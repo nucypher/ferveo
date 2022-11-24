@@ -282,6 +282,11 @@ pub fn setup_simple<E: PairingEngine>(
         private.public_decryption_contexts = public_contexts.clone();
     }
 
+    // TODO: Should we also be returning some sort of signed transcript?
+    // "Post the signed message \(\tau, (F_0, \ldots, F_t), \hat{u}2, (\hat{Y}{i,\omega_j})\) to the blockchain"
+    // \tau - unique session identifier
+    // See: https://nikkolasg.github.io/ferveo/pvss.html#dealers-role
+
     (pubkey.into(), privkey.into(), private_contexts)
 }
 
