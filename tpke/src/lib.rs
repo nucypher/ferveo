@@ -140,7 +140,7 @@ pub fn setup<E: PairingEngine>(
     // F_0 - The commitment to the constant term, and is the public key output Y from PVDKG
     // TODO: It seems like the rest of the F_i are not computed?
     let pubkey = g.mul(x);
-    let privkey = h.mul(x);
+    let privkey = h.mul(x); // ek_i in PVSS?
 
     let mut private_contexts = vec![];
     let mut public_contexts = vec![];
@@ -300,6 +300,7 @@ pub fn generate_random<R: RngCore, E: PairingEngine>(
 #[cfg(test)]
 mod tests {
     use crate::*;
+    use ark_bls12_381::Fr;
     use ark_std::test_rng;
 
     type E = ark_bls12_381::Bls12_381;
@@ -358,8 +359,7 @@ mod tests {
 
     // Source: https://stackoverflow.com/questions/26469715/how-do-i-write-a-rust-unit-test-that-ensures-that-a-panic-has-occurred
     // TODO: Remove after adding proper error handling to the library
-    use std::panic;
-
+    use std::{collections::HashMap, panic};
     fn catch_unwind_silent<F: FnOnce() -> R + panic::UnwindSafe, R>(
         f: F,
     ) -> std::thread::Result<R> {
@@ -508,5 +508,134 @@ mod tests {
             checked_decrypt_with_shared_secret(&ciphertext, aad, &shared_secret)
         });
         assert!(result.is_err());
+    }
+
+    fn make_decryption_shares<E: PairingEngine>(
+        private_decryption_contexts: &Vec<PrivateDecryptionContextSimple<E>>,
+        ciphertext: &Ciphertext<E>,
+    ) -> Vec<DecryptionShareSimple<E>> {
+        private_decryption_contexts
+            .iter()
+            .map(|context| {
+                let u = ciphertext.commitment;
+                let i = context.index;
+                let z_i = context.private_key_share.clone();
+                // Simplifying to just one key share per node
+                assert_eq!(z_i.private_key_shares.len(), 1);
+                let z_i = z_i.private_key_shares[0];
+                // Really want to call E::pairing here to avoid heavy computations on client side
+                // C_i = e(U, Z_i)
+                let c_i = E::pairing(u, z_i); // TODO: Check whether blinded key share fits here
+                DecryptionShareSimple {
+                    decrypter_index: i,
+                    decryption_share: c_i,
+                }
+            })
+            .collect::<Vec<_>>()
+    }
+
+    #[test]
+    fn simple_threshold_decryption_with_share_recovery() {
+        let mut rng = &mut test_rng();
+        let threshold = 16 * 2 / 3;
+        let shares_num = 16;
+        let msg: &[u8] = "abc".as_bytes();
+        let aad: &[u8] = "my-aad".as_bytes();
+
+        let (pubkey, _privkey, private_decryption_contexts, dealer_lagrange) =
+            setup_simple::<E>(threshold, shares_num, &mut rng);
+
+        let ciphertext = encrypt::<_, E>(msg, aad, &pubkey, rng);
+
+        let shares =
+            make_decryption_shares(&private_decryption_contexts, &ciphertext);
+        let lagrange = prepare_combine_simple(
+            &private_decryption_contexts[0].public_decryption_contexts,
+        );
+        let s = share_combine_simple::<E>(&shares, &lagrange);
+
+        let plaintext =
+            checked_decrypt_with_shared_secret(&ciphertext, aad, &s);
+        assert_eq!(plaintext, msg);
+
+        // Refresh the shares
+
+        // `private_decryption_contexts` represents set A of participants
+        // B set of participants contains one participant
+        // D = A\B
+        let x_r = Fr::one();
+        let original_y_r = &private_decryption_contexts[0].private_key_share;
+
+        let remaining_participants = private_decryption_contexts[1..].to_vec();
+        let new_shares = refresh_decryption_shares::<E>(
+            &remaining_participants,
+            &x_r,
+            threshold,
+            rng,
+        );
+    }
+
+    fn refresh_decryption_shares<E: PairingEngine>(
+        participants: &[PrivateDecryptionContextSimple<E>],
+        x_r: &E::Fr,
+        threshold: usize,
+        rng: &mut impl RngCore,
+    ) -> Vec<DecryptionShareSimple<E>> {
+        let mut deltas: HashMap<usize, HashMap<usize, E::Fr>> = HashMap::new();
+        for p1 in participants {
+            let i = p1.index;
+            let d_i = make_random_polynomial(threshold, x_r, rng);
+            for p2 in participants {
+                let j = p2.index;
+                let x_j = p2.public_decryption_contexts[j].domain;
+                if !deltas.contains_key(&i) {
+                    deltas = HashMap::new();
+                }
+                deltas[&i][&j] = evaluate_polynomial(&d_i, x_j);
+            }
+        }
+
+        let mut new_shares: Vec<DecryptionShareSimple<E>> = Vec::new();
+        for p1 in participants {
+            let i = p1.index;
+            let mut y_prime_i = p1.private_key_share.private_key_shares[0];
+            for j in deltas.keys() {
+                y_prime_i = y_prime_i + deltas[j][&i];
+            }
+            new_shares.push(DecryptionShareSimple {
+                decrypter_index: i,
+                decryption_share: y_prime_i,
+            });
+        }
+        new_shares
+    }
+
+    fn make_random_polynomial<E: PairingEngine>(
+        threshold: usize,
+        x_r: E::Fr,
+        rng: &mut impl RngCore,
+    ) -> Vec<E::Fr> {
+        let d_i = (0..threshold).map(|_| E::Fr::rand(rng)).collect::<Vec<_>>();
+        d_i.insert(0, E::Fr::zero());
+
+        let d_i_at_x_r: E::Fr = evaluate_polynomial::<E>(&d_i, x_r);
+        assert_eq!(d_i_at_x_r, E::Fr::zero());
+
+        let d_i_0 = E::Fr::zero() - d_i_at_x_r;
+        d_i[0] = d_i_0;
+        d_i
+    }
+
+    fn evaluate_polynomial<E: PairingEngine>(
+        polynomial: &[E::Fr],
+        x: E::Fr,
+    ) -> E::Fr {
+        let mut result = E::Fr::zero();
+        let mut x_power = E::Fr::one();
+        for coeff in polynomial {
+            result += *coeff * x_power;
+            x_power *= x;
+        }
+        result
     }
 }
