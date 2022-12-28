@@ -40,4 +40,5 @@ pub struct PrivateDecryptionContextSimple<E: PairingEngine> {
     pub g: E::G1Affine,
     pub g_inv: E::G1Prepared,
     pub h_inv: E::G2Prepared,
+    pub h: E::G2Affine,
 }

@@ -269,6 +269,7 @@ pub fn setup_simple<E: PairingEngine>(
             g,
             g_inv: E::G1Prepared::from(-g),
             h_inv: E::G2Prepared::from(-h),
+            h, // TODO: Remove this sensitive data here
         });
         public_contexts.push(PublicDecryptionContextSimple::<E> {
             domain: domain[0],
@@ -301,6 +302,7 @@ pub fn generate_random<R: RngCore, E: PairingEngine>(
 mod tests {
     use crate::*;
     use ark_bls12_381::Fr;
+    use ark_ec::ProjectiveCurve;
     use ark_std::test_rng;
 
     type E = ark_bls12_381::Bls12_381;
@@ -359,7 +361,11 @@ mod tests {
 
     // Source: https://stackoverflow.com/questions/26469715/how-do-i-write-a-rust-unit-test-that-ensures-that-a-panic-has-occurred
     // TODO: Remove after adding proper error handling to the library
-    use std::{collections::HashMap, panic};
+    use std::{
+        collections::HashMap,
+        ops::{Add, AddAssign},
+        panic,
+    };
     fn catch_unwind_silent<F: FnOnce() -> R + panic::UnwindSafe, R>(
         f: F,
     ) -> std::thread::Result<R> {
@@ -573,6 +579,20 @@ mod tests {
             threshold,
             rng,
         );
+
+        // TODO: Refresh lagrange coefficeints here?
+        // let lagrange = prepare_combine_simple(
+        //     &private_decryption_contexts[0].public_decryption_contexts,
+        // );
+
+        let s = share_combine_simple::<E>(&new_shares, &lagrange);
+
+        // So far, the ciphertext is valid
+        let plaintext =
+            checked_decrypt_with_shared_secret(&ciphertext, aad, &s);
+        assert_eq!(plaintext, msg);
+
+
     }
 
     fn refresh_decryption_shares<E: PairingEngine>(
@@ -584,27 +604,39 @@ mod tests {
         let mut deltas: HashMap<usize, HashMap<usize, E::Fr>> = HashMap::new();
         for p1 in participants {
             let i = p1.index;
-            let d_i = make_random_polynomial(threshold, x_r, rng);
+            let d_i = make_random_polynomial::<E>(threshold, x_r, rng);
             for p2 in participants {
                 let j = p2.index;
                 let x_j = p2.public_decryption_contexts[j].domain;
                 if !deltas.contains_key(&i) {
-                    deltas = HashMap::new();
+                    deltas.insert(i, HashMap::new());
                 }
-                deltas[&i][&j] = evaluate_polynomial(&d_i, x_j);
+                let eval = evaluate_polynomial::<E>(&d_i, &x_j);
+                // TODO: Find a more efficient way keep track of those values
+                let mut d = deltas.get(&i).unwrap().clone();
+                d.insert(j, eval);
+                deltas.insert(i, d);
             }
         }
 
         let mut new_shares: Vec<DecryptionShareSimple<E>> = Vec::new();
-        for p1 in participants {
-            let i = p1.index;
-            let mut y_prime_i = p1.private_key_share.private_key_shares[0];
+        for p in participants {
+            let h_g2 = E::G2Projective::from(p.h);
+
+            assert_eq!(p.private_key_share.private_key_shares.len(), 1);
+            let i = p.index;
+            let mut y_prime_i = E::G2Projective::from(
+                p.private_key_share.private_key_shares[0],
+            );
             for j in deltas.keys() {
-                y_prime_i = y_prime_i + deltas[j][&i];
+                let delta_g2 = h_g2.mul(deltas[j][&i].into_repr());
+                y_prime_i += delta_g2;
             }
+
             new_shares.push(DecryptionShareSimple {
                 decrypter_index: i,
-                decryption_share: y_prime_i,
+                // TODO: Is this a correct method to convert new y_prime_i to E::Fr?
+                decryption_share: E::pairing(p.g, y_prime_i),
             });
         }
         new_shares
@@ -612,10 +644,10 @@ mod tests {
 
     fn make_random_polynomial<E: PairingEngine>(
         threshold: usize,
-        x_r: E::Fr,
+        x_r: &E::Fr,
         rng: &mut impl RngCore,
     ) -> Vec<E::Fr> {
-        let d_i = (0..threshold).map(|_| E::Fr::rand(rng)).collect::<Vec<_>>();
+        let mut d_i = (0..threshold).map(|_| E::Fr::rand(rng)).collect::<Vec<_>>();
         d_i.insert(0, E::Fr::zero());
 
         let d_i_at_x_r: E::Fr = evaluate_polynomial::<E>(&d_i, x_r);
@@ -628,7 +660,7 @@ mod tests {
 
     fn evaluate_polynomial<E: PairingEngine>(
         polynomial: &[E::Fr],
-        x: E::Fr,
+        x: &E::Fr,
     ) -> E::Fr {
         let mut result = E::Fr::zero();
         let mut x_power = E::Fr::one();
