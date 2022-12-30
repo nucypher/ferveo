@@ -366,6 +366,7 @@ mod tests {
         ops::{Add, AddAssign},
         panic,
     };
+
     fn catch_unwind_silent<F: FnOnce() -> R + panic::UnwindSafe, R>(
         f: F,
     ) -> std::thread::Result<R> {
@@ -468,22 +469,9 @@ mod tests {
         let mut ciphertext = encrypt::<_, E>(msg, aad, &pubkey, rng);
 
         // Creating decryption shares
-        let decryption_shares = private_decryption_contexts
-            .iter()
-            .map(|context| {
-                let u = ciphertext.commitment;
-                let z_i = context.private_key_share.clone();
-                // Simplifying to just one key share per node
-                assert_eq!(z_i.private_key_shares.len(), 1);
-                let z_i = z_i.private_key_shares[0];
-                // Really want to call E::pairing here to avoid heavy computations on client side
-                // C_i = e(U, Z_i)
-                // TODO: Check whether blinded key share fits here
-                E::pairing(u, z_i)
-            })
-            .collect::<Vec<_>>();
+        let decryption_shares = make_decryption_shares(&contexts, &ciphertext);
 
-        let shares_x = &private_decryption_contexts[0]
+        let shares_x = &contexts[0]
             .public_decryption_contexts
             .iter()
             .map(|ctxt| ctxt.domain)
@@ -517,10 +505,10 @@ mod tests {
     }
 
     fn make_decryption_shares<E: PairingEngine>(
-        private_decryption_contexts: &Vec<PrivateDecryptionContextSimple<E>>,
+        contexts: &Vec<PrivateDecryptionContextSimple<E>>,
         ciphertext: &Ciphertext<E>,
-    ) -> Vec<DecryptionShareSimple<E>> {
-        private_decryption_contexts
+    ) -> Vec<E::Fqk> {
+        contexts
             .iter()
             .map(|context| {
                 let u = ciphertext.commitment;
@@ -531,11 +519,7 @@ mod tests {
                 let z_i = z_i.private_key_shares[0];
                 // Really want to call E::pairing here to avoid heavy computations on client side
                 // C_i = e(U, Z_i)
-                let c_i = E::pairing(u, z_i); // TODO: Check whether blinded key share fits here
-                DecryptionShareSimple {
-                    decrypter_index: i,
-                    decryption_share: c_i,
-                }
+                E::pairing(u, z_i)
             })
             .collect::<Vec<_>>()
     }
@@ -548,31 +532,44 @@ mod tests {
         let msg: &[u8] = "abc".as_bytes();
         let aad: &[u8] = "my-aad".as_bytes();
 
-        let (pubkey, _privkey, private_decryption_contexts, dealer_lagrange) =
+        // To be updated
+        let (pubkey, _privkey, contexts) =
             setup_simple::<E>(threshold, shares_num, &mut rng);
 
-        let ciphertext = encrypt::<_, E>(msg, aad, &pubkey, rng);
+        // Stays the same
+        // Ciphertext.commitment is already computed to match U
+        let mut ciphertext = encrypt::<_, E>(msg, aad, &pubkey, rng);
 
-        let shares =
-            make_decryption_shares(&private_decryption_contexts, &ciphertext);
-        let lagrange = prepare_combine_simple(
-            &private_decryption_contexts[0].public_decryption_contexts,
+        // Creating decryption shares
+        let decryption_shares = make_decryption_shares(&contexts, &ciphertext);
+
+        let shares_x = &contexts[0]
+            .public_decryption_contexts
+            .iter()
+            .map(|ctxt| ctxt.domain)
+            .collect::<Vec<_>>();
+        let lagrange = prepare_combine_simple::<E>(shares_x);
+
+        let shared_secret =
+            share_combine_simple::<E>(&decryption_shares, &lagrange);
+
+        // So far, the ciphertext is valid
+        let plaintext = checked_decrypt_with_shared_secret(
+            &ciphertext,
+            aad,
+            &shared_secret,
         );
-        let s = share_combine_simple::<E>(&shares, &lagrange);
-
-        let plaintext =
-            checked_decrypt_with_shared_secret(&ciphertext, aad, &s);
         assert_eq!(plaintext, msg);
 
         // Refresh the shares
 
-        // `private_decryption_contexts` represents set A of participants
+        // `contexts` represents set A of participants
         // B set of participants contains one participant
         // D = A\B
         let x_r = Fr::one();
-        let original_y_r = &private_decryption_contexts[0].private_key_share;
+        let original_y_r = &contexts[0].private_key_share;
 
-        let remaining_participants = private_decryption_contexts[1..].to_vec();
+        let remaining_participants = contexts[1..].to_vec();
         let new_shares = refresh_decryption_shares::<E>(
             &remaining_participants,
             &x_r,
@@ -582,7 +579,7 @@ mod tests {
 
         // TODO: Refresh lagrange coefficeints here?
         // let lagrange = prepare_combine_simple(
-        //     &private_decryption_contexts[0].public_decryption_contexts,
+        //     &contexts[0].public_decryption_contexts,
         // );
 
         let s = share_combine_simple::<E>(&new_shares, &lagrange);
@@ -591,8 +588,6 @@ mod tests {
         let plaintext =
             checked_decrypt_with_shared_secret(&ciphertext, aad, &s);
         assert_eq!(plaintext, msg);
-
-
     }
 
     fn refresh_decryption_shares<E: PairingEngine>(
@@ -600,7 +595,7 @@ mod tests {
         x_r: &E::Fr,
         threshold: usize,
         rng: &mut impl RngCore,
-    ) -> Vec<DecryptionShareSimple<E>> {
+    ) -> Vec<E::Fqk> {
         let mut deltas: HashMap<usize, HashMap<usize, E::Fr>> = HashMap::new();
         for p1 in participants {
             let i = p1.index;
@@ -619,7 +614,7 @@ mod tests {
             }
         }
 
-        let mut new_shares: Vec<DecryptionShareSimple<E>> = Vec::new();
+        let mut new_shares = Vec::new();
         for p in participants {
             let h_g2 = E::G2Projective::from(p.h);
 
@@ -633,11 +628,7 @@ mod tests {
                 y_prime_i += delta_g2;
             }
 
-            new_shares.push(DecryptionShareSimple {
-                decrypter_index: i,
-                // TODO: Is this a correct method to convert new y_prime_i to E::Fr?
-                decryption_share: E::pairing(p.g, y_prime_i),
-            });
+            new_shares.push(E::pairing(p.g, y_prime_i));
         }
         new_shares
     }
@@ -647,7 +638,8 @@ mod tests {
         x_r: &E::Fr,
         rng: &mut impl RngCore,
     ) -> Vec<E::Fr> {
-        let mut d_i = (0..threshold).map(|_| E::Fr::rand(rng)).collect::<Vec<_>>();
+        let mut d_i =
+            (0..threshold).map(|_| E::Fr::rand(rng)).collect::<Vec<_>>();
         d_i.insert(0, E::Fr::zero());
 
         let d_i_at_x_r: E::Fr = evaluate_polynomial::<E>(&d_i, x_r);
