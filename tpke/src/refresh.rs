@@ -128,7 +128,7 @@ fn prepare_share_updates_for_refreshing<E: PairingEngine>(
 
 fn compute_polynomial_deltas<E: PairingEngine>(
     participants: &[PrivateDecryptionContextSimple<E>],
-    coeffs: &Vec<E::Fr>,
+    coeffs: &[E::Fr],
 ) -> HashMap<usize, E::G2Projective> {
     participants
         .iter()
