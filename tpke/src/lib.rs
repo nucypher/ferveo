@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 
 use crate::hash_to_curve::htp_bls12381_g2;
-use ark_ec::{msm::FixedBaseMSM, AffineCurve, PairingEngine, ProjectiveCurve};
+use ark_ec::{msm::FixedBaseMSM, AffineCurve, PairingEngine};
 use ark_ff::{Field, One, PrimeField, ToBytes, UniformRand, Zero};
 use ark_poly::{
     univariate::DensePolynomial, EvaluationDomain, Polynomial, UVPolynomial,
@@ -308,6 +308,7 @@ fn make_decryption_share<E: PairingEngine>(
 mod tests {
     use crate::*;
     use ark_bls12_381::Fr;
+    use ark_ec::ProjectiveCurve;
     use ark_std::test_rng;
     use rand::prelude::StdRng;
     use std::panic;
@@ -316,15 +317,15 @@ mod tests {
 
     #[test]
     fn ciphertext_serialization() {
-        let mut rng = test_rng();
-        let threshold = 3;
-        let shares_num = 8;
+        let rng = &mut test_rng();
+        let shares_num = 16;
+        let threshold = shares_num * 2 / 3;
         let msg: &[u8] = "abc".as_bytes();
-        let aad: &[u8] = "aad".as_bytes();
+        let aad: &[u8] = "my-aad".as_bytes();
 
-        let (pubkey, _, _) = setup::<E>(threshold, shares_num, &mut rng);
+        let (pubkey, _, _) = setup::<E>(threshold, shares_num, rng);
 
-        let ciphertext = encrypt::<StdRng, E>(msg, aad, &pubkey, &mut rng);
+        let ciphertext = encrypt::<StdRng, E>(msg, aad, &pubkey, rng);
 
         let serialized = ciphertext.to_bytes();
         let deserialized: Ciphertext<E> = Ciphertext::from_bytes(&serialized);
@@ -348,15 +349,15 @@ mod tests {
 
     #[test]
     fn symmetric_encryption() {
-        let mut rng = test_rng();
-        let threshold = 3;
-        let shares_num = 8;
+        let rng = &mut test_rng();
+        let shares_num = 16;
+        let threshold = shares_num * 2 / 3;
         let msg: &[u8] = "abc".as_bytes();
         let aad: &[u8] = "my-aad".as_bytes();
 
-        let (pubkey, privkey, _) = setup::<E>(threshold, shares_num, &mut rng);
+        let (pubkey, privkey, _) = setup::<E>(threshold, shares_num, rng);
 
-        let ciphertext = encrypt::<StdRng, E>(msg, aad, &pubkey, &mut rng);
+        let ciphertext = encrypt::<StdRng, E>(msg, aad, &pubkey, rng);
         let plaintext = checked_decrypt(&ciphertext, aad, privkey);
 
         assert_eq!(msg, plaintext)
@@ -364,13 +365,13 @@ mod tests {
 
     #[test]
     fn threshold_encryption() {
-        let mut rng = &mut test_rng();
-        let threshold = 16 * 2 / 3;
+        let rng = &mut test_rng();
         let shares_num = 16;
+        let threshold = shares_num * 2 / 3;
         let msg: &[u8] = "abc".as_bytes();
         let aad: &[u8] = "my-aad".as_bytes();
 
-        let (pubkey, _, contexts) = setup::<E>(threshold, shares_num, &mut rng);
+        let (pubkey, _, contexts) = setup::<E>(threshold, shares_num, rng);
         let mut ciphertext = encrypt::<_, E>(msg, aad, &pubkey, rng);
 
         let mut shares: Vec<DecryptionShare<E>> = vec![];
@@ -413,15 +414,14 @@ mod tests {
 
     #[test]
     fn ciphertext_validity_check() {
-        let mut rng = test_rng();
-        let threshold = 3;
-        let shares_num = 8;
+        let rng = &mut test_rng();
+        let shares_num = 16;
+        let threshold = shares_num * 2 / 3;
         let msg: &[u8] = "abc".as_bytes();
         let aad: &[u8] = "my-aad".as_bytes();
 
-        let (pubkey, _, _) = setup::<E>(threshold, shares_num, &mut rng);
-        let mut ciphertext =
-            encrypt::<rand::rngs::StdRng, E>(msg, aad, &pubkey, &mut rng);
+        let (pubkey, _, _) = setup::<E>(threshold, shares_num, rng);
+        let mut ciphertext = encrypt::<StdRng, E>(msg, aad, &pubkey, rng);
 
         // So far, the ciphertext is valid
         assert!(check_ciphertext_validity(&ciphertext, aad));
@@ -437,14 +437,14 @@ mod tests {
 
     #[test]
     fn simple_threshold_decryption() {
-        let mut rng = &mut test_rng();
-        let threshold = 16 * 2 / 3;
+        let rng = &mut test_rng();
         let shares_num = 16;
+        let threshold = shares_num * 2 / 3;
         let msg: &[u8] = "abc".as_bytes();
         let aad: &[u8] = "my-aad".as_bytes();
 
         let (pubkey, _, private_decryption_contexts) =
-            setup_simple::<E>(threshold, shares_num, &mut rng);
+            setup_simple::<E>(threshold, shares_num, rng);
 
         // Ciphertext.commitment is already computed to match U
         let mut ciphertext = encrypt::<_, E>(msg, aad, &pubkey, rng);
@@ -491,12 +491,12 @@ mod tests {
 
     #[test]
     fn simple_threshold_decryption_with_share_refreshing_at_point() {
-        let mut rng = &mut test_rng();
+        let rng = &mut test_rng();
         let shares_num = 16;
         let threshold = shares_num * 2 / 3;
 
         let (_, _, mut contexts) =
-            setup_simple::<E>(threshold, shares_num, &mut rng);
+            setup_simple::<E>(threshold, shares_num, rng);
 
         // Prepare participants
 
@@ -528,14 +528,14 @@ mod tests {
 
     #[test]
     fn simple_threshold_decryption_with_share_recovery_at_point() {
-        let mut rng = &mut test_rng();
+        let rng = &mut test_rng();
         let shares_num = 16;
         let threshold = shares_num * 2 / 3;
         let msg: &[u8] = "abc".as_bytes();
         let aad: &[u8] = "my-aad".as_bytes();
 
         let (pubkey, _, contexts) =
-            setup_simple::<E>(threshold, shares_num, &mut rng);
+            setup_simple::<E>(threshold, shares_num, rng);
         let ciphertext = encrypt::<_, E>(msg, aad, &pubkey, rng);
 
         // Remove one participant from the contexts and all nested structures
@@ -588,47 +588,32 @@ mod tests {
 
     #[test]
     fn simple_threshold_decryption_with_share_refresh() {
-        let mut rng = &mut test_rng();
+        let rng = &mut test_rng();
         let shares_num = 16;
         let threshold = shares_num * 2 / 3;
         let msg: &[u8] = "abc".as_bytes();
         let aad: &[u8] = "my-aad".as_bytes();
 
         let (pubkey, _, contexts) =
-            setup_simple::<E>(threshold, shares_num, &mut rng);
+            setup_simple::<E>(threshold, shares_num, rng);
         let ciphertext = encrypt::<_, E>(msg, aad, &pubkey, rng);
 
-        // Remove one participant from the contexts and all nested structures
-        let mut remaining_participants = contexts;
-        remaining_participants.pop();
-        for p in &mut remaining_participants {
-            p.public_decryption_contexts.pop();
-        }
-
-        // Refresh the share
-        let x_r = Fr::rand(rng);
-        let y_r = recover_share_at_point(
-            &remaining_participants,
-            threshold,
-            &x_r,
-            rng,
-        );
-        let recovered_key_share = PrivateKeyShare {
-            private_key_shares: vec![y_r.into_affine()],
-        };
+        // Refresh shares
+        let fresh_shares = refresh_shares::<E>(&contexts, threshold, rng);
 
         // Creating decryption shares
-        let mut decryption_shares: Vec<_> = remaining_participants
+        let decryption_shares: Vec<_> = fresh_shares
             .iter()
-            .map(|ctxt| {
-                make_decryption_share(&ctxt.private_key_share, &ciphertext)
+            .map(|private_share| {
+                let private_share = PrivateKeyShare {
+                    private_key_shares: vec![private_share.into_affine()],
+                };
+                make_decryption_share(&private_share, &ciphertext)
             })
             .collect();
-        decryption_shares
-            .push(make_decryption_share(&recovered_key_share, &ciphertext));
 
         // Creating a shared secret from remaining shares and the recovered one
-        let shares_x = &remaining_participants[0]
+        let shares_x = &contexts[0]
             .public_decryption_contexts
             .iter()
             .map(|ctxt| ctxt.domain)

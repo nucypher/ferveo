@@ -14,11 +14,15 @@ pub fn recover_share_at_point<E: PairingEngine>(
     x_r: &E::Fr,
     rng: &mut StdRng,
 ) -> E::G2Projective {
-    let share_updates =
-        prepare_share_updates::<E>(other_participants, x_r, threshold, rng);
+    let share_updates = prepare_share_updates_for_recovery::<E>(
+        other_participants,
+        x_r,
+        threshold,
+        rng,
+    );
 
     let new_shares_y =
-        update_decryption_shares::<E>(other_participants, &share_updates);
+        update_shares_for_recovery::<E>(other_participants, &share_updates);
 
     // Interpolate new shares to recover y_r
     let shares_x = &other_participants[0]
@@ -34,7 +38,7 @@ pub fn recover_share_at_point<E: PairingEngine>(
     prods.fold(E::G2Projective::zero(), |acc, y_j| acc + y_j)
 }
 
-fn prepare_share_updates<E: PairingEngine>(
+fn prepare_share_updates_for_recovery<E: PairingEngine>(
     participants: &[PrivateDecryptionContextSimple<E>],
     x_r: &E::Fr,
     threshold: usize,
@@ -50,25 +54,14 @@ fn prepare_share_updates<E: PairingEngine>(
             let d_i = make_random_polynomial::<E>(threshold, x_r, rng);
 
             // Now, we need to evaluate the polynomial at each of participants' indices
-            let deltas_i: HashMap<_, _> = participants
-                .iter()
-                .map(|p2| {
-                    let j = p2.index;
-                    let x_j = p2.public_decryption_contexts[j].domain;
-                    // Compute the evaluation of the polynomial at the domain element x_j
-                    // d_i(x_j)
-                    let eval = evaluate_polynomial::<E>(&d_i, &x_j);
-                    let h_g2 = E::G2Projective::from(p2.h);
-                    let eval_g2 = h_g2.mul(eval.into_repr());
-                    (j, eval_g2)
-                })
-                .collect();
+            let deltas_i: HashMap<_, _> =
+                compute_polynomial_deltas::<E>(participants, &d_i);
             (i, deltas_i)
         })
         .collect::<HashMap<_, _>>()
 }
 
-fn update_decryption_shares<E: PairingEngine>(
+fn update_shares_for_recovery<E: PairingEngine>(
     participants: &[PrivateDecryptionContextSimple<E>],
     deltas: &HashMap<usize, HashMap<usize, E::G2Projective>>,
 ) -> Vec<E::G2Projective> {
@@ -122,4 +115,50 @@ fn evaluate_polynomial<E: PairingEngine>(
         x_power *= x;
     }
     result
+}
+
+fn prepare_share_updates_for_refreshing<E: PairingEngine>(
+    participants: &[PrivateDecryptionContextSimple<E>],
+    threshold: usize,
+    rng: &mut impl RngCore,
+) -> HashMap<usize, E::G2Projective> {
+    let coeffs = make_random_polynomial::<E>(threshold, &E::Fr::zero(), rng);
+    compute_polynomial_deltas(participants, &coeffs)
+}
+
+fn compute_polynomial_deltas<E: PairingEngine>(
+    participants: &[PrivateDecryptionContextSimple<E>],
+    coeffs: &Vec<E::Fr>,
+) -> HashMap<usize, E::G2Projective> {
+    participants
+        .iter()
+        .map(|p| {
+            let i = p.index;
+            let x_i = p.public_decryption_contexts[i].domain;
+            let eval = evaluate_polynomial::<E>(coeffs, &x_i);
+            let h_g2 = E::G2Projective::from(p.h);
+            let eval_g2 = h_g2.mul(eval.into_repr());
+            (i, eval_g2)
+        })
+        .collect::<HashMap<_, _>>()
+}
+
+pub fn refresh_shares<E: PairingEngine>(
+    participants: &[PrivateDecryptionContextSimple<E>],
+    threshold: usize,
+    rng: &mut impl RngCore,
+) -> Vec<E::G2Projective> {
+    let share_updates =
+        prepare_share_updates_for_refreshing::<E>(participants, threshold, rng);
+    participants
+        .iter()
+        .map(|p| {
+            let i = p.index;
+            let mut new_y = E::G2Projective::from(
+                p.private_key_share.private_key_shares[0], // y_i
+            );
+            new_y += share_updates[&i];
+            new_y
+        })
+        .collect()
 }
