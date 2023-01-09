@@ -1,5 +1,6 @@
 use crate::*;
-use ferveo_common::ValidatorSet;
+pub use ark_bls12_381::Bls12_381 as EllipticCurve;
+use ferveo_common::{TendermintValidator, ValidatorSet};
 use itertools::izip;
 
 /// partition_domain takes as input a vector of validators from
@@ -56,4 +57,45 @@ pub fn partition_domain<E: PairingEngine>(
                 .ok_or_else(|| anyhow!("allocated weight overflow"))?;
     }
     Ok(participants)
+}
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_partition_domain() {
+        // Test case with two validators and equal weights
+
+        let rng = &mut ark_std::test_rng();
+        let validator_set = ValidatorSet::new(vec![
+            TendermintValidator {
+                power: 50,
+                address: "validator_0".to_string(),
+                public_key: ferveo_common::Keypair::<EllipticCurve>::new(rng)
+                    .public(),
+            },
+            TendermintValidator {
+                power: 50,
+                address: "validator_1".to_string(),
+                public_key: ferveo_common::Keypair::<EllipticCurve>::new(rng)
+                    .public(),
+            },
+        ]);
+
+        let params = Params {
+            tau: 1,
+            total_weight: 100,
+            security_threshold: 50,
+            retry_after: 0,
+        };
+
+        let participants = partition_domain(&params, validator_set).unwrap();
+        assert_eq!(participants.len(), 2);
+        assert_eq!(participants[0].weight, 50);
+        assert_eq!(participants[0].share_start, 0);
+        assert_eq!(participants[0].share_end, 50);
+        assert_eq!(participants[1].weight, 50);
+        assert_eq!(participants[1].share_start, 50);
+        assert_eq!(participants[1].share_end, 100);
+    }
 }
