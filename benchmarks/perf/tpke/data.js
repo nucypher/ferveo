@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1675347902727,
+  "lastUpdate": 1675705711778,
   "repoUrl": "https://github.com/nucypher/ferveo",
   "entries": {
     "Rust Benchmark": [
@@ -449,6 +449,456 @@ window.BENCHMARK_DATA = {
             "name": "Refresh Shares Benchmark/Refresh Shares/64",
             "value": 71503389,
             "range": "± 858425",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "39299780+piotr-roslaniec@users.noreply.github.com",
+            "name": "piotr-roslaniec",
+            "username": "piotr-roslaniec"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9050db0a2fae2ac9d7f1843813413db8aab0857d",
+          "message": "Merge pull request #63 from nucypher/remove-msg",
+          "timestamp": "2023-02-06T18:07:42+01:00",
+          "tree_id": "658e3bde965d3413ba42a6cf445965535f634816",
+          "url": "https://github.com/nucypher/ferveo/commit/9050db0a2fae2ac9d7f1843813413db8aab0857d"
+        },
+        "date": 1675705710979,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "SHARE CREATE/share_create_fast/4",
+            "value": 24757987,
+            "range": "± 7543",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple/4",
+            "value": 32066415,
+            "range": "± 4770",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple_precomputed/4",
+            "value": 9834263,
+            "range": "± 3663",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_fast/8",
+            "value": 49527925,
+            "range": "± 15165",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple/8",
+            "value": 64125700,
+            "range": "± 9285",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple_precomputed/8",
+            "value": 19648654,
+            "range": "± 9309",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_fast/16",
+            "value": 99010674,
+            "range": "± 20064",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple/16",
+            "value": 128279403,
+            "range": "± 28564",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple_precomputed/16",
+            "value": 39352784,
+            "range": "± 19980",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_fast/32",
+            "value": 198066938,
+            "range": "± 46043",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple/32",
+            "value": 256630986,
+            "range": "± 46007",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple_precomputed/32",
+            "value": 78241204,
+            "range": "± 23035",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_fast/64",
+            "value": 396346496,
+            "range": "± 54219",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple/64",
+            "value": 512646206,
+            "range": "± 103313",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple_precomputed/64",
+            "value": 157506829,
+            "range": "± 88669",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_fast/4",
+            "value": 4528493,
+            "range": "± 1324",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_simple/4",
+            "value": 29163,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_fast/8",
+            "value": 9624994,
+            "range": "± 2730",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_simple/8",
+            "value": 319651,
+            "range": "± 184",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_fast/16",
+            "value": 19769436,
+            "range": "± 6287",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_simple/16",
+            "value": 1698508,
+            "range": "± 7162",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_fast/32",
+            "value": 40565151,
+            "range": "± 8380",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_simple/32",
+            "value": 7328669,
+            "range": "± 24816",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_fast/64",
+            "value": 83601239,
+            "range": "± 15546",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_simple/64",
+            "value": 30143242,
+            "range": "± 53005",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_fast/4",
+            "value": 2911598,
+            "range": "± 2414",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple/4",
+            "value": 9272739,
+            "range": "± 2399",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple_precomputed/4",
+            "value": 23986,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_fast/8",
+            "value": 4340622,
+            "range": "± 826",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple/8",
+            "value": 18167260,
+            "range": "± 6220",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple_precomputed/8",
+            "value": 48142,
+            "range": "± 49",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_fast/16",
+            "value": 7178912,
+            "range": "± 2548",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple/16",
+            "value": 36457272,
+            "range": "± 8248",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple_precomputed/16",
+            "value": 96432,
+            "range": "± 22",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_fast/32",
+            "value": 12854910,
+            "range": "± 5484",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple/32",
+            "value": 69970599,
+            "range": "± 16749",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple_precomputed/32",
+            "value": 192654,
+            "range": "± 39",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_fast/64",
+            "value": 24274995,
+            "range": "± 24402",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple/64",
+            "value": 147310790,
+            "range": "± 13741",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple_precomputed/64",
+            "value": 386313,
+            "range": "± 166",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/256",
+            "value": 6862280,
+            "range": "± 5762",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/256",
+            "value": 5878189,
+            "range": "± 1994",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/512",
+            "value": 6863568,
+            "range": "± 4659",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/512",
+            "value": 5877416,
+            "range": "± 994",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/1024",
+            "value": 6869301,
+            "range": "± 7151",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/1024",
+            "value": 5885809,
+            "range": "± 1428",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/2048",
+            "value": 6878560,
+            "range": "± 3497",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/2048",
+            "value": 5897758,
+            "range": "± 1558",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/4096",
+            "value": 6904242,
+            "range": "± 4885",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/4096",
+            "value": 5931288,
+            "range": "± 1473",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/8192",
+            "value": 6952568,
+            "range": "± 4922",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/8192",
+            "value": 5971711,
+            "range": "± 1447",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/16384",
+            "value": 7018978,
+            "range": "± 5200",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/16384",
+            "value": 6041228,
+            "range": "± 1478",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "VALIDITY CHECKS/check_ciphertext_validity/256",
+            "value": 5868364,
+            "range": "± 629",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "VALIDITY CHECKS/check_ciphertext_validity/512",
+            "value": 5867367,
+            "range": "± 11960",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "VALIDITY CHECKS/check_ciphertext_validity/1024",
+            "value": 5875232,
+            "range": "± 1059",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "VALIDITY CHECKS/check_ciphertext_validity/2048",
+            "value": 5883003,
+            "range": "± 1548",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "VALIDITY CHECKS/check_ciphertext_validity/4096",
+            "value": 5919988,
+            "range": "± 1284",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "VALIDITY CHECKS/check_ciphertext_validity/8192",
+            "value": 5952947,
+            "range": "± 903",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "VALIDITY CHECKS/check_ciphertext_validity/16384",
+            "value": 6013218,
+            "range": "± 916",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Recover Share at Point Benchmark/Recover Share at Point/4",
+            "value": 11307199,
+            "range": "± 11109",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Recover Share at Point Benchmark/Recover Share at Point/8",
+            "value": 58041452,
+            "range": "± 32492",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Recover Share at Point Benchmark/Recover Share at Point/16",
+            "value": 254195257,
+            "range": "± 56264",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Recover Share at Point Benchmark/Recover Share at Point/32",
+            "value": 1057632143,
+            "range": "± 361663",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Recover Share at Point Benchmark/Recover Share at Point/64",
+            "value": 4305500737,
+            "range": "± 794041",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Refresh Shares Benchmark/Refresh Shares/4",
+            "value": 4231134,
+            "range": "± 1917",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Refresh Shares Benchmark/Refresh Shares/8",
+            "value": 8465636,
+            "range": "± 3997",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Refresh Shares Benchmark/Refresh Shares/16",
+            "value": 17039239,
+            "range": "± 8606",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Refresh Shares Benchmark/Refresh Shares/32",
+            "value": 33910168,
+            "range": "± 111951",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Refresh Shares Benchmark/Refresh Shares/64",
+            "value": 67755780,
+            "range": "± 28127",
             "unit": "ns/iter"
           }
         ]
