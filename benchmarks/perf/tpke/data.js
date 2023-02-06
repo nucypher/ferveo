@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1675708564416,
+  "lastUpdate": 1675718479579,
   "repoUrl": "https://github.com/nucypher/ferveo",
   "entries": {
     "Rust Benchmark": [
@@ -1439,6 +1439,546 @@ window.BENCHMARK_DATA = {
             "name": "Refresh Shares Benchmark/Refresh Shares/64",
             "value": 66970379,
             "range": "± 1379300",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "39299780+piotr-roslaniec@users.noreply.github.com",
+            "name": "piotr-roslaniec",
+            "username": "piotr-roslaniec"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "58515cf06c39c578eced7f276d0e7b1b98fd00e9",
+          "message": "Merge pull request #48 from nucypher/benchmark-primitives-size",
+          "timestamp": "2023-02-06T21:36:42+01:00",
+          "tree_id": "0a8282d80b147d501ee9365bdc52964208edebc3",
+          "url": "https://github.com/nucypher/ferveo/commit/58515cf06c39c578eced7f276d0e7b1b98fd00e9"
+        },
+        "date": 1675718478272,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "SHARE CREATE/share_create_fast/4",
+            "value": 24795078,
+            "range": "± 33226",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple/4",
+            "value": 33470872,
+            "range": "± 5991",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple_precomputed/4",
+            "value": 9879310,
+            "range": "± 3652",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_fast/8",
+            "value": 49571229,
+            "range": "± 9576",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple/8",
+            "value": 66940139,
+            "range": "± 10189",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple_precomputed/8",
+            "value": 19733241,
+            "range": "± 11739",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_fast/16",
+            "value": 99116974,
+            "range": "± 175520",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple/16",
+            "value": 133840787,
+            "range": "± 34528",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple_precomputed/16",
+            "value": 39495247,
+            "range": "± 33029",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_fast/32",
+            "value": 198178777,
+            "range": "± 21391",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple/32",
+            "value": 267707385,
+            "range": "± 46941",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple_precomputed/32",
+            "value": 78564018,
+            "range": "± 565602",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_fast/64",
+            "value": 396949418,
+            "range": "± 52304",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple/64",
+            "value": 534740447,
+            "range": "± 86418",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE CREATE/share_create_simple_precomputed/64",
+            "value": 158160567,
+            "range": "± 65079",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_fast/4",
+            "value": 4525516,
+            "range": "± 738",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_simple/4",
+            "value": 29173,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_fast/8",
+            "value": 9610996,
+            "range": "± 1307",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_simple/8",
+            "value": 313348,
+            "range": "± 206",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_fast/16",
+            "value": 19734600,
+            "range": "± 7850",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_simple/16",
+            "value": 1695903,
+            "range": "± 9749",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_fast/32",
+            "value": 40515194,
+            "range": "± 33245",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_simple/32",
+            "value": 7379708,
+            "range": "± 46648",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_fast/64",
+            "value": 83298718,
+            "range": "± 14474",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE PREPARE/share_prepare_simple/64",
+            "value": 30420933,
+            "range": "± 98462",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_fast/4",
+            "value": 2958734,
+            "range": "± 1228",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple/4",
+            "value": 9320514,
+            "range": "± 2086",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple_precomputed/4",
+            "value": 23880,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_fast/8",
+            "value": 4400680,
+            "range": "± 1149",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple/8",
+            "value": 18260271,
+            "range": "± 4435",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple_precomputed/8",
+            "value": 47957,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_fast/16",
+            "value": 7255152,
+            "range": "± 4401",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple/16",
+            "value": 36638905,
+            "range": "± 6813",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple_precomputed/16",
+            "value": 96202,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_fast/32",
+            "value": 12988165,
+            "range": "± 6022",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple/32",
+            "value": 70336107,
+            "range": "± 25071",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple_precomputed/32",
+            "value": 192198,
+            "range": "± 34",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_fast/64",
+            "value": 24474320,
+            "range": "± 18111",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple/64",
+            "value": 148055779,
+            "range": "± 79521",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "SHARE COMBINE/share_combine_simple_precomputed/64",
+            "value": 412445,
+            "range": "± 239",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/256",
+            "value": 6884762,
+            "range": "± 5464",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/256",
+            "value": 5883308,
+            "range": "± 1811",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/512",
+            "value": 6883879,
+            "range": "± 4343",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/512",
+            "value": 5885225,
+            "range": "± 942",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/1024",
+            "value": 6888049,
+            "range": "± 7431",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/1024",
+            "value": 5893033,
+            "range": "± 940",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/2048",
+            "value": 6902854,
+            "range": "± 2882",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/2048",
+            "value": 5903142,
+            "range": "± 642",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/4096",
+            "value": 6934078,
+            "range": "± 6038",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/4096",
+            "value": 5932822,
+            "range": "± 6541",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/8192",
+            "value": 6970312,
+            "range": "± 3262",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/8192",
+            "value": 5979668,
+            "range": "± 2156",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/encrypt/16384",
+            "value": 7042522,
+            "range": "± 5571",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ENCRYPT DECRYPT/decrypt/16384",
+            "value": 6053074,
+            "range": "± 3086",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "CIPHERTEXT VERIFICATION/ciphertext_verification/256",
+            "value": 5882653,
+            "range": "± 1267",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "CIPHERTEXT VERIFICATION/ciphertext_verification/512",
+            "value": 5881984,
+            "range": "± 681",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "CIPHERTEXT VERIFICATION/ciphertext_verification/1024",
+            "value": 5889733,
+            "range": "± 1276",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "CIPHERTEXT VERIFICATION/ciphertext_verification/2048",
+            "value": 5899365,
+            "range": "± 886",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "CIPHERTEXT VERIFICATION/ciphertext_verification/4096",
+            "value": 5937629,
+            "range": "± 2328",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "CIPHERTEXT VERIFICATION/ciphertext_verification/8192",
+            "value": 5969648,
+            "range": "± 1383",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "CIPHERTEXT VERIFICATION/ciphertext_verification/16384",
+            "value": 6033733,
+            "range": "± 1918",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_fast_verification/4",
+            "value": 9076908,
+            "range": "± 3452",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_fast_batch_verification/4",
+            "value": 4949561,
+            "range": "± 3958",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_simple_verification/4",
+            "value": 25728821,
+            "range": "± 8526",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_fast_verification/8",
+            "value": 18174953,
+            "range": "± 4662",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_fast_batch_verification/8",
+            "value": 7653932,
+            "range": "± 10920",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_simple_verification/8",
+            "value": 51514596,
+            "range": "± 15094",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_fast_verification/16",
+            "value": 36358157,
+            "range": "± 9791",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_fast_batch_verification/16",
+            "value": 13069408,
+            "range": "± 7053",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_simple_verification/16",
+            "value": 102951829,
+            "range": "± 43798",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_fast_verification/32",
+            "value": 72755521,
+            "range": "± 11969",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_fast_batch_verification/32",
+            "value": 23906248,
+            "range": "± 17263",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_simple_verification/32",
+            "value": 205968356,
+            "range": "± 37951",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_fast_verification/64",
+            "value": 145683730,
+            "range": "± 159367",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_fast_batch_verification/64",
+            "value": 46749705,
+            "range": "± 52722",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "DECRYPTION SHARE VERIFICATION/share_simple_verification/64",
+            "value": 411915423,
+            "range": "± 178564",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Recover Share at Point Benchmark/Recover Share at Point/4",
+            "value": 11263000,
+            "range": "± 7203",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Recover Share at Point Benchmark/Recover Share at Point/8",
+            "value": 57826129,
+            "range": "± 28125",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Recover Share at Point Benchmark/Recover Share at Point/16",
+            "value": 253257199,
+            "range": "± 62558",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Recover Share at Point Benchmark/Recover Share at Point/32",
+            "value": 1053670608,
+            "range": "± 3550743",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Recover Share at Point Benchmark/Recover Share at Point/64",
+            "value": 4289422746,
+            "range": "± 1885722",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Refresh Shares Benchmark/Refresh Shares/4",
+            "value": 4211328,
+            "range": "± 1362",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Refresh Shares Benchmark/Refresh Shares/8",
+            "value": 8424924,
+            "range": "± 3009",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Refresh Shares Benchmark/Refresh Shares/16",
+            "value": 16962613,
+            "range": "± 5709",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Refresh Shares Benchmark/Refresh Shares/32",
+            "value": 33751913,
+            "range": "± 11209",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Refresh Shares Benchmark/Refresh Shares/64",
+            "value": 67429849,
+            "range": "± 22595",
             "unit": "ns/iter"
           }
         ]
