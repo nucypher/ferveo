@@ -176,6 +176,13 @@ impl<E: Pairing> DecryptionSharePrecomputed<E> {
         )
     }
 
+    pub fn to_simple(&self) -> DecryptionShareSimple<E> {
+        DecryptionShareSimple {
+            decryption_share: self.decryption_share,
+            validator_checksum: self.validator_checksum.clone(),
+        }
+    }
+
     pub fn create_unchecked(
         validator_index: usize,
         validator_decryption_key: &E::ScalarField,
