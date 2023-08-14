@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 use std::ops::Mul;
 
 use ark_ec::{pairing::Pairing, CurveGroup};
@@ -11,6 +9,12 @@ use serde_with::serde_as;
 use subproductdomain::SubproductDomain;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
+use crate::{
+    verify_decryption_shares_fast, Ciphertext, DecryptionShareFast,
+    DecryptionSharePrecomputed, DecryptionShareSimple, Error,
+    PublicDecryptionContextFast, Result,
+};
+
 #[serde_as]
 #[derive(
     Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Zeroize, ZeroizeOnDrop,
@@ -18,12 +22,6 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 pub struct SharedSecret<E: Pairing>(
     #[serde_as(as = "serialization::SerdeAs")] pub(crate) E::TargetField,
 );
-
-use crate::{
-    verify_decryption_shares_fast, Ciphertext, DecryptionShareFast,
-    DecryptionSharePrecomputed, DecryptionShareSimple, Error,
-    PublicDecryptionContextFast, Result,
-};
 
 pub fn prepare_combine_fast<E: Pairing>(
     public_decryption_contexts: &[PublicDecryptionContextFast<E>],
@@ -138,6 +136,15 @@ pub fn share_combine_simple<E: Pairing>(
             acc * c_i.decryption_share.pow(alpha_i.into_bigint())
         },
     );
+    SharedSecret(shared_secret)
+}
+
+pub fn share_combine_simple_updated<E: Pairing>(
+    decryption_shares: &[DecryptionShareSimple<E>],
+) -> SharedSecret<E> {
+    let shared_secret = decryption_shares
+        .iter()
+        .fold(E::TargetField::one(), |acc, c_i| acc * c_i.decryption_share);
     SharedSecret(shared_secret)
 }
 

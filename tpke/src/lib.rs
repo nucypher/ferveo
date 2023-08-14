@@ -284,9 +284,10 @@ mod tests {
 
     use ark_bls12_381::Fr;
     use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
-    use ark_ff::Zero;
+    use ark_ff::{Field, Zero};
     use ark_std::{test_rng, UniformRand};
     use ferveo_common::{FromBytes, ToBytes};
+    use itertools::zip_eq;
     use rand_core::RngCore;
 
     use crate::{
@@ -857,5 +858,143 @@ mod tests {
             make_shared_secret(&pub_contexts, &new_decryption_shares);
 
         assert_eq!(old_shared_secret, new_shared_secret);
+    }
+
+    #[test]
+    fn tdec_precomputed_variant_pessimistic_case() {
+        let mut rng = &mut test_rng();
+        let shares_num = 16;
+        let msg = "my-msg".as_bytes().to_vec();
+        let aad: &[u8] = "my-aad".as_bytes();
+
+        let (pubkey, _, contexts_precomputed) =
+            setup_precomputed::<E>(shares_num, &mut rng);
+        let g_inv = &contexts_precomputed[0].setup_params.g_inv;
+        let ciphertext =
+            encrypt::<E>(SecretBox::new(msg.clone()), aad, &pubkey, rng)
+                .unwrap();
+
+        // Some nodes didn't respond
+        let missing_node_n = 2;
+
+        let decryption_shares_precomputed: Vec<_> = contexts_precomputed
+            .iter()
+            .map(|context| {
+                context.create_share_precomputed(&ciphertext, aad).unwrap()
+            })
+            .take(shares_num - missing_node_n)
+            .collect::<Vec<_>>();
+
+        // We need to run another round of setup recreate missing shares
+        let (_, _, contexts_simple) =
+            setup_simple::<E>(missing_node_n, missing_node_n, &mut rng);
+
+        let decryption_shares_simple: Vec<_> = contexts_simple
+            .iter()
+            .map(|context| context.create_share(&ciphertext, aad).unwrap())
+            .collect::<Vec<_>>();
+
+        // Ok, now we are back to `share_num` number of shares. We can proceed with decryption
+
+        // First, we need to prepare the lagrange coefficients to update the shares
+        // We need to combine the domain points from both contexts
+        let precomputed_domain_points = contexts_precomputed[0]
+            .public_decryption_contexts
+            .iter()
+            .map(|c| c.domain)
+            .take(shares_num - missing_node_n)
+            .collect::<Vec<_>>();
+        let simple_domain_points = contexts_simple[0]
+            .public_decryption_contexts
+            .iter()
+            .map(|c| c.domain)
+            .take(missing_node_n)
+            .collect::<Vec<_>>();
+        let all_domain_points = precomputed_domain_points
+            .iter()
+            .cloned()
+            .chain(simple_domain_points.iter().cloned())
+            .collect::<Vec<_>>();
+
+        // These are the old L coefficients, they correspond to the precomputed shares
+        let precomputed_lagrange_coeffs =
+            prepare_combine_simple::<E>(&precomputed_domain_points);
+
+        // These are the new L' coefficients, they correspond to both the precomputed and the simple shares
+        let new_lagrange_coeffs =
+            prepare_combine_simple::<E>(&all_domain_points);
+
+        // Now, we update our shares
+        // We're going to calculate share updates for both the precomputed and the simple shares
+
+        // Update coefficients for precomputed shares
+        let updated_lagrange_coeffs_initial = zip_eq(
+            precomputed_lagrange_coeffs,
+            new_lagrange_coeffs[0..shares_num - missing_node_n].to_vec(),
+        )
+        // L' / L
+        .map(|(initial, combined)| combined / initial)
+        .collect::<Vec<_>>();
+
+        // For the simple shares, we can just use the new coefficients
+        let simple_share_updates =
+            new_lagrange_coeffs[shares_num - missing_node_n..].to_vec();
+
+        // Finally, we can update the shares
+
+        let updated_precomputed_shares = zip_eq(
+            decryption_shares_precomputed,
+            updated_lagrange_coeffs_initial,
+        )
+        .map(|(share, updated_lagrange_coeff)| {
+            let mut updated_share = share;
+            updated_share.decryption_share =
+                updated_share.decryption_share.pow(updated_lagrange_coeff.0);
+            updated_share
+        })
+        .collect::<Vec<_>>();
+        let updated_simple_shares =
+            zip_eq(decryption_shares_simple, simple_share_updates)
+                .map(|(share, updated_coeffs)| {
+                    let mut updated_share = share;
+                    updated_share.decryption_share =
+                        updated_share.decryption_share.pow(updated_coeffs.0);
+                    updated_share
+                })
+                .collect::<Vec<_>>();
+
+        // Now, we can combine the share to get the shared secret
+        // We're going to cast precomputed shares into simple shares
+        let combined_shares = updated_precomputed_shares
+            .iter()
+            .map(|s| s.to_simple())
+            .chain(updated_simple_shares.iter().cloned())
+            .collect::<Vec<_>>();
+        let shared_secret = share_combine_simple_updated::<E>(&combined_shares);
+
+        test_ciphertext_validation_fails(
+            &msg,
+            aad,
+            &ciphertext,
+            &shared_secret,
+            g_inv,
+        );
+
+        // TODO: Sort out this error case
+
+        // Note that in this variant, if we use less than `share_num` shares, we will get a
+        // decryption error.
+
+        // let not_enough_shares =
+        //     &decryption_shares_precomputed[0..shares_num - 1];
+        // let bad_shared_secret =
+        //     share_combine_precomputed::<E>(not_enough_shares);
+        // assert!(decrypt_with_shared_secret(
+        //     &ciphertext,
+        //     aad,
+        //     &bad_shared_secret,
+        //     g_inv,
+        // )
+        //     .is_err());
     }
 }
