@@ -8,8 +8,8 @@ use wasm_bindgen_test::*;
 
 type TestSetup = (
     u32,
-    usize,
-    usize,
+    u32,
+    u32,
     Vec<Keypair>,
     Vec<Validator>,
     ValidatorArray,
@@ -21,11 +21,12 @@ type TestSetup = (
 
 fn setup_dkg() -> TestSetup {
     let tau = 1;
-    let shares_num = 16;
+    let shares_num: u32 = 16;
     let security_threshold = shares_num * 2 / 3;
 
-    let validator_keypairs =
-        (0..shares_num).map(gen_keypair).collect::<Vec<Keypair>>();
+    let validator_keypairs = (0..shares_num as usize)
+        .map(gen_keypair)
+        .collect::<Vec<Keypair>>();
     let validators = validator_keypairs
         .iter()
         .enumerate()
@@ -38,8 +39,8 @@ fn setup_dkg() -> TestSetup {
     let messages = validators.iter().map(|sender| {
         let dkg = Dkg::new(
             tau,
-            shares_num as u32,
-            security_threshold as u32,
+            shares_num,
+            security_threshold,
             &validators_js,
             sender,
         )
@@ -54,8 +55,8 @@ fn setup_dkg() -> TestSetup {
 
     let mut dkg = Dkg::new(
         tau,
-        shares_num as u32,
-        security_threshold as u32,
+        shares_num,
+        security_threshold,
         &validators_js,
         &validators[0],
     )
@@ -112,8 +113,8 @@ fn tdec_simple() {
         .map(|(validator, keypair)| {
             let mut dkg = Dkg::new(
                 tau,
-                shares_num as u32,
-                security_threshold as u32,
+                shares_num,
+                security_threshold,
                 &validators_js,
                 &validator,
             )
@@ -166,8 +167,8 @@ fn tdec_precomputed() {
         .map(|(validator, keypair)| {
             let mut dkg = Dkg::new(
                 tau,
-                shares_num as u32,
-                security_threshold as u32,
+                shares_num,
+                security_threshold,
                 &validators_js,
                 &validator,
             )

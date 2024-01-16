@@ -135,6 +135,79 @@ def test_precomputed_tdec_doesnt_have_enough_messages():
         FerveoVariant.Precomputed, shares_num=4, threshold=4, shares_to_use=3
     )
 
+def test_dkg_has_min_shares():
+    total_shares_num = 5
+    min_shares_num = 3
+    threshold = 3
+
+    tau = 1
+    validator_keypairs = [Keypair.random() for _ in range(0, total_shares_num)]
+    validators = [
+        Validator(gen_eth_addr(i), keypair.public_key())
+        for i, keypair in enumerate(validator_keypairs)
+    ]
+    validators.sort(key=lambda v: v.address)
+
+    messages = []
+    for sender in validators:
+        dkg = Dkg(
+            tau=tau,
+            shares_num=min_shares_num,
+            security_threshold=threshold,
+            validators=validators,
+            me=sender,
+        )
+        messages.append(ValidatorMessage(sender, dkg.generate_transcript()))
+
+    dkg = Dkg(
+        tau=tau,
+        shares_num=min_shares_num,
+        security_threshold=threshold,
+        validators=validators,
+        me=validators[0],
+    )
+    pvss_aggregated = dkg.aggregate_transcripts(messages)
+    assert pvss_aggregated.verify(min_shares_num, messages)
+
+    dkg_pk_bytes = bytes(dkg.public_key)
+    dkg_pk = DkgPublicKey.from_bytes(dkg_pk_bytes)
+
+    msg = "abc".encode()
+    aad = "my-aad".encode()
+    ciphertext = encrypt(msg, aad, dkg_pk)
+
+    decryption_shares = []
+    for validator, validator_keypair in zip(validators, validator_keypairs):
+        dkg = Dkg(
+            tau=tau,
+            shares_num=total_shares_num,
+            security_threshold=threshold,
+            validators=validators,
+            me=validator,
+        )
+        pvss_aggregated = dkg.aggregate_transcripts(messages)
+        assert pvss_aggregated.verify(total_shares_num, messages)
+
+        decryption_share = decryption_share_for_variant(variant, pvss_aggregated)(
+            dkg, ciphertext.header, aad, validator_keypair
+        )
+        decryption_shares.append(decryption_share)
+
+    shared_secret = combine_shares_for_variant(variant, decryption_shares)
+
+    if variant == FerveoVariant.Simple and len(decryption_shares) < threshold:
+        with pytest.raises(ThresholdEncryptionError):
+            decrypt_with_shared_secret(ciphertext, aad, shared_secret)
+        return
+
+    if variant == FerveoVariant.Precomputed and len(decryption_shares) < total_shares_num:
+        with pytest.raises(ThresholdEncryptionError):
+            decrypt_with_shared_secret(ciphertext, aad, shared_secret)
+        return
+
+    plaintext = decrypt_with_shared_secret(ciphertext, aad, shared_secret)
+    assert bytes(plaintext) == msg
+
 
 PARAMS = [
     (1, FerveoVariant.Simple),

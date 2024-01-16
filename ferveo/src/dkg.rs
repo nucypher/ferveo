@@ -15,9 +15,47 @@ use crate::{
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct DkgParams {
-    pub tau: u32,
-    pub security_threshold: u32,
-    pub shares_num: u32,
+    tau: u32,
+    security_threshold: u32,
+    shares_num: u32,
+}
+
+impl DkgParams {
+    /// Create new DKG parameters
+    /// `tau` is a unique identifier for the DKG (ritual id)
+    /// `security_threshold` is the minimum number of shares required to reconstruct the key
+    /// `shares_num` is the total number of shares to be generated
+    /// Returns an error if the parameters are invalid
+    /// Parameters must hold: `shares_num` >= `security_threshold`
+    pub fn new(
+        tau: u32,
+        security_threshold: u32,
+        shares_num: u32,
+    ) -> Result<Self> {
+        if shares_num < security_threshold {
+            return Err(Error::InvalidDkgParameters(
+                shares_num,
+                security_threshold,
+            ));
+        }
+        Ok(Self {
+            tau,
+            security_threshold,
+            shares_num,
+        })
+    }
+
+    pub fn tau(&self) -> u32 {
+        self.tau
+    }
+
+    pub fn security_threshold(&self) -> u32 {
+        self.security_threshold
+    }
+
+    pub fn shares_num(&self) -> u32 {
+        self.shares_num
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
@@ -77,14 +115,15 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         me: &Validator<E>,
     ) -> Result<Self> {
         let domain = ark_poly::GeneralEvaluationDomain::<E::ScalarField>::new(
-            dkg_params.shares_num as usize,
+            validators.len(),
         )
         .expect("unable to construct domain");
 
-        // Sort the validators to verify a global ordering
+        // Verify the global ordering of validators
         if !is_sorted(validators) {
             return Err(Error::ValidatorsNotSorted);
         }
+        // TODO: Should we take it from the coordinator instead of using validators: &[Validator<E>] as input?
         let validators: ValidatorsMap<E> = validators
             .iter()
             .enumerate()
@@ -123,6 +162,7 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
             validators,
             state: DkgState::Sharing {
                 accumulated_shares: 0,
+                // TODO: Do we need to keep track of the block number?
                 block: 0,
             },
         })
@@ -151,6 +191,7 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         }
     }
 
+    // TODO: Make private, use `share` instead. Currently used only in bindings
     pub fn create_share<R: RngCore>(
         &self,
         rng: &mut R,
@@ -248,6 +289,10 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
                     return Err(Error::UnknownDealer(sender.clone().address));
                 }
 
+                // TODO: Throw error instead of silently accepting excess shares?
+                // if self.vss.len() < self.dkg_params.shares_num as usize {
+                //     self.vss.insert(sender.address.clone(), pvss.clone());
+                // }
                 self.vss.insert(sender.address.clone(), pvss.clone());
 
                 // we keep track of the amount of shares seen until the security
@@ -321,6 +366,7 @@ pub(crate) mod test_common {
 
     pub use ark_bls12_381::Bls12_381 as E;
     use ferveo_common::Keypair;
+    use rand::seq::SliceRandom;
 
     pub use super::*;
 
@@ -348,22 +394,32 @@ pub(crate) mod test_common {
 
     pub type TestSetup = (PubliclyVerifiableDkg<E>, Vec<Keypair<E>>);
 
-    pub fn setup_dkg_for_n_validators(
+    pub fn setup_dkg_for_me(
         security_threshold: u32,
         shares_num: u32,
         my_index: usize,
     ) -> TestSetup {
-        let keypairs = gen_keypairs(shares_num);
+        setup_dkg_for_me_with_n_validators(
+            security_threshold,
+            shares_num,
+            my_index,
+            shares_num,
+        )
+    }
+
+    pub fn setup_dkg_for_me_with_n_validators(
+        security_threshold: u32,
+        shares_num: u32,
+        my_index: usize,
+        n_validators: u32,
+    ) -> TestSetup {
+        let keypairs = gen_keypairs(n_validators);
         let mut validators = gen_validators(keypairs.as_slice());
         validators.sort();
         let me = validators[my_index].clone();
         let dkg = PubliclyVerifiableDkg::new(
             &validators,
-            &DkgParams {
-                tau: 0,
-                security_threshold,
-                shares_num,
-            },
+            &DkgParams::new(0, security_threshold, shares_num).unwrap(),
             &me,
         )
         .expect("Setup failed");
@@ -373,44 +429,56 @@ pub(crate) mod test_common {
     /// Create a test dkg
     ///
     /// The [`test_dkg_init`] module checks correctness of this setup
-    pub fn setup_dkg(validator: usize) -> TestSetup {
-        setup_dkg_for_n_validators(2, 4, validator)
+    pub fn setup_dkg() -> TestSetup {
+        setup_dkg_for_me(2, 4, 0)
     }
 
     /// Set up a dkg with enough pvss transcripts to meet the threshold
     ///
     /// The correctness of this function is tested in the module [`test_dealing`]
     pub fn setup_dealt_dkg() -> TestSetup {
-        setup_dealt_dkg_with_n_validators(2, 4)
+        setup_dealt_dkg_with_n_validators(2, 4, 4)
     }
 
     pub fn setup_dealt_dkg_with_n_validators(
         security_threshold: u32,
         shares_num: u32,
+        validators_num: u32,
     ) -> TestSetup {
         let rng = &mut ark_std::test_rng();
 
         // Gather everyone's transcripts
-        let messages: Vec<_> = (0..shares_num)
+        let mut dkgs = Vec::new();
+        let mut messages: Vec<_> = (0..validators_num)
             .map(|my_index| {
-                let (mut dkg, _) = setup_dkg_for_n_validators(
+                let (mut dkg, _) = setup_dkg_for_me_with_n_validators(
                     security_threshold,
                     shares_num,
                     my_index as usize,
+                    validators_num,
                 );
+                dkgs.push(dkg.clone());
+
                 let me = dkg.me.validator.clone();
                 let message = dkg.share(rng).unwrap();
+                println!("{my_index}");
                 (me, message)
             })
             .collect();
 
         // Create a test DKG instance
-        let (mut dkg, keypairs) =
-            setup_dkg_for_n_validators(security_threshold, shares_num, 0);
-        messages.iter().for_each(|(sender, message)| {
-            dkg.apply_message(sender, message).expect("Setup failed");
-        });
-        (dkg, keypairs)
+        let mut dkg = dkgs.pop().unwrap();
+
+        // `shares_num` is either equal or lower than `validators_num`, so we always take `shares_num` messages
+        assert!(shares_num <= validators_num);
+        // Make sure messages are out of order - The ordering should not matter
+        messages.shuffle(rng);
+        messages.iter().take(shares_num as usize).for_each(
+            |(sender, message)| {
+                dkg.apply_message(sender, message).expect("Setup failed");
+            },
+        );
+        (dkg, gen_keypairs(validators_num))
     }
 }
 
@@ -450,28 +518,40 @@ mod test_dkg_init {
 #[cfg(test)]
 mod test_dealing {
     use ark_ec::AffineRepr;
+    use test_case::test_case;
 
     use super::test_common::*;
     use crate::DkgState::Dealt;
 
-    /// Test that dealing correct PVSS transcripts
-    /// pass verification an application and that
+    /// Test that dealing correct PVSS transcripts pass verification an application and that
     /// state is updated correctly
-    #[test]
-    fn test_pvss_dealing() {
-        let rng = &mut ark_std::test_rng();
+    #[test_case(4, 4 ; "number of shares is equal to number of validators")]
+    #[test_case(4, 6 ; "number of shares is smaller than the number of validators")]
+    fn test_pvss_dealing(shares_num: u32, validator_num: u32) {
+        let threshold = 3;
+        // Create a test DKG instance
+        let (mut dkg, _) = setup_dkg_for_me_with_n_validators(
+            threshold,
+            shares_num,
+            0,
+            validator_num,
+        );
 
         // Gather everyone's transcripts
         let mut messages = vec![];
-        for i in 0..4 {
-            let (mut dkg, _) = setup_dkg(i);
+        let rng = &mut ark_std::test_rng();
+        // Notice how we use `shares_num` instead of `validator_num` - Not everyone will send a message
+        for i in 0..shares_num {
+            let (mut dkg, _) = setup_dkg_for_me_with_n_validators(
+                threshold,
+                shares_num,
+                i as usize,
+                validator_num,
+            );
             let message = dkg.share(rng).unwrap();
             let sender = dkg.me.validator.clone();
             messages.push((sender, message));
         }
-
-        // Create a test DKG instance
-        let (mut dkg, _) = setup_dkg(0);
 
         let mut expected = 0u32;
         for (sender, pvss) in messages.iter() {
@@ -483,7 +563,7 @@ mod test_dealing {
 
             expected += 1;
             if expected < dkg.dkg_params.security_threshold {
-                // check that shares accumulates correctly
+                // Check that shares accumulates correctly
                 match dkg.state {
                     DkgState::Sharing {
                         accumulated_shares, ..
@@ -505,7 +585,7 @@ mod test_dealing {
     #[test]
     fn test_pvss_from_unknown_dealer_rejected() {
         let rng = &mut ark_std::test_rng();
-        let (mut dkg, _) = setup_dkg(0);
+        let (mut dkg, _) = setup_dkg();
         assert!(matches!(
             dkg.state,
             DkgState::Sharing {
@@ -538,7 +618,7 @@ mod test_dealing {
     #[test]
     fn test_pvss_sent_twice_rejected() {
         let rng = &mut ark_std::test_rng();
-        let (mut dkg, _) = setup_dkg(0);
+        let (mut dkg, _) = setup_dkg();
         // We start with an empty state
         assert!(matches!(
             dkg.state,
@@ -573,7 +653,7 @@ mod test_dealing {
     #[test]
     fn test_own_pvss() {
         let rng = &mut ark_std::test_rng();
-        let (mut dkg, _) = setup_dkg(0);
+        let (mut dkg, _) = setup_dkg();
         // We start with an empty state
         assert!(matches!(
             dkg.state,
@@ -613,7 +693,7 @@ mod test_dealing {
     #[test]
     fn test_pvss_cannot_share_from_wrong_state() {
         let rng = &mut ark_std::test_rng();
-        let (mut dkg, _) = setup_dkg(0);
+        let (mut dkg, _) = setup_dkg();
         assert!(matches!(
             dkg.state,
             DkgState::Sharing {
@@ -638,7 +718,7 @@ mod test_dealing {
     #[test]
     fn test_share_message_state_guards() {
         let rng = &mut ark_std::test_rng();
-        let (mut dkg, _) = setup_dkg(0);
+        let (mut dkg, _) = setup_dkg();
         let pvss = dkg.share(rng).unwrap();
         assert!(matches!(
             dkg.state,
@@ -749,5 +829,23 @@ mod test_aggregation {
         }
         let sender = dkg.me.validator.clone();
         assert!(dkg.verify_message(&sender, &aggregate).is_err());
+    }
+}
+
+/// Test DKG parameters
+#[cfg(test)]
+mod test_dkg_params {
+    const TAU: u32 = 0;
+
+    #[test]
+    fn test_shares_num_less_than_security_threshold() {
+        let dkg_params = super::DkgParams::new(TAU, 4, 3);
+        assert!(dkg_params.is_err());
+    }
+
+    #[test]
+    fn test_valid_dkg_params() {
+        let dkg_params = super::DkgParams::new(TAU, 2, 3);
+        assert!(dkg_params.is_ok());
     }
 }

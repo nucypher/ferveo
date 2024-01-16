@@ -93,7 +93,17 @@ impl From<FerveoPythonError> for PyErr {
                 }
                 Error::InvalidVariant(variant) => {
                     InvalidVariant::new_err(variant.to_string())
-                }
+                },
+                Error::InvalidDkgParameters(num_shares, security_threshold) => {
+                    InvalidDkgParameters::new_err(format!(
+                        "num_shares: {num_shares}, security_threshold: {security_threshold}"
+                    ))
+                },
+                Error::InvalidShareIndex(index) => {
+                    InvalidShareIndex::new_err(format!(
+                        "{index}"
+                    ))
+                },
             },
             _ => default(),
         }
@@ -128,6 +138,8 @@ create_exception!(exceptions, ValidatorPublicKeyMismatch, PyValueError);
 create_exception!(exceptions, SerializationError, PyValueError);
 create_exception!(exceptions, InvalidByteLength, PyValueError);
 create_exception!(exceptions, InvalidVariant, PyValueError);
+create_exception!(exceptions, InvalidDkgParameters, PyValueError);
+create_exception!(exceptions, InvalidShareIndex, PyValueError);
 
 fn from_py_bytes<T: FromBytes>(bytes: &[u8]) -> PyResult<T> {
     T::from_bytes(bytes)

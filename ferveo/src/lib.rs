@@ -101,6 +101,12 @@ pub enum Error {
 
     #[error("Invalid variant: {0}")]
     InvalidVariant(String),
+
+    #[error("Invalid DKG parameters: number of shares {0}, threshold {1}")]
+    InvalidDkgParameters(u32, u32),
+
+    #[error("Invalid share index: {0}")]
+    InvalidShareIndex(u32),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -131,6 +137,7 @@ mod test_dkg_full {
         SharedSecret,
     };
     use itertools::izip;
+    use test_case::test_case;
 
     use super::*;
     use crate::dkg::test_common::*;
@@ -189,114 +196,125 @@ mod test_dkg_full {
         (pvss_aggregated, decryption_shares, shared_secret)
     }
 
-    #[test]
-    fn test_dkg_simple_tdec() {
+    #[test_case(4, 4; "number of shares (validators) is a power of 2")]
+    #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
+    #[test_case(4, 4; "number of shares is equal to number of validators")]
+    #[test_case(4, 6; "number of shares is smaller than the number of validators")]
+    fn test_dkg_simple_tdec(shares_num: u32, validator_num: u32) {
         let rng = &mut test_rng();
 
-        // Works for both power of 2 and non-power of 2
-        for shares_num in [4, 7] {
-            let threshold = shares_num / 2 + 1;
-            let (dkg, validator_keypairs) =
-                setup_dealt_dkg_with_n_validators(threshold, shares_num);
-            let msg = "my-msg".as_bytes().to_vec();
-            let aad: &[u8] = "my-aad".as_bytes();
-            let public_key = dkg.public_key();
-            let ciphertext = ferveo_tdec::encrypt::<E>(
-                SecretBox::new(msg.clone()),
-                aad,
-                &public_key,
-                rng,
-            )
-            .unwrap();
+        let threshold = shares_num / 2 + 1;
+        let (dkg, validator_keypairs) = setup_dealt_dkg_with_n_validators(
+            threshold,
+            shares_num,
+            validator_num,
+        );
+        let msg = "my-msg".as_bytes().to_vec();
+        let aad: &[u8] = "my-aad".as_bytes();
+        let public_key = dkg.public_key();
+        let ciphertext = ferveo_tdec::encrypt::<E>(
+            SecretBox::new(msg.clone()),
+            aad,
+            &public_key,
+            rng,
+        )
+        .unwrap();
 
-            let (_, _, shared_secret) = make_shared_secret_simple_tdec(
-                &dkg,
-                aad,
-                &ciphertext.header().unwrap(),
-                validator_keypairs.as_slice(),
-            );
+        let (_, _, shared_secret) = make_shared_secret_simple_tdec(
+            &dkg,
+            aad,
+            &ciphertext.header().unwrap(),
+            validator_keypairs.as_slice(),
+        );
 
-            let plaintext = ferveo_tdec::decrypt_with_shared_secret(
-                &ciphertext,
-                aad,
-                &shared_secret,
-                &dkg.pvss_params.g_inv(),
-            )
-            .unwrap();
-            assert_eq!(plaintext, msg);
-        }
+        let plaintext = ferveo_tdec::decrypt_with_shared_secret(
+            &ciphertext,
+            aad,
+            &shared_secret,
+            &dkg.pvss_params.g_inv(),
+        )
+        .unwrap();
+        assert_eq!(plaintext, msg);
     }
 
-    #[test]
-    fn test_dkg_simple_tdec_precomputed() {
+    #[test_case(4, 4; "number of shares (validators) is a power of 2")]
+    #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
+    #[test_case(4, 4; "number of shares is equal to number of validators")]
+    #[test_case(4, 6; "number of shares is smaller than the number of validators")]
+    fn test_dkg_simple_tdec_precomputed(shares_num: u32, validators_num: u32) {
         let rng = &mut test_rng();
 
-        // Works for both power of 2 and non-power of 2
-        for shares_num in [4, 7] {
-            // In precomputed variant, threshold must be equal to shares_num
-            let threshold = shares_num;
-            let (dkg, validator_keypairs) =
-                setup_dealt_dkg_with_n_validators(threshold, shares_num);
-            let msg = "my-msg".as_bytes().to_vec();
-            let aad: &[u8] = "my-aad".as_bytes();
-            let public_key = dkg.public_key();
-            let ciphertext = ferveo_tdec::encrypt::<E>(
-                SecretBox::new(msg.clone()),
-                aad,
-                &public_key,
-                rng,
-            )
-            .unwrap();
+        // In precomputed variant, threshold must be equal to shares_num
+        let threshold = shares_num;
+        let (dkg, validator_keypairs) = setup_dealt_dkg_with_n_validators(
+            threshold,
+            shares_num,
+            validators_num,
+        );
+        let msg = "my-msg".as_bytes().to_vec();
+        let aad: &[u8] = "my-aad".as_bytes();
+        let public_key = dkg.public_key();
+        let ciphertext = ferveo_tdec::encrypt::<E>(
+            SecretBox::new(msg.clone()),
+            aad,
+            &public_key,
+            rng,
+        )
+        .unwrap();
 
-            let pvss_aggregated = aggregate(&dkg.vss);
-            pvss_aggregated.verify_aggregation(&dkg).unwrap();
-            let domain_points = dkg
-                .domain
-                .elements()
-                .take(validator_keypairs.len())
-                .collect::<Vec<_>>();
+        let pvss_aggregated = aggregate(&dkg.vss);
+        pvss_aggregated.verify_aggregation(&dkg).unwrap();
+        let domain_points = dkg
+            .domain
+            .elements()
+            .take(validator_keypairs.len())
+            .collect::<Vec<_>>();
 
-            let decryption_shares: Vec<DecryptionSharePrecomputed<E>> =
-                validator_keypairs
-                    .iter()
-                    .map(|validator_keypair| {
-                        let validator = dkg
-                            .get_validator(&validator_keypair.public_key())
-                            .unwrap();
-                        pvss_aggregated
-                            .make_decryption_share_simple_precomputed(
-                                &ciphertext.header().unwrap(),
-                                aad,
-                                &validator_keypair.decryption_key,
-                                validator.share_index,
-                                &domain_points,
-                                &dkg.pvss_params.g_inv(),
-                            )
-                            .unwrap()
-                    })
-                    .collect();
-            assert_eq!(domain_points.len(), decryption_shares.len());
+        let decryption_shares: Vec<DecryptionSharePrecomputed<E>> =
+            validator_keypairs
+                .iter()
+                .map(|validator_keypair| {
+                    let validator = dkg
+                        .get_validator(&validator_keypair.public_key())
+                        .unwrap();
+                    pvss_aggregated
+                        .make_decryption_share_simple_precomputed(
+                            &ciphertext.header().unwrap(),
+                            aad,
+                            &validator_keypair.decryption_key,
+                            validator.share_index,
+                            &domain_points,
+                            &dkg.pvss_params.g_inv(),
+                        )
+                        .unwrap()
+                })
+                .collect();
+        assert_eq!(domain_points.len(), decryption_shares.len());
 
-            let shared_secret =
-                ferveo_tdec::share_combine_precomputed::<E>(&decryption_shares);
+        let shared_secret =
+            ferveo_tdec::share_combine_precomputed::<E>(&decryption_shares);
 
-            // Combination works, let's decrypt
-            let plaintext = ferveo_tdec::decrypt_with_shared_secret(
-                &ciphertext,
-                aad,
-                &shared_secret,
-                &dkg.pvss_params.g_inv(),
-            )
-            .unwrap();
-            assert_eq!(plaintext, msg);
-        }
+        // Combination works, let's decrypt
+        let plaintext = ferveo_tdec::decrypt_with_shared_secret(
+            &ciphertext,
+            aad,
+            &shared_secret,
+            &dkg.pvss_params.g_inv(),
+        )
+        .unwrap();
+        assert_eq!(plaintext, msg);
     }
 
-    #[test]
-    fn test_dkg_simple_tdec_share_verification() {
+    #[test_case(4, 4; "number of shares is equal to number of validators")]
+    #[test_case(4, 6; "number of shares is smaller than the number of validators")]
+    fn test_dkg_simple_tdec_share_verification(
+        shares_num: u32,
+        validators_num: u32,
+    ) {
         let rng = &mut test_rng();
 
-        let (dkg, validator_keypairs) = setup_dealt_dkg_with_n_validators(3, 4);
+        let (dkg, validator_keypairs) =
+            setup_dealt_dkg_with_n_validators(2, shares_num, validators_num);
         let msg = "my-msg".as_bytes().to_vec();
         let aad: &[u8] = "my-aad".as_bytes();
         let public_key = dkg.public_key();
@@ -322,7 +340,7 @@ mod test_dkg_full {
             &decryption_shares,
         )
         .for_each(
-            |(aggregated_share, validator_keypair, decryption_share)| {
+            |((_, aggregated_share), validator_keypair, decryption_share)| {
                 assert!(decryption_share.verify(
                     aggregated_share,
                     &validator_keypair.public_key().encryption_key,
@@ -339,7 +357,7 @@ mod test_dkg_full {
         let mut with_bad_decryption_share = decryption_share.clone();
         with_bad_decryption_share.decryption_share = TargetField::zero();
         assert!(!with_bad_decryption_share.verify(
-            &pvss_aggregated.shares[0],
+            &pvss_aggregated.shares[&0],
             &validator_keypairs[0].public_key().encryption_key,
             &dkg.pvss_params.h,
             &ciphertext,
@@ -349,21 +367,28 @@ mod test_dkg_full {
         let mut with_bad_checksum = decryption_share;
         with_bad_checksum.validator_checksum.checksum = G1Affine::zero();
         assert!(!with_bad_checksum.verify(
-            &pvss_aggregated.shares[0],
+            &pvss_aggregated.shares[&0],
             &validator_keypairs[0].public_key().encryption_key,
             &dkg.pvss_params.h,
             &ciphertext,
         ));
     }
 
-    #[test]
-    fn test_dkg_simple_tdec_share_recovery() {
+    #[test_case(4, 4; "number of shares is equal to number of validators")]
+    // TODO: Doesn't work - Should it work? Or is a case that we don't care about?
+    // #[test_case(4, 6; "number of shares is smaller than the number of validators")]
+    fn test_dkg_simple_tdec_share_recovery(
+        shares_num: u32,
+        validators_num: u32,
+    ) {
         let rng = &mut test_rng();
 
         let security_threshold = 3;
-        let shares_num = 4;
-        let (dkg, validator_keypairs) =
-            setup_dealt_dkg_with_n_validators(security_threshold, shares_num);
+        let (dkg, validator_keypairs) = setup_dealt_dkg_with_n_validators(
+            security_threshold,
+            shares_num,
+            validators_num,
+        );
         let msg = "my-msg".as_bytes().to_vec();
         let aad: &[u8] = "my-aad".as_bytes();
         let public_key = &dkg.public_key();
@@ -410,7 +435,7 @@ mod test_dkg_full {
                     &domain_points,
                     &dkg.pvss_params.h.into_affine(),
                     &x_r,
-                    dkg.dkg_params.security_threshold as usize,
+                    dkg.dkg_params.security_threshold() as usize,
                     rng,
                 );
                 (v_addr.clone(), deltas_i)
@@ -439,11 +464,13 @@ mod test_dkg_full {
                 // Creates updated private key shares
                 // TODO: Why not using dkg.aggregate()?
                 let pvss_aggregated = aggregate(&dkg.vss);
-                pvss_aggregated.update_private_key_share_for_recovery(
-                    &decryption_key,
-                    validator.share_index,
-                    updates_for_participant.as_slice(),
-                )
+                pvss_aggregated
+                    .update_private_key_share_for_recovery(
+                        &decryption_key,
+                        validator.share_index,
+                        updates_for_participant.as_slice(),
+                    )
+                    .unwrap()
             })
             .collect();
 
@@ -515,14 +542,16 @@ mod test_dkg_full {
         );
     }
 
-    #[test]
-    fn test_dkg_simple_tdec_share_refreshing() {
+    #[test_case(4, 4; "number of shares is equal to number of validators")]
+    #[test_case(4, 6; "number of shares is smaller than the number of validators")]
+    fn test_dkg_simple_tdec_share_refreshing(
+        shares_num: u32,
+        validators_num: u32,
+    ) {
         let rng = &mut test_rng();
 
-        let security_threshold = 3;
-        let shares_num = 4;
         let (dkg, validator_keypairs) =
-            setup_dealt_dkg_with_n_validators(security_threshold, shares_num);
+            setup_dealt_dkg_with_n_validators(2, shares_num, validators_num);
         let msg = "my-msg".as_bytes().to_vec();
         let aad: &[u8] = "my-aad".as_bytes();
         let public_key = &dkg.public_key();
@@ -552,7 +581,7 @@ mod test_dkg_full {
                 let deltas_i = prepare_share_updates_for_refresh::<E>(
                     &domain_points,
                     &dkg.pvss_params.h.into_affine(),
-                    dkg.dkg_params.security_threshold as usize,
+                    dkg.dkg_params.security_threshold() as usize,
                     rng,
                 );
                 (v_addr.clone(), deltas_i)
@@ -582,11 +611,13 @@ mod test_dkg_full {
                 // Creates updated private key shares
                 // TODO: Why not using dkg.aggregate()?
                 let pvss_aggregated = aggregate(&dkg.vss);
-                pvss_aggregated.update_private_key_share_for_recovery(
-                    &decryption_key,
-                    validator.share_index,
-                    updates_for_participant.as_slice(),
-                )
+                pvss_aggregated
+                    .update_private_key_share_for_recovery(
+                        &decryption_key,
+                        validator.share_index,
+                        updates_for_participant.as_slice(),
+                    )
+                    .unwrap()
             })
             .collect();
 
@@ -608,10 +639,10 @@ mod test_dkg_full {
                 .collect();
 
         let lagrange = ferveo_tdec::prepare_combine_simple::<E>(
-            &domain_points[..security_threshold as usize],
+            &domain_points[..dkg.dkg_params.security_threshold() as usize],
         );
         let new_shared_secret = ferveo_tdec::share_combine_simple::<E>(
-            &decryption_shares[..security_threshold as usize],
+            &decryption_shares[..dkg.dkg_params.security_threshold() as usize],
             &lagrange,
         );
 

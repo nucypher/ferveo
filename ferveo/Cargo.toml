@@ -51,6 +51,7 @@ wasm-bindgen-derive = { version = "0.2.1", optional = true }
 criterion = "0.3" # supports pprof, # TODO: Figure out if/how we can update to 0.4
 digest = { version = "0.10.0", features = ["alloc"] }
 pprof = { version = "0.6", features = ["flamegraph", "criterion"] }
+test-case = "3.3.1"
 
 # WASM bindings
 console_error_panic_hook = "0.1.7"

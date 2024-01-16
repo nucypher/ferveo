@@ -80,11 +80,7 @@ fn setup_dkg(
     let me = validators[validator].clone();
     PubliclyVerifiableDkg::new(
         &validators,
-        &DkgParams {
-            tau: 0,
-            security_threshold,
-            shares_num,
-        },
+        &DkgParams::new(0, security_threshold, shares_num).unwrap(),
         &me,
     )
     .expect("Setup failed")
