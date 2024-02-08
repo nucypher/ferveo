@@ -7,7 +7,7 @@ use chacha20poly1305::{
     aead::{generic_array::GenericArray, Aead, KeyInit, Payload},
     ChaCha20Poly1305,
 };
-use ferveo_common::serialization;
+use ferveo_common::{serialization, ToBytes};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use sha2::{digest::Digest, Sha256};
@@ -89,6 +89,10 @@ impl<E: Pairing> CiphertextHeader<E> {
         } else {
             Err(Error::CiphertextVerificationFailed)
         }
+    }
+
+    pub fn header_hash(&self) -> [u8; 32] {
+        sha256(&self.to_bytes().unwrap())
     }
 }
 

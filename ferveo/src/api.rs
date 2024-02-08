@@ -5,6 +5,7 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::UniformRand;
 use bincode;
 use ferveo_common::serialization;
+use ferveo_common::ToBytes;
 use generic_array::{typenum::U48, GenericArray};
 use group_threshold_cryptography as tpke;
 use rand::RngCore;
@@ -84,11 +85,25 @@ impl Ciphertext {
     pub fn payload(&self) -> Vec<u8> {
         self.0.payload()
     }
+
+    pub fn ciphertext_hash(&self) -> Result<[u8; 32]> {
+        Ok(self.0.ciphertext_hash())
+    }
 }
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CiphertextHeader(tpke::api::CiphertextHeader);
+
+impl CiphertextHeader {
+    pub fn header_hash(&self) -> Result<[u8; 32]> {
+        Ok(self.0.header_hash())
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+        self.0.to_bytes().map_err(Error::from)
+    }
+}
 
 /// The ferveo variant to use for the decryption share derivation.
 #[derive(
