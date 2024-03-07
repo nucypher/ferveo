@@ -172,8 +172,25 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         self.domain
             .elements()
             .enumerate()
-            .map(|(i, point)| (i as u32, point))
+            .map(|(share_index, point)| (share_index as u32, point))
             .collect::<HashMap<_, _>>()
+    }
+
+    // TODO: Revisit naming later
+    /// Return a map of domain points for the DKG
+    pub fn domain_and_key_map(&self) -> HashMap<u32, (DomainPoint<E>, E::G2)> {
+        let map = self.domain_point_map();
+        self.validators
+            .values()
+            .map(|v| {
+                let domain_point = map.get(&v.share_index).unwrap();
+                // TODO: Use PublicKey directly
+                (
+                    v.share_index,
+                    (*domain_point, E::G2::from(v.public_key.encryption_key)),
+                )
+            })
+            .collect::<_>()
     }
 
     /// Verify PVSS transcripts against the set of validators in the DKG

@@ -112,7 +112,7 @@ mod test_dkg_full {
     use std::collections::HashMap;
 
     use ark_bls12_381::{Bls12_381 as E, Fr, G1Affine};
-    use ark_ec::{AffineRepr, CurveGroup};
+    use ark_ec::AffineRepr;
     use ark_ff::{UniformRand, Zero};
     use ark_std::test_rng;
     use ferveo_common::Keypair;
@@ -472,13 +472,13 @@ mod test_dkg_full {
         let share_updates = remaining_validators
             .keys()
             .map(|v_addr| {
-                let deltas_i = ShareRecoveryUpdate::create_share_updates(
-                    &domain_points,
-                    &dkg.pvss_params.h.into_affine(),
-                    &x_r,
-                    dkg.dkg_params.security_threshold(),
-                    rng,
-                );
+                let deltas_i =
+                    crate::refresh::ShareUpdate::create_recovery_updates(
+                        &dkg.domain_and_key_map(),
+                        &x_r,
+                        dkg.dkg_params.security_threshold(),
+                        rng,
+                    );
                 (v_addr.clone(), deltas_i)
             })
             .collect::<HashMap<_, _>>();
@@ -646,9 +646,8 @@ mod test_dkg_full {
             .validators
             .keys()
             .map(|v_addr| {
-                let deltas_i = ShareRefreshUpdate::create_share_updates(
-                    &dkg.domain_point_map(),
-                    &dkg.pvss_params.h.into_affine(),
+                let deltas_i = ShareUpdate::create_refresh_updates(
+                    &dkg.domain_and_key_map(),
                     dkg.dkg_params.security_threshold(),
                     rng,
                 );

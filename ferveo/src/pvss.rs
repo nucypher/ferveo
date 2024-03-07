@@ -19,8 +19,8 @@ use zeroize::{self, Zeroize, ZeroizeOnDrop};
 
 use crate::{
     assert_no_share_duplicates, batch_to_projective_g1, batch_to_projective_g2,
-    DomainPoint, Error, PrivateKeyShare, PrivateKeyShareUpdate,
-    PubliclyVerifiableDkg, Result, UpdatedPrivateKeyShare, Validator,
+    DomainPoint, Error, PrivateKeyShare, PubliclyVerifiableDkg, Result,
+    ShareUpdate, UpdatedPrivateKeyShare, Validator,
 };
 
 /// These are the blinded evaluations of shares of a single random polynomial
@@ -381,7 +381,7 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         &self,
         validator_keypair: &Keypair<E>,
         share_index: u32,
-        share_updates: &[impl PrivateKeyShareUpdate<E>],
+        share_updates: &[ShareUpdate<E>],
     ) -> Result<UpdatedPrivateKeyShare<E>> {
         // Retrieve the private key share and apply the updates
         Ok(self
