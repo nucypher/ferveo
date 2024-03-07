@@ -1,6 +1,5 @@
 use std::{collections::HashMap, fmt, io};
 
-use ark_ec::CurveGroup;
 use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::UniformRand;
@@ -388,31 +387,31 @@ pub fn combine_shares_simple(shares: &[DecryptionShareSimple]) -> SharedSecret {
 pub struct SharedSecret(pub ferveo_tdec::api::SharedSecret<E>);
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-// TODO: Use refresh::ShareRecoveryUpdate instead of ferveo_tdec::PrivateKeyShare
-pub struct ShareRecoveryUpdate(pub ferveo_tdec::PrivateKeyShare<E>);
+pub struct ShareRecoveryUpdate(pub crate::refresh::ShareUpdate<E>);
 
 impl ShareRecoveryUpdate {
     // TODO: There are two recovery scenarios: at random and at a specific point. Do we ever want
     // to recover at a specific point? What scenario would that be? Validator rotation?
-    pub fn create_share_updates(
+
+    // TODO: Answer to this 👆 : Yes, recovery at specific point will be used for validator rotation
+
+    pub fn create_recovery_updates(
         // TODO: Decouple from Dkg? We don't need any specific Dkg instance here, just some params etc
         dkg: &Dkg,
         x_r: &DomainPoint,
     ) -> Result<HashMap<u32, ShareRecoveryUpdate>> {
         let rng = &mut thread_rng();
-        let update_map =
-            crate::refresh::ShareRecoveryUpdate::create_share_updates(
-                &dkg.0.domain_point_map(),
-                &dkg.0.pvss_params.h.into_affine(),
-                x_r,
-                dkg.0.dkg_params.security_threshold(),
-                rng,
-            )
-            .into_iter()
-            .map(|(share_index, share_update)| {
-                (share_index, ShareRecoveryUpdate(share_update.0.clone()))
-            })
-            .collect();
+        let update_map = crate::refresh::ShareUpdate::create_recovery_updates(
+            &dkg.0.domain_and_key_map(),
+            x_r,
+            dkg.0.dkg_params.security_threshold(),
+            rng,
+        )
+        .into_iter()
+        .map(|(share_index, share_update)| {
+            (share_index, ShareRecoveryUpdate(share_update)) // TODO: Do we need to clone?
+        })
+        .collect();
         Ok(update_map)
     }
 
@@ -425,24 +424,22 @@ impl ShareRecoveryUpdate {
     }
 }
 
-#[serde_as]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ShareRefreshUpdate(pub crate::ShareRefreshUpdate<E>);
+pub struct ShareRefreshUpdate(pub crate::refresh::ShareUpdate<E>);
 
 impl ShareRefreshUpdate {
     pub fn create_share_updates(
         dkg: &Dkg,
     ) -> Result<HashMap<u32, ShareRefreshUpdate>> {
         let rng = &mut thread_rng();
-        let updates = crate::refresh::ShareRefreshUpdate::create_share_updates(
-            &dkg.0.domain_point_map(),
-            &dkg.0.pvss_params.h.into_affine(),
+        let updates = crate::refresh::ShareUpdate::create_refresh_updates(
+            &dkg.0.domain_and_key_map(),
             dkg.0.dkg_params.security_threshold(),
             rng,
         )
         .into_iter()
         .map(|(share_index, share_update)| {
-            (share_index, ShareRefreshUpdate(share_update))
+            (share_index, ShareRefreshUpdate(share_update)) // TODO: Do we need to clone?
         })
         .collect::<HashMap<_, _>>();
         Ok(updates)
@@ -485,7 +482,10 @@ impl PrivateKeyShare {
         let share_updates: Vec<_> = share_updates
             .iter()
             .cloned()
-            .map(|update| crate::refresh::ShareRecoveryUpdate(update.0))
+            .map(|share_update| crate::refresh::ShareUpdate {
+                update: share_update.0.update,
+                commitment: share_update.0.commitment,
+            })
             .collect();
         // TODO: Remove this wrapping after figuring out serde_as
         let updated_key_share = self.0.create_updated_key_share(&share_updates);
@@ -1138,11 +1138,12 @@ mod test_ferveo_api {
         let share_updates = dkgs
             .iter()
             .map(|validator_dkg| {
-                let share_update = ShareRecoveryUpdate::create_share_updates(
-                    validator_dkg,
-                    &x_r,
-                )
-                .unwrap();
+                let share_update =
+                    ShareRecoveryUpdate::create_recovery_updates(
+                        validator_dkg,
+                        &x_r,
+                    )
+                    .unwrap();
                 (validator_dkg.me().address.clone(), share_update)
             })
             .collect::<HashMap<_, _>>();
