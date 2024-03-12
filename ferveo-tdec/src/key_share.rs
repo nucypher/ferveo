@@ -1,10 +1,7 @@
 use std::ops::Mul;
 
 use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
-
-
 use ferveo_common::serialization;
-
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -23,8 +20,8 @@ pub struct ShareCommitment<E: Pairing>(
 
 #[derive(Debug, Copy, Clone)]
 pub struct BlindedKeyShare<E: Pairing> {
-    pub validator_public_key: E::G2Affine,      // [b] H
-    pub blinded_key_share: E::G2Affine, // [b] Z_{i, \omega_i}
+    pub validator_public_key: E::G2Affine, // [b] H
+    pub blinded_key_share: E::G2Affine,    // [b] Z_{i, \omega_i}
 }
 
 impl<E: Pairing> BlindedKeyShare<E> {
@@ -69,7 +66,8 @@ pub struct PrivateKeyShare<E: Pairing>(
 // #[cfg(test)]
 impl<E: Pairing> PrivateKeyShare<E> {
     pub fn blind(&self, b: E::ScalarField) -> BlindedKeyShare<E> {
-        let validator_public_key = E::G2Affine::generator().mul(b).into_affine();
+        let validator_public_key =
+            E::G2Affine::generator().mul(b).into_affine();
         BlindedKeyShare::<E> {
             validator_public_key,
             blinded_key_share: self.0.mul(b).into_affine(),

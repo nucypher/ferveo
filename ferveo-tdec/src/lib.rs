@@ -86,21 +86,23 @@ pub mod test_common {
         // The dealer chooses a uniformly random polynomial f of degree t-1
         let threshold_poly =
             DensePolynomial::<E::ScalarField>::rand(threshold - 1, rng);
+
         // Domain, or omega Ω
         let fft_domain =
             ark_poly::GeneralEvaluationDomain::<E::ScalarField>::new(
                 shares_num,
             )
             .unwrap();
+
+        // domain points: - ω_j in Ω
+        let domain_points = fft_domain.elements().collect::<Vec<_>>();
+
         // `evals` are evaluations of the polynomial f over the domain, omega: f(ω_j) for ω_j in Ω
         let evals = threshold_poly.evaluate_over_domain_by_ref(fft_domain);
 
-        // domain points: - ω_j in Ω
-        let shares_x = fft_domain.elements().collect::<Vec<_>>();
-
         // A_j, share commitments of participants:  [f(ω_j)] G
         let share_commitments = fast_multiexp(&evals.evals, g.into_group());
-        
+
         // FIXME: These 2 lines don't make sense
         //let pubkey_share = g.mul(evals.evals[0]);
         //debug_assert!(share_commitments[0] == E::G1Affine::from(pubkey_share));
@@ -111,12 +113,12 @@ pub mod test_common {
 
         // The shared secret is the free coefficient from threshold poly
         let a_0 = threshold_poly.coeffs[0];
-        
+
         // F_0, group's public key
-        let pubkey = g.mul(a_0);
-        
+        let group_pubkey = g.mul(a_0);
+
         // group's private key (NOTE: just for tests, this is NEVER constructed in production)
-        let privkey = h.mul(a_0);
+        let group_privkey = h.mul(a_0);
 
         // As in SSS, shared secret should be f(0), which is also the free coefficient
         let secret = threshold_poly.evaluate(&E::ScalarField::zero());
@@ -125,14 +127,17 @@ pub mod test_common {
         let mut private_contexts = vec![];
         let mut public_contexts = vec![];
 
-        // (domain, A, Z)
-        for (index, (domain, share_commit, private)) in
-            izip!(shares_x.iter(), share_commitments.iter(), privkey_shares.iter())
-                .enumerate()
+        // (domain_point, A, Z)
+        for (index, (domain_point, share_commit, private_share)) in izip!(
+            domain_points.iter(),
+            share_commitments.iter(),
+            privkey_shares.iter()
+        )
+        .enumerate()
         {
-            let private_key_share = PrivateKeyShare::<E>(*private);
+            let private_key_share = PrivateKeyShare::<E>(*private_share);
             let b = E::ScalarField::rand(rng);
-            let blinded_key_share = private_key_share.blind(b);
+            let blinded_key_share: BlindedKeyShare<E> = private_key_share.blind(b);
             private_contexts.push(PrivateDecryptionContextSimple::<E> {
                 index,
                 setup_params: SetupParams {
@@ -147,20 +152,22 @@ pub mod test_common {
                 public_decryption_contexts: vec![],
             });
             public_contexts.push(PublicDecryptionContextSimple::<E> {
-                domain: *domain,
-                share_commitment: ShareCommitment::<E>(*share_commit),  // FIXME
+                domain: *domain_point,
+                share_commitment: ShareCommitment::<E>(*share_commit), // FIXME
                 blinded_key_share,
                 h,
-                validator_public_key: blinded_key_share.validator_public_key.into_group()
+                validator_public_key: blinded_key_share
+                    .validator_public_key
+                    .into_group(),
             });
         }
-        for private in private_contexts.iter_mut() {
-            private.public_decryption_contexts = public_contexts.clone();
+        for private_ctxt in private_contexts.iter_mut() {
+            private_ctxt.public_decryption_contexts = public_contexts.clone();
         }
 
         (
-            PublicKey(pubkey.into()),
-            PrivateKeyShare(privkey.into()), // TODO: Not the correct type
+            PublicKey(group_pubkey.into()),
+            PrivateKeyShare(group_privkey.into()), // TODO: Not the correct type, but whatever
             private_contexts,
         )
     }

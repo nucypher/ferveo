@@ -436,9 +436,11 @@ mod tests_refresh {
                 &updated_private_key_shares,
             )
             .unwrap();
+
+        // The new share should be the same as the original
         assert_eq!(new_private_key_share, original_private_key_share);
 
-        // If we don't have enough private share updates, the resulting private share will be incorrect
+        // But if we don't have enough private share updates, the resulting private share will be incorrect
         let not_enough_shares = updated_private_key_shares
             .into_iter()
             .take(security_threshold as usize - 1)
@@ -551,7 +553,7 @@ mod tests_refresh {
         let rng = &mut test_rng();
         let security_threshold = shares_num * 2 / 3;
 
-        let (_, private_key_share, contexts) =
+        let (_, shared_private_key, contexts) =
             setup_simple::<E>(shares_num, security_threshold, rng);
         let domain_points_and_keys = &contexts
             .iter()
@@ -617,6 +619,6 @@ mod tests_refresh {
                 &refreshed_shares,
             )
             .unwrap();
-        assert_eq!(private_key_share, new_shared_private_key.0);
+        assert_eq!(shared_private_key, new_shared_private_key.0);
     }
 }
