@@ -9,7 +9,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct PublicDecryptionContextFast<E: Pairing> {
     pub domain: E::ScalarField,
-    pub public_key: ShareCommitment<E>,  // FIXME
+    pub public_key: ShareCommitment<E>, // FIXME
     pub blinded_key_share: BlindedKeyShare<E>,
     // This decrypter's contribution to N(0), namely (-1)^|domain| * \prod_i omega_i
     pub lagrange_n_0: E::ScalarField,
