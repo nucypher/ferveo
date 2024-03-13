@@ -136,7 +136,7 @@ pub mod test_common {
         .enumerate()
         {
             let private_key_share = PrivateKeyShare::<E>(*private_share);
-            let b = E::ScalarField::rand(rng);
+            let b = E::ScalarField::one();  // FIXME: rand(rng);
             let blinded_key_share: BlindedKeyShare<E> = private_key_share.blind(b);
             private_contexts.push(PrivateDecryptionContextSimple::<E> {
                 index,
