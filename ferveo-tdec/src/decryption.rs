@@ -1,26 +1,16 @@
 use std::ops::Mul;
 
 use ark_ec::{pairing::Pairing, CurveGroup};
-use ark_ff::{Field, One, Zero};
-use ark_std::UniformRand;
+use ark_ff::Field;
 use ferveo_common::serialization;
-use itertools::{izip, zip_eq};
-use rand_core::RngCore;
+use itertools::izip;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::serde_as;
 
 use crate::{
-    Ciphertext, CiphertextHeader, PrivateKeyShare, PublicDecryptionContextFast,
+    Ciphertext, CiphertextHeader, PrivateKeyShare,
     PublicDecryptionContextSimple, Result,
 };
-
-#[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DecryptionShareFast<E: Pairing> {
-    pub decrypter_index: usize,
-    #[serde_as(as = "serialization::SerdeAs")]
-    pub decryption_share: E::G1Affine,
-}
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -230,122 +220,6 @@ impl<E: Pairing> DecryptionSharePrecomputed<E> {
     }
 }
 
-pub fn generate_random_scalars<R: RngCore, E: Pairing>(
-    n: usize,
-    rng: &mut R,
-) -> Vec<E::ScalarField> {
-    (0..n)
-        .map(|_| E::ScalarField::rand(rng))
-        .collect::<Vec<_>>()
-}
-
-// TODO: Remove this code? Currently only used in benchmarks. Move to benchmark suite?
-pub fn batch_verify_decryption_shares<R: RngCore, E: Pairing>(
-    pub_contexts: &[PublicDecryptionContextFast<E>],
-    ciphertexts: &[Ciphertext<E>],
-    decryption_shares: &[Vec<DecryptionShareFast<E>>],
-    rng: &mut R,
-) -> bool {
-    let num_ciphertexts = ciphertexts.len();
-    let num_shares = decryption_shares[0].len();
-
-    // Get [b_i] H for each of the decryption shares
-    let blinding_keys = decryption_shares[0]
-        .iter()
-        .map(|d| {
-            E::G2Prepared::from(
-                pub_contexts[d.decrypter_index]
-                    .blinded_key_share
-                    .blinding_key,
-            )
-        })
-        .collect::<Vec<_>>();
-
-    // For each ciphertext, generate num_shares random scalars
-    let alpha_ij = (0..num_ciphertexts)
-        .map(|_| generate_random_scalars::<_, E>(num_shares, rng))
-        .collect::<Vec<_>>();
-
-    let mut pairings_a = Vec::with_capacity(num_shares + 1);
-    let mut pairings_b = Vec::with_capacity(num_shares + 1);
-
-    // Compute \sum_j \alpha_{i,j} for each ciphertext i
-    let sum_alpha_i = alpha_ij
-        .iter()
-        .map(|alpha_j| alpha_j.iter().sum::<E::ScalarField>())
-        .collect::<Vec<_>>();
-
-    // Compute \sum_i [ \sum_j \alpha_{i,j} ] U_i
-    let sum_u_i = E::G1Prepared::from(
-        izip!(ciphertexts.iter(), sum_alpha_i.iter())
-            .map(|(c, alpha_j)| c.commitment.mul(*alpha_j))
-            .sum::<E::G1>()
-            .into_affine(),
-    );
-
-    // e(\sum_i [ \sum_j \alpha_{i,j} ] U_i, -H)
-    pairings_a.push(sum_u_i);
-    pairings_b.push(pub_contexts[0].h_inv.clone());
-
-    let mut sum_d_i = vec![E::G1::zero(); num_shares];
-
-    // sum_D_i = { [\sum_i \alpha_{i,j} ] D_i }
-    for (d, alpha_j) in izip!(decryption_shares.iter(), alpha_ij.iter()) {
-        for (sum_alpha_d_i, d_ij, alpha) in
-            izip!(sum_d_i.iter_mut(), d.iter(), alpha_j.iter())
-        {
-            *sum_alpha_d_i += d_ij.decryption_share.mul(*alpha);
-        }
-    }
-
-    // e([\sum_i \alpha_{i,j} ] D_i, B_i)
-    for (d_i, b_i) in izip!(sum_d_i.iter(), blinding_keys.iter()) {
-        pairings_a.push(E::G1Prepared::from(d_i.into_affine()));
-        pairings_b.push(b_i.clone());
-    }
-
-    E::multi_pairing(pairings_a, pairings_b).0 == E::TargetField::one()
-}
-
-pub fn verify_decryption_shares_fast<E: Pairing>(
-    pub_contexts: &[PublicDecryptionContextFast<E>],
-    ciphertext: &Ciphertext<E>,
-    decryption_shares: &[DecryptionShareFast<E>],
-) -> bool {
-    // [b_i] H
-    let blinding_keys = decryption_shares
-        .iter()
-        .map(|d| {
-            E::G2Prepared::from(
-                pub_contexts[d.decrypter_index]
-                    .blinded_key_share
-                    .blinding_key,
-            )
-        })
-        .collect::<Vec<_>>();
-
-    let mut pairing_a: Vec<E::G1Prepared> = vec![];
-    let mut pairing_b = vec![];
-
-    // e(U, -H)
-    pairing_a.push(ciphertext.commitment.into());
-    pairing_b.push(pub_contexts[0].h_inv.clone());
-
-    for (d_i, p_i) in zip_eq(decryption_shares, blinding_keys) {
-        let mut pairing_a_i = pairing_a.clone();
-        let mut pairing_b_i = pairing_b.clone();
-        // e(D_i, B_i)
-        pairing_a_i.push(d_i.decryption_share.into());
-        pairing_b_i.push(p_i.clone());
-        if E::multi_pairing(pairing_a_i, pairing_b_i).0 != E::TargetField::one()
-        {
-            return false;
-        }
-    }
-
-    true
-}
-
 pub fn verify_decryption_shares_simple<E: Pairing>(
     pub_contexts: &Vec<PublicDecryptionContextSimple<E>>,
     ciphertext: &Ciphertext<E>,
@@ -369,27 +243,4 @@ pub fn verify_decryption_shares_simple<E: Pairing>(
         }
     }
     true
-}
-
-#[cfg(test)]
-mod tests {
-    use ark_ec::AffineRepr;
-    use ferveo_common::{FromBytes, ToBytes};
-
-    use crate::*;
-
-    type E = ark_bls12_381::Bls12_381;
-
-    #[test]
-    fn decryption_share_serialization() {
-        let decryption_share = DecryptionShareFast::<E> {
-            decrypter_index: 1,
-            decryption_share: ark_bls12_381::G1Affine::generator(),
-        };
-
-        let serialized = decryption_share.to_bytes().unwrap();
-        let deserialized: DecryptionShareFast<E> =
-            DecryptionShareFast::from_bytes(&serialized).unwrap();
-        assert_eq!(serialized, deserialized.to_bytes().unwrap())
-    }
 }
