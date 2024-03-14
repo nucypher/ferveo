@@ -46,7 +46,7 @@ impl<E: Pairing> PrivateKeyShare<E> {
         &self,
         share_updates: &[ShareUpdate<E>],
     ) -> UpdatedPrivateKeyShare<E> {
-        // TODO: Validate commitments from share update
+        // TODO: Validate commitments from share update  // FIXME: Don't forget!!!!!
         let updated_key_share = share_updates
             .iter()
             .fold(self.0 .0, |acc, delta| (acc + delta.update).into());
@@ -310,7 +310,8 @@ mod tests_refresh {
     use ark_bls12_381::Fr;
     use ark_std::{test_rng, UniformRand, Zero};
     use ferveo_tdec::{
-        test_common::setup_simple, PrivateDecryptionContextSimple,
+        test_common::setup_simple, BlindedKeyShare,
+        PrivateDecryptionContextSimple,
     };
     use rand_core::RngCore;
     use test_case::{test_case, test_matrix};
@@ -595,9 +596,26 @@ mod tests_refresh {
                     .collect();
 
                 // And creates a new, refreshed share
-                let updated_share =
-                    PrivateKeyShare(p.private_key_share.clone())
-                        .create_updated_key_share(&updates_for_participant);
+                let blinded_key_share =
+                    p.public_decryption_contexts[p.index].blinded_key_share;
+
+                // TODO: Encapsulate this somewhere, originally from PrivateKeyShare.create_updated_key_share
+                // FIXME: Validate commitments from share update, don't forget!!!!!
+                let updated_blinded_key_share: BlindedKeyShare<E> =
+                    BlindedKeyShare {
+                        validator_public_key: blinded_key_share
+                            .validator_public_key,
+                        blinded_key_share: updates_for_participant.iter().fold(
+                            blinded_key_share.blinded_key_share,
+                            |acc, delta| (acc + delta.update).into(),
+                        ),
+                    };
+
+                let unblinding_factor = p.setup_params.b_inv;
+                let updated_share = UpdatedPrivateKeyShare(
+                    updated_blinded_key_share.unblind(unblinding_factor),
+                );
+
                 (p.index as u32, updated_share)
             })
             // We only need `threshold` refreshed shares to recover the original share

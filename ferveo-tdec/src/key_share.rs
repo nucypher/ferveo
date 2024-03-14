@@ -18,6 +18,8 @@ pub struct ShareCommitment<E: Pairing>(
     #[serde_as(as = "serialization::SerdeAs")] pub E::G1Affine, // A_{i, \omega_i}
 );
 
+// TODO: Improve by adding share commitment here
+// TODO: Is this a test utility perhaps?
 #[derive(Debug, Copy, Clone)]
 pub struct BlindedKeyShare<E: Pairing> {
     pub validator_public_key: E::G2Affine, // [b] H
@@ -52,6 +54,14 @@ impl<E: Pairing> BlindedKeyShare<E> {
     //     self.blinded_key_share =
     //         self.blinded_key_share.mul(-*omega_inv).into_affine();
     // }
+    pub fn unblind(
+        &self,
+        unblinding_factor: E::ScalarField,
+    ) -> PrivateKeyShare<E> {
+        PrivateKeyShare::<E>(
+            self.blinded_key_share.mul(unblinding_factor).into_affine(),
+        )
+    }
 }
 
 #[serde_as]
