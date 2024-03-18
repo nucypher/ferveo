@@ -599,6 +599,12 @@ mod tests_refresh {
         let refreshed_shares = contexts
             .iter()
             .map(|p| {
+                let blinded_key_share =
+                    p.public_decryption_contexts[p.index].blinded_key_share;
+
+                let participant_public_key =
+                    blinded_key_share.validator_public_key;
+
                 // Current participant receives updates from other participants
                 let updates_for_participant: Vec<_> = share_updates_by_producer
                     .values()
@@ -607,20 +613,20 @@ mod tests_refresh {
                             .get(&(p.index as u32))
                             .cloned()
                             .unwrap();
+                        // Verify that the share update is valid for this participant
+                        // TODO: Refine this later – for the moment, it's enough for testing
+                        let _is_update_valid = update_for_participant
+                            .verify(participant_public_key.into()).unwrap();
                         update_for_participant
                     })
                     .collect();
 
                 // And creates a new, refreshed share
-                let blinded_key_share =
-                    p.public_decryption_contexts[p.index].blinded_key_share;
 
                 // TODO: Encapsulate this somewhere, originally from PrivateKeyShare.create_updated_key_share
-                // FIXME: Validate commitments from share update, don't forget!!!!!
                 let updated_blinded_key_share: BlindedKeyShare<E> =
                     BlindedKeyShare {
-                        validator_public_key: blinded_key_share
-                            .validator_public_key,
+                        validator_public_key: participant_public_key,
                         blinded_key_share: updates_for_participant.iter().fold(
                             blinded_key_share.blinded_key_share,
                             |acc, delta| (acc + delta.update).into(),
