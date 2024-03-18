@@ -582,15 +582,16 @@ mod tests_refresh {
             .collect::<HashMap<u32, _>>();
 
         // Each participant prepares an update for each other participant:
-        let share_updates = contexts
+        let share_updates_by_producer = contexts
             .iter()
             .map(|p| {
-                let share_updates = ShareUpdate::<E>::create_refresh_updates(
-                    domain_points_and_keys,
-                    security_threshold as u32,
-                    rng,
-                );
-                (p.index as u32, share_updates)
+                let a_share_updates_map: HashMap<u32, ShareUpdate<E>> =
+                    ShareUpdate::<E>::create_refresh_updates(
+                        domain_points_and_keys,
+                        security_threshold as u32,
+                        rng,
+                    );
+                (p.index as u32, a_share_updates_map)
             })
             .collect::<HashMap<u32, _>>();
 
@@ -599,10 +600,14 @@ mod tests_refresh {
             .iter()
             .map(|p| {
                 // Current participant receives updates from other participants
-                let updates_for_participant: Vec<_> = share_updates
+                let updates_for_participant: Vec<_> = share_updates_by_producer
                     .values()
-                    .map(|updates| {
-                        updates.get(&(p.index as u32)).cloned().unwrap()
+                    .map(|updates_from_producer| {
+                        let update_for_participant = updates_from_producer
+                            .get(&(p.index as u32))
+                            .cloned()
+                            .unwrap();
+                        update_for_participant
                     })
                     .collect();
 
