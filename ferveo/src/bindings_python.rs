@@ -57,6 +57,9 @@ impl From<FerveoPythonError> for PyErr {
                 Error::InvalidTranscriptAggregate => {
                     InvalidTranscriptAggregate::new_err("")
                 }
+                Error::InvalidShareUpdate => {
+                    InvalidShareUpdate::new_err("")
+                }
                 Error::ValidatorPublicKeyMismatch => {
                     ValidatorPublicKeyMismatch::new_err("")
                 }
@@ -141,6 +144,7 @@ create_exception!(exceptions, InsufficientTranscriptsForAggregate, PyException);
 create_exception!(exceptions, InvalidDkgPublicKey, PyValueError);
 create_exception!(exceptions, InsufficientValidators, PyValueError);
 create_exception!(exceptions, InvalidTranscriptAggregate, PyValueError);
+create_exception!(exceptions, InvalidShareUpdate, PyValueError);
 create_exception!(exceptions, ValidatorPublicKeyMismatch, PyValueError);
 create_exception!(exceptions, SerializationError, PyValueError);
 create_exception!(exceptions, InvalidByteLength, PyValueError);
