@@ -80,6 +80,10 @@ pub enum Error {
     #[error("Invalid share index: {0}")]
     InvalidShareIndex(u32),
 
+    /// Failed to verify a share update
+    #[error("Invalid share update")]
+    InvalidShareUpdate,
+
     /// Failed to produce a precomputed variant decryption share
     #[error("Invalid DKG parameters for precomputed variant: number of shares {0}, threshold {1}")]
     InvalidDkgParametersForPrecomputedVariant(u32, u32),

@@ -241,6 +241,17 @@ impl<E: Pairing> ShareUpdate<E> {
         )
         // TODO: Cast return elements into ShareRecoveryUpdate
     }
+
+    // TODO: Unit tests
+    pub fn verify(&self, target_validator_public_key: E::G2) -> Result<bool> {
+        let is_valid = E::pairing(E::G1::generator(), self.update)
+            == E::pairing(self.commitment, target_validator_public_key);
+        if is_valid{
+            Ok(true)
+        } else {
+            Err(Error::InvalidShareUpdate)
+        }
+    }
 }
 
 // TODO: working here
