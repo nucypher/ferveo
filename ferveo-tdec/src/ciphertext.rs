@@ -14,7 +14,7 @@ use sha2::{digest::Digest, Sha256};
 use zeroize::ZeroizeOnDrop;
 
 use crate::{
-    htp_bls12381_g2, Error, PrivateKeyShare, PublicKeyShare, Result, SecretBox,
+    htp_bls12381_g2, Error, PrivateKeyShare, PublicKey, Result, SecretBox,
     SharedSecret,
 };
 
@@ -98,7 +98,7 @@ impl<E: Pairing> CiphertextHeader<E> {
 pub fn encrypt<E: Pairing>(
     message: SecretBox<Vec<u8>>,
     aad: &[u8],
-    pubkey: &PublicKeyShare<E>,
+    pubkey: &PublicKey<E>,
     rng: &mut impl rand::Rng,
 ) -> Result<Ciphertext<E>> {
     // r
@@ -108,8 +108,7 @@ pub fn encrypt<E: Pairing>(
     // h
     let h_gen = E::G2Affine::generator();
 
-    let ry_prep =
-        E::G1Prepared::from(pubkey.public_key_share.mul(rand_element).into());
+    let ry_prep = E::G1Prepared::from(pubkey.0.mul(rand_element).into());
     // s
     let product = E::pairing(ry_prep, h_gen).0;
     // u
@@ -150,7 +149,7 @@ pub fn decrypt_symmetric<E: Pairing>(
     ciphertext.check(aad, g_inv)?;
     let shared_secret = E::pairing(
         E::G1Prepared::from(ciphertext.commitment),
-        E::G2Prepared::from(private_key.private_key_share),
+        E::G2Prepared::from(private_key.0),
     )
     .0;
     let shared_secret = SharedSecret(shared_secret);

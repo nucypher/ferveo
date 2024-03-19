@@ -9,11 +9,11 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-#[derive(Debug, Clone)]
-// TODO: Should we rename it to PublicKey or SharedPublicKey?
-pub struct PublicKeyShare<E: Pairing> {
-    pub public_key_share: E::G1Affine, // A_{i, \omega_i}
-}
+#[serde_as]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PublicKey<E: Pairing>(
+    #[serde_as(as = "serialization::SerdeAs")] pub E::G1Affine, // A_{i, \omega_i}
+);
 
 #[derive(Debug, Clone)]
 pub struct BlindedKeyShare<E: Pairing> {
@@ -24,15 +24,14 @@ pub struct BlindedKeyShare<E: Pairing> {
 impl<E: Pairing> BlindedKeyShare<E> {
     pub fn verify_blinding<R: RngCore>(
         &self,
-        public_key_share: &PublicKeyShare<E>,
+        public_key: &PublicKey<E>,
         rng: &mut R,
     ) -> bool {
         let g = E::G1Affine::generator();
         let alpha = E::ScalarField::rand(rng);
 
-        let alpha_a = E::G1Prepared::from(
-            g + public_key_share.public_key_share.mul(alpha).into_affine(),
-        );
+        let alpha_a =
+            E::G1Prepared::from(g + public_key.0.mul(alpha).into_affine());
 
         // \sum_i(Y_i)
         let alpha_z = E::G2Prepared::from(
@@ -56,18 +55,16 @@ impl<E: Pairing> BlindedKeyShare<E> {
 #[derive(
     Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Zeroize, ZeroizeOnDrop,
 )]
-pub struct PrivateKeyShare<E: Pairing> {
-    // TODO: Replace with a tuple?
-    #[serde_as(as = "serialization::SerdeAs")]
-    pub private_key_share: E::G2Affine,
-}
+pub struct PrivateKeyShare<E: Pairing>(
+    #[serde_as(as = "serialization::SerdeAs")] pub E::G2Affine,
+);
 
 impl<E: Pairing> PrivateKeyShare<E> {
     pub fn blind(&self, b: E::ScalarField) -> BlindedKeyShare<E> {
         let blinding_key = E::G2Affine::generator().mul(b).into_affine();
         BlindedKeyShare::<E> {
             blinding_key,
-            blinded_key_share: self.private_key_share.mul(b).into_affine(),
+            blinded_key_share: self.0.mul(b).into_affine(),
         }
     }
 }

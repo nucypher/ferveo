@@ -5,13 +5,13 @@ use ark_ec::{pairing::Pairing, CurveGroup};
 use crate::{
     prepare_combine_simple, BlindedKeyShare, Ciphertext, CiphertextHeader,
     DecryptionShareFast, DecryptionSharePrecomputed, DecryptionShareSimple,
-    PrivateKeyShare, PublicKeyShare, Result,
+    PrivateKeyShare, PublicKey, Result,
 };
 
 #[derive(Clone, Debug)]
 pub struct PublicDecryptionContextFast<E: Pairing> {
     pub domain: E::ScalarField,
-    pub public_key_share: PublicKeyShare<E>,
+    pub public_key: PublicKey<E>,
     pub blinded_key_share: BlindedKeyShare<E>,
     // This decrypter's contribution to N(0), namely (-1)^|domain| * \prod_i omega_i
     pub lagrange_n_0: E::ScalarField,
@@ -21,7 +21,7 @@ pub struct PublicDecryptionContextFast<E: Pairing> {
 #[derive(Clone, Debug)]
 pub struct PublicDecryptionContextSimple<E: Pairing> {
     pub domain: E::ScalarField,
-    pub public_key_share: PublicKeyShare<E>,
+    pub public_key: PublicKey<E>,
     pub blinded_key_share: BlindedKeyShare<E>,
     pub h: E::G2Affine,
     pub validator_public_key: E::G2,

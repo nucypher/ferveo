@@ -59,7 +59,7 @@ assert client_aggregate.verify(validators_num, messages)
 # In the meantime, the client creates a ciphertext and decryption request
 msg = "abc".encode()
 aad = "my-aad".encode()
-ciphertext = encrypt(msg, aad, dkg.public_key)
+ciphertext = encrypt(msg, aad, client_aggregate.public_key)
 
 # Having aggregated the transcripts, the validators can now create decryption shares
 decryption_shares = []

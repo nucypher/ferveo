@@ -360,11 +360,6 @@ impl Dkg {
         Ok(Self(dkg))
     }
 
-    #[wasm_bindgen(js_name = "publicKey")]
-    pub fn public_key(&self) -> DkgPublicKey {
-        DkgPublicKey(self.0.public_key())
-    }
-
     #[wasm_bindgen(js_name = "generateTranscript")]
     pub fn generate_transcript(&mut self) -> JsResult<Transcript> {
         let rng = &mut thread_rng();
@@ -495,6 +490,14 @@ impl ValidatorMessage {
 #[wasm_bindgen]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AggregatedTranscript(api::AggregatedTranscript);
+
+#[wasm_bindgen]
+impl AggregatedTranscript {
+    #[wasm_bindgen(getter, js_name = "publicKey")]
+    pub fn public_key(&self) -> DkgPublicKey {
+        DkgPublicKey(self.0.public_key())
+    }
+}
 
 generate_common_methods!(AggregatedTranscript);
 

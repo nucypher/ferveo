@@ -77,7 +77,7 @@ pub mod test_common {
         shares_num: usize,
         rng: &mut impl RngCore,
     ) -> (
-        PublicKeyShare<E>,
+        PublicKey<E>,
         PrivateKeyShare<E>,
         Vec<PrivateDecryptionContextFast<E>>,
     ) {
@@ -138,9 +138,7 @@ pub mod test_common {
         )
         .enumerate()
         {
-            let private_key_share = PrivateKeyShare {
-                private_key_share: *private,
-            };
+            let private_key_share = PrivateKeyShare(*private);
             let b = E::ScalarField::rand(rng);
             let mut blinded_key_shares = private_key_share.blind(b);
             blinded_key_shares.multiply_by_omega_inv(domain_inv);
@@ -159,9 +157,7 @@ pub mod test_common {
             });
             public_contexts.push(PublicDecryptionContextFast::<E> {
                 domain: *domain,
-                public_key_share: PublicKeyShare::<E> {
-                    public_key_share: *public,
-                },
+                public_key: PublicKey::<E>(*public),
                 blinded_key_share: blinded_key_shares,
                 lagrange_n_0: *domain,
                 h_inv: E::G2Prepared::from(-h.into_group()),
@@ -172,12 +168,8 @@ pub mod test_common {
         }
 
         (
-            PublicKeyShare {
-                public_key_share: pubkey.into(),
-            },
-            PrivateKeyShare {
-                private_key_share: privkey.into(),
-            },
+            PublicKey(pubkey.into()),
+            PrivateKeyShare(privkey.into()),
             private_contexts,
         )
     }
@@ -187,7 +179,7 @@ pub mod test_common {
         shares_num: usize,
         rng: &mut impl rand::Rng,
     ) -> (
-        PublicKeyShare<E>,
+        PublicKey<E>,
         PrivateKeyShare<E>,
         Vec<PrivateDecryptionContextSimple<E>>,
     ) {
@@ -235,9 +227,7 @@ pub mod test_common {
             izip!(shares_x.iter(), pubkey_shares.iter(), privkey_shares.iter())
                 .enumerate()
         {
-            let private_key_share = PrivateKeyShare::<E> {
-                private_key_share: *private,
-            };
+            let private_key_share = PrivateKeyShare::<E>(*private);
             let b = E::ScalarField::rand(rng);
             let blinded_key_share = private_key_share.blind(b);
             private_contexts.push(PrivateDecryptionContextSimple::<E> {
@@ -255,9 +245,7 @@ pub mod test_common {
             });
             public_contexts.push(PublicDecryptionContextSimple::<E> {
                 domain: *domain,
-                public_key_share: PublicKeyShare::<E> {
-                    public_key_share: *public,
-                },
+                public_key: PublicKey::<E>(*public),
                 blinded_key_share,
                 h,
                 validator_public_key: h.mul(b),
@@ -268,12 +256,8 @@ pub mod test_common {
         }
 
         (
-            PublicKeyShare {
-                public_key_share: pubkey.into(),
-            },
-            PrivateKeyShare {
-                private_key_share: privkey.into(),
-            },
+            PublicKey(pubkey.into()),
+            PrivateKeyShare(privkey.into()),
             private_contexts,
         )
     }
@@ -282,7 +266,7 @@ pub mod test_common {
         shares_num: usize,
         rng: &mut impl rand::Rng,
     ) -> (
-        PublicKeyShare<E>,
+        PublicKey<E>,
         PrivateKeyShare<E>,
         Vec<PrivateDecryptionContextSimple<E>>,
     ) {

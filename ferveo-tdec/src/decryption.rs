@@ -74,13 +74,13 @@ impl<E: Pairing> ValidatorShareChecksum<E> {
 
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(bound(
-    serialize = "ValidatorShareChecksum<E>: Serialize",
-    deserialize = "ValidatorShareChecksum<E>: DeserializeOwned"
-))]
 pub struct DecryptionShareSimple<E: Pairing> {
     #[serde_as(as = "serialization::SerdeAs")]
     pub decryption_share: E::TargetField,
+    #[serde(bound(
+        serialize = "ValidatorShareChecksum<E>: Serialize",
+        deserialize = "ValidatorShareChecksum<E>: DeserializeOwned"
+    ))]
     pub validator_checksum: ValidatorShareChecksum<E>,
 }
 
@@ -110,11 +110,8 @@ impl<E: Pairing> DecryptionShareSimple<E> {
         ciphertext_header: &CiphertextHeader<E>,
     ) -> Result<Self> {
         // D_i = e(U, Z_i)
-        let decryption_share = E::pairing(
-            ciphertext_header.commitment,
-            private_key_share.private_key_share,
-        )
-        .0;
+        let decryption_share =
+            E::pairing(ciphertext_header.commitment, private_key_share.0).0;
 
         let validator_checksum = ValidatorShareChecksum::new(
             validator_decryption_key,
@@ -146,14 +143,14 @@ impl<E: Pairing> DecryptionShareSimple<E> {
 
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(bound(
-    serialize = "ValidatorShareChecksum<E>: Serialize",
-    deserialize = "ValidatorShareChecksum<E>: DeserializeOwned"
-))]
 pub struct DecryptionSharePrecomputed<E: Pairing> {
     pub decrypter_index: usize,
     #[serde_as(as = "serialization::SerdeAs")]
     pub decryption_share: E::TargetField,
+    #[serde(bound(
+        serialize = "ValidatorShareChecksum<E>: Serialize",
+        deserialize = "ValidatorShareChecksum<E>: DeserializeOwned"
+    ))]
     pub validator_checksum: ValidatorShareChecksum<E>,
 }
 
@@ -188,11 +185,8 @@ impl<E: Pairing> DecryptionSharePrecomputed<E> {
         let u_to_lagrange_coeff =
             ciphertext_header.commitment.mul(lagrange_coeff);
         // C_{λ_i} = e(U_{λ_i}, Z_i)
-        let decryption_share = E::pairing(
-            u_to_lagrange_coeff,
-            private_key_share.private_key_share,
-        )
-        .0;
+        let decryption_share =
+            E::pairing(u_to_lagrange_coeff, private_key_share.0).0;
 
         let validator_checksum = ValidatorShareChecksum::new(
             validator_decryption_key,

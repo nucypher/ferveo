@@ -105,6 +105,7 @@ class DecryptionSharePrecomputed:
 
 @final
 class AggregatedTranscript:
+    public_key: DkgPublicKey
     def __init__(self, messages: Sequence[ValidatorMessage]): ...
     def verify(
         self, validators_num: int, messages: Sequence[ValidatorMessage]
@@ -157,18 +158,6 @@ def decrypt_with_shared_secret(
 class ThresholdEncryptionError(Exception):
     pass
 
-class InvalidDkgStateToDeal(Exception):
-    pass
-
-class InvalidDkgStateToAggregate(Exception):
-    pass
-
-class InvalidDkgStateToVerify(Exception):
-    pass
-
-class InvalidDkgStateToIngest(Exception):
-    pass
-
 class DealerNotInValidatorSet(Exception):
     pass
 
@@ -179,12 +168,6 @@ class DuplicateDealer(Exception):
     pass
 
 class InvalidPvssTranscript(Exception):
-    pass
-
-class InsufficientTranscriptsForAggregate(Exception):
-    pass
-
-class InvalidDkgPublicKey(Exception):
     pass
 
 class InsufficientValidators(Exception):
@@ -220,5 +203,8 @@ class NoTranscriptsToAggregate(Exception):
 class InvalidAggregateVerificationParameters(Exception):
     pass
 
-class UnknownValidator(Exception):
+class TooManyTranscripts(Exception):
+    pass
+
+class DuplicateTranscript(Exception):
     pass

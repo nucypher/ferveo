@@ -80,7 +80,8 @@ fn setup_dkg(
     // In the meantime, the client creates a ciphertext and decryption request
     let msg = "my-msg".as_bytes().to_vec();
     let aad = "my-aad".as_bytes().to_vec();
-    let ciphertext = ferveo_encrypt(&msg, &aad, &dkg.public_key()).unwrap();
+    let ciphertext =
+        ferveo_encrypt(&msg, &aad, &client_aggregate.public_key()).unwrap();
 
     (
         validator_keypairs,

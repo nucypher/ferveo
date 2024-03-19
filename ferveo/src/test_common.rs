@@ -1,12 +1,16 @@
 /// Factory functions and variables for testing
 use std::str::FromStr;
 
+use ark_bls12_381::Bls12_381;
 pub use ark_bls12_381::Bls12_381 as E;
 use ark_ec::pairing::Pairing;
 use ferveo_common::Keypair;
-use rand::seq::SliceRandom;
+use rand::{seq::SliceRandom, Rng};
 
-use crate::{DkgParams, EthereumAddress, PubliclyVerifiableDkg, Validator};
+use crate::{
+    DkgParams, EthereumAddress, PubliclyVerifiableDkg, PubliclyVerifiableSS,
+    Validator, ValidatorMessage,
+};
 
 pub type ScalarField = <E as Pairing>::ScalarField;
 pub type G1 = <E as Pairing>::G1Affine;
@@ -73,17 +77,25 @@ pub fn setup_dkg(my_validator_index: usize) -> TestSetup {
     )
 }
 
+pub type DealtTestSetup = (
+    PubliclyVerifiableDkg<E>,
+    Vec<Keypair<E>>,
+    Vec<ValidatorMessage<E>>,
+);
+
 /// Set up a dkg with enough pvss transcripts to meet the threshold
 ///
 /// The correctness of this function is tested in the module [`crate::dkg::test_dealing`]
-pub fn setup_dealt_dkg() -> TestSetup {
+pub fn setup_dealt_dkg() -> DealtTestSetup {
     setup_dealt_dkg_with(SECURITY_THRESHOLD, SHARES_NUM)
 }
+
+// TODO: Rewrite setup_utils to return messages separately
 
 pub fn setup_dealt_dkg_with(
     security_threshold: u32,
     shares_num: u32,
-) -> TestSetup {
+) -> DealtTestSetup {
     setup_dealt_dkg_with_n_validators(
         security_threshold,
         shares_num,
@@ -95,36 +107,61 @@ pub fn setup_dealt_dkg_with_n_validators(
     security_threshold: u32,
     shares_num: u32,
     validators_num: u32,
-) -> TestSetup {
+) -> DealtTestSetup {
+    setup_dealt_dkg_with_n_transcript_dealt(
+        security_threshold,
+        shares_num,
+        validators_num,
+        security_threshold,
+    )
+}
+
+pub fn make_messages(
+    rng: &mut (impl Rng + Sized),
+    dkg: &PubliclyVerifiableDkg<Bls12_381>,
+) -> Vec<(Validator<E>, PubliclyVerifiableSS<E>)> {
+    let mut messages = vec![];
+    for i in 0..dkg.dkg_params.shares_num() {
+        let (dkg, _) = setup_dkg(i as usize);
+        let transcript = dkg.generate_transcript(rng).unwrap();
+        let sender = dkg.me.clone();
+        messages.push((sender, transcript));
+    }
+    messages
+}
+
+pub fn setup_dealt_dkg_with_n_transcript_dealt(
+    security_threshold: u32,
+    shares_num: u32,
+    validators_num: u32,
+    transcripts_to_use: u32,
+) -> DealtTestSetup {
     let rng = &mut ark_std::test_rng();
 
     // Gather everyone's transcripts
-    let mut messages: Vec<_> = (0..validators_num)
+    // Use only the first `transcripts_to_use` transcripts
+    let mut transcripts: Vec<_> = (0..transcripts_to_use)
         .map(|my_index| {
-            let (mut dkg, _) = setup_dkg_for_n_validators(
+            let (dkg, _) = setup_dkg_for_n_validators(
                 security_threshold,
                 shares_num,
                 my_index as usize,
                 validators_num,
             );
             let me = dkg.me.clone();
-            let message = dkg.share(rng).unwrap();
-            (me, message)
+            let transcript = dkg.generate_transcript(rng).unwrap();
+            (me, transcript)
         })
         .collect();
 
     // Create a test DKG instance
-    let (mut dkg, keypairs) = setup_dkg_for_n_validators(
+    let (dkg, keypairs) = setup_dkg_for_n_validators(
         security_threshold,
         shares_num,
         0,
         validators_num,
     );
-
     // The ordering of messages should not matter
-    messages.shuffle(rng);
-    messages.iter().for_each(|(sender, message)| {
-        dkg.apply_message(sender, message).expect("Setup failed");
-    });
-    (dkg, keypairs)
+    transcripts.shuffle(rng);
+    (dkg, keypairs, transcripts)
 }

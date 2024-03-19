@@ -10,18 +10,26 @@ use ferveo_tdec::{
 };
 use itertools::zip_eq;
 use rand_core::RngCore;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use zeroize::ZeroizeOnDrop;
 
-use crate::{DomainPoint, Error, Result};
+use crate::{DomainPoint, Error, PubliclyVerifiableParams, Result};
 
 // TODO: Rename refresh.rs to key_share.rs?
 
 type InnerPrivateKeyShare<E> = ferveo_tdec::PrivateKeyShare<E>;
 
 /// Private key share held by a participant in the DKG protocol.
-#[derive(Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
-pub struct PrivateKeyShare<E: Pairing>(pub InnerPrivateKeyShare<E>);
+#[derive(
+    Debug, Clone, PartialEq, Eq, ZeroizeOnDrop, Serialize, Deserialize,
+)]
+pub struct PrivateKeyShare<E: Pairing>(
+    #[serde(bound(
+        serialize = "ferveo_tdec::PrivateKeyShare<E>: Serialize",
+        deserialize = "ferveo_tdec::PrivateKeyShare<E>: DeserializeOwned"
+    ))]
+    pub InnerPrivateKeyShare<E>,
+);
 
 impl<E: Pairing> PrivateKeyShare<E> {
     pub fn new(private_key_share: InnerPrivateKeyShare<E>) -> Self {
@@ -37,12 +45,8 @@ impl<E: Pairing> PrivateKeyShare<E> {
     ) -> UpdatedPrivateKeyShare<E> {
         let updated_key_share = share_updates
             .iter()
-            .fold(self.0.private_key_share, |acc, delta| {
-                (acc + delta.inner().private_key_share).into()
-            });
-        let updated_key_share = InnerPrivateKeyShare {
-            private_key_share: updated_key_share,
-        };
+            .fold(self.0 .0, |acc, delta| (acc + delta.inner().0).into());
+        let updated_key_share = ferveo_tdec::PrivateKeyShare(updated_key_share);
         UpdatedPrivateKeyShare(updated_key_share)
     }
 
@@ -56,11 +60,9 @@ impl<E: Pairing> PrivateKeyShare<E> {
         // Interpolate new shares to recover y_r
         let lagrange = lagrange_basis_at::<E>(domain_points, x_r);
         let prods = zip_eq(updated_private_shares, lagrange)
-            .map(|(y_j, l)| y_j.0.private_key_share.mul(l));
+            .map(|(y_j, l)| y_j.0 .0.mul(l));
         let y_r = prods.fold(E::G2::zero(), |acc, y_j| acc + y_j);
-        PrivateKeyShare(ferveo_tdec::PrivateKeyShare {
-            private_key_share: y_r.into_affine(),
-        })
+        PrivateKeyShare(ferveo_tdec::PrivateKeyShare(y_r.into_affine()))
     }
 
     pub fn create_decryption_share_simple(
@@ -68,14 +70,14 @@ impl<E: Pairing> PrivateKeyShare<E> {
         ciphertext_header: &CiphertextHeader<E>,
         aad: &[u8],
         validator_keypair: &Keypair<E>,
-        g_inv: &E::G1Prepared,
     ) -> Result<DecryptionShareSimple<E>> {
+        let g_inv = PubliclyVerifiableParams::<E>::default().g_inv();
         DecryptionShareSimple::create(
             &validator_keypair.decryption_key,
             &self.0,
             ciphertext_header,
             aad,
-            g_inv,
+            &g_inv,
         )
         .map_err(|e| e.into())
     }
@@ -87,9 +89,9 @@ impl<E: Pairing> PrivateKeyShare<E> {
         validator_keypair: &Keypair<E>,
         share_index: u32,
         domain_points: &[DomainPoint<E>],
-        g_inv: &E::G1Prepared,
     ) -> Result<DecryptionSharePrecomputed<E>> {
-        // In precomputed variant, we offload the some of the decryption related computation to the server-side:
+        let g_inv = PubliclyVerifiableParams::<E>::default().g_inv();
+        // In precomputed variant, we offload some of the decryption related computation to the server-side:
         // We use the `prepare_combine_simple` function to precompute the lagrange coefficients
         let lagrange_coeffs = prepare_combine_simple::<E>(domain_points);
         let lagrange_coeff = &lagrange_coeffs
@@ -102,15 +104,21 @@ impl<E: Pairing> PrivateKeyShare<E> {
             ciphertext_header,
             aad,
             lagrange_coeff,
-            g_inv,
+            &g_inv,
         )
         .map_err(|e| e.into())
     }
 }
 
 /// An updated private key share, resulting from an intermediate step in a share recovery or refresh operation.
-#[derive(Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, ZeroizeOnDrop, Serialize, Deserialize,
+)]
 pub struct UpdatedPrivateKeyShare<E: Pairing>(
+    #[serde(bound(
+        serialize = "ferveo_tdec::PrivateKeyShare<E>: Serialize",
+        deserialize = "ferveo_tdec::PrivateKeyShare<E>: DeserializeOwned"
+    ))]
     pub(crate) InnerPrivateKeyShare<E>,
 );
 
@@ -128,7 +136,6 @@ impl<E: Pairing> UpdatedPrivateKeyShare<E> {
     }
 }
 
-// TODO: Replace with an into trait?
 /// Trait for types that can be used to update a private key share.
 pub trait PrivateKeyShareUpdate<E: Pairing> {
     fn inner(&self) -> &InnerPrivateKeyShare<E>;
@@ -172,6 +179,10 @@ impl<E: Pairing> ShareRecoveryUpdate<E> {
     Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ZeroizeOnDrop,
 )]
 pub struct ShareRefreshUpdate<E: Pairing>(
+    #[serde(bound(
+        serialize = "ferveo_tdec::PrivateKeyShare<E>: Serialize",
+        deserialize = "ferveo_tdec::PrivateKeyShare<E>: DeserializeOwned"
+    ))]
     pub(crate) ferveo_tdec::PrivateKeyShare<E>,
 );
 
@@ -226,9 +237,7 @@ fn prepare_share_updates_with_root<E: Pairing>(
             let eval = d_i.evaluate(x_i);
             h.mul(eval).into_affine()
         })
-        .map(|p| InnerPrivateKeyShare {
-            private_key_share: p,
-        })
+        .map(ferveo_tdec::PrivateKeyShare)
         .collect()
 }
 

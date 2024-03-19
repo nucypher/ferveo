@@ -62,7 +62,7 @@ function setupTest(
   // Client creates a ciphertext and requests decryption shares from validators
   const msg = Buffer.from("my-msg");
   const aad = Buffer.from("my-aad");
-  const ciphertext = ferveoEncrypt(msg, aad, dkg.publicKey());
+  const ciphertext = ferveoEncrypt(msg, aad, clientAggregate.publicKey);
 
   return {
     validatorKeypairs,

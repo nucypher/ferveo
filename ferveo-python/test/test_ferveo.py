@@ -89,7 +89,7 @@ def scenario_for_variant(
     # Client creates a ciphertext and requests decryption shares from validators
     msg = "abc".encode()
     aad = "my-aad".encode()
-    ciphertext = encrypt(msg, aad, dkg.public_key)
+    ciphertext = encrypt(msg, aad, client_aggregate.public_key)
 
     # Having aggregated the transcripts, the validators can now create decryption shares
     decryption_shares = []
