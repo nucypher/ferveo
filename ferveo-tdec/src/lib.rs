@@ -175,8 +175,8 @@ pub mod test_common {
     }
 
     pub fn setup_simple<E: Pairing>(
-        threshold: usize,
         shares_num: usize,
+        threshold: usize,
         rng: &mut impl rand::Rng,
     ) -> (
         PublicKey<E>,
@@ -264,17 +264,17 @@ pub mod test_common {
 
     pub fn setup_precomputed<E: Pairing>(
         shares_num: usize,
+        threshold: usize,
         rng: &mut impl rand::Rng,
     ) -> (
         PublicKey<E>,
         PrivateKeyShare<E>,
         Vec<PrivateDecryptionContextSimple<E>>,
     ) {
-        // In precomputed variant, the security threshold is equal to the number of shares
-        setup_simple::<E>(shares_num, shares_num, rng)
+        setup_simple::<E>(shares_num, threshold, rng)
     }
 
-    pub fn create_shared_secret<E: Pairing>(
+    pub fn create_shared_secret_simple<E: Pairing>(
         pub_contexts: &[PublicDecryptionContextSimple<E>],
         decryption_shares: &[DecryptionShareSimple<E>],
     ) -> SharedSecret<E> {
@@ -291,8 +291,12 @@ mod tests {
     use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
     use ark_std::{test_rng, UniformRand};
     use ferveo_common::{FromBytes, ToBytes};
+    use rand::seq::IteratorRandom;
 
-    use crate::test_common::{create_shared_secret, setup_simple, *};
+    use crate::{
+        api::DecryptionSharePrecomputed,
+        test_common::{create_shared_secret_simple, setup_simple, *},
+    };
 
     type E = ark_bls12_381::Bls12_381;
     type TargetField = <E as Pairing>::TargetField;
@@ -378,7 +382,7 @@ mod tests {
         let aad: &[u8] = "my-aad".as_bytes();
 
         let (pubkey, _, contexts) =
-            setup_simple::<E>(threshold, shares_num, rng);
+            setup_simple::<E>(shares_num, threshold, rng);
         let ciphertext =
             encrypt::<E>(SecretBox::new(msg), aad, &pubkey, rng).unwrap();
 
@@ -447,7 +451,7 @@ mod tests {
         let aad: &[u8] = "my-aad".as_bytes();
 
         let (pubkey, _, contexts) =
-            setup_simple::<E>(threshold, shares_num, &mut rng);
+            setup_simple::<E>(shares_num, threshold, &mut rng);
         let g_inv = &contexts[0].setup_params.g_inv;
 
         let ciphertext =
@@ -462,10 +466,10 @@ mod tests {
             })
             .take(threshold)
             .collect();
-        let pub_contexts =
+        let selected_contexts =
             contexts[0].public_decryption_contexts[..threshold].to_vec();
         let shared_secret =
-            create_shared_secret(&pub_contexts, &decryption_shares);
+            create_shared_secret_simple(&selected_contexts, &decryption_shares);
 
         test_ciphertext_validation_fails(
             &msg,
@@ -476,13 +480,18 @@ mod tests {
         );
 
         // If we use less than threshold shares, we should fail
-        let decryption_shares = decryption_shares[..threshold - 1].to_vec();
-        let pub_contexts = pub_contexts[..threshold - 1].to_vec();
-        let shared_secret =
-            create_shared_secret(&pub_contexts, &decryption_shares);
-
-        let result =
-            decrypt_with_shared_secret(&ciphertext, aad, &shared_secret, g_inv);
+        let not_enough_dec_shares = decryption_shares[..threshold - 1].to_vec();
+        let not_enough_contexts = selected_contexts[..threshold - 1].to_vec();
+        let bash_shared_secret = create_shared_secret_simple(
+            &not_enough_contexts,
+            &not_enough_dec_shares,
+        );
+        let result = decrypt_with_shared_secret(
+            &ciphertext,
+            aad,
+            &bash_shared_secret,
+            g_inv,
+        );
         assert!(result.is_err());
     }
 
@@ -490,30 +499,39 @@ mod tests {
     fn tdec_precomputed_variant_e2e() {
         let mut rng = &mut test_rng();
         let shares_num = 16;
+        let threshold = shares_num * 2 / 3;
         let msg = "my-msg".as_bytes().to_vec();
         let aad: &[u8] = "my-aad".as_bytes();
 
         let (pubkey, _, contexts) =
-            setup_precomputed::<E>(shares_num, &mut rng);
+            setup_precomputed::<E>(shares_num, threshold, &mut rng);
         let g_inv = &contexts[0].setup_params.g_inv;
         let ciphertext =
             encrypt::<E>(SecretBox::new(msg.clone()), aad, &pubkey, rng)
                 .unwrap();
 
-        let decryption_shares: Vec<_> = contexts
+        let selected_participants =
+            (0..threshold).choose_multiple(rng, threshold);
+        let selected_contexts = contexts
+            .iter()
+            .filter(|c| selected_participants.contains(&c.index))
+            .cloned()
+            .collect::<Vec<_>>();
+
+        let decryption_shares = selected_contexts
             .iter()
             .map(|context| {
                 context
                     .create_share_precomputed(
                         &ciphertext.header().unwrap(),
                         aad,
+                        &selected_participants,
                     )
                     .unwrap()
             })
-            .collect();
+            .collect::<Vec<DecryptionSharePrecomputed>>();
 
         let shared_secret = share_combine_precomputed::<E>(&decryption_shares);
-
         test_ciphertext_validation_fails(
             &msg,
             aad,
@@ -522,19 +540,17 @@ mod tests {
             g_inv,
         );
 
-        // Note that in this variant, if we use less than `share_num` shares, we will get a
-        // decryption error.
-
-        let not_enough_shares = &decryption_shares[0..shares_num - 1];
-        let bad_shared_secret =
-            share_combine_precomputed::<E>(not_enough_shares);
-        assert!(decrypt_with_shared_secret(
+        // If we use less than threshold shares, we should fail
+        let not_enough_dec_shares = decryption_shares[..threshold - 1].to_vec();
+        let bash_shared_secret =
+            share_combine_precomputed(&not_enough_dec_shares);
+        let result = decrypt_with_shared_secret(
             &ciphertext,
             aad,
-            &bad_shared_secret,
+            &bash_shared_secret,
             g_inv,
-        )
-        .is_err());
+        );
+        assert!(result.is_err());
     }
 
     #[test]
@@ -546,7 +562,7 @@ mod tests {
         let aad: &[u8] = "my-aad".as_bytes();
 
         let (pubkey, _, contexts) =
-            setup_simple::<E>(threshold, shares_num, &mut rng);
+            setup_simple::<E>(shares_num, threshold, &mut rng);
 
         let ciphertext =
             encrypt::<E>(SecretBox::new(msg), aad, &pubkey, rng).unwrap();

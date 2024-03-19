@@ -105,7 +105,7 @@ impl SetupSimple {
         let aad: &[u8] = "my-aad".as_bytes();
 
         let (pubkey, privkey, contexts) =
-            setup_simple::<E>(threshold, shares_num, rng);
+            setup_simple::<E>(shares_num, threshold, rng);
 
         // Ciphertext.commitment is already computed to match U
         let ciphertext =
@@ -124,10 +124,10 @@ impl SetupSimple {
 
         let pub_contexts = contexts[0].clone().public_decryption_contexts;
         let domain: Vec<Fr> = pub_contexts.iter().map(|c| c.domain).collect();
-        let lagrange = prepare_combine_simple::<E>(&domain);
+        let lagrange_coeffs = prepare_combine_simple::<E>(&domain);
 
         let shared_secret =
-            share_combine_simple::<E>(&decryption_shares, &lagrange);
+            share_combine_simple::<E>(&decryption_shares, &lagrange_coeffs);
 
         let shared = SetupShared {
             threshold,
@@ -144,7 +144,7 @@ impl SetupSimple {
             contexts,
             pub_contexts,
             decryption_shares,
-            lagrange_coeffs: lagrange,
+            lagrange_coeffs,
         }
     }
 }
@@ -200,6 +200,8 @@ pub fn bench_create_decryption_share(c: &mut Criterion) {
         };
         let simple_precomputed = {
             let setup = SetupSimple::new(shares_num, MSG_SIZE_CASES[0], rng);
+            let selected_participants =
+                (0..setup.shared.threshold).collect::<Vec<_>>();
             move || {
                 black_box(
                     setup
@@ -209,6 +211,7 @@ pub fn bench_create_decryption_share(c: &mut Criterion) {
                             context.create_share_precomputed(
                                 &setup.shared.ciphertext.header().unwrap(),
                                 &setup.shared.aad,
+                                &selected_participants,
                             )
                         })
                         .collect::<Vec<_>>(),
@@ -295,6 +298,8 @@ pub fn bench_share_combine(c: &mut Criterion) {
         };
         let simple_precomputed = {
             let setup = SetupSimple::new(shares_num, MSG_SIZE_CASES[0], rng);
+            // TODO: Use threshold instead of shares_num
+            let selected_participants = (0..shares_num).collect::<Vec<_>>();
 
             let decryption_shares: Vec<_> = setup
                 .contexts
@@ -304,6 +309,7 @@ pub fn bench_share_combine(c: &mut Criterion) {
                         .create_share_precomputed(
                             &setup.shared.ciphertext.header().unwrap(),
                             &setup.shared.aad,
+                            &selected_participants,
                         )
                         .unwrap()
                 })

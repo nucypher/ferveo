@@ -72,6 +72,9 @@ impl<E: Pairing> ValidatorShareChecksum<E> {
     }
 }
 
+/// A decryption share for a simple variant of the threshold decryption scheme.
+/// In this variant, the decryption share require additional computation on the
+/// client side int order to be combined.
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DecryptionShareSimple<E: Pairing> {
@@ -141,6 +144,11 @@ impl<E: Pairing> DecryptionShareSimple<E> {
     }
 }
 
+/// A decryption share for a precomputed variant of the threshold decryption scheme.
+/// In this variant, the decryption share is precomputed and can be combined
+/// without additional computation on the client side.
+/// The downside is that the threshold of decryption shares required to decrypt
+/// is equal to the number of private key shares in the scheme.
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DecryptionSharePrecomputed<E: Pairing> {
@@ -155,7 +163,9 @@ pub struct DecryptionSharePrecomputed<E: Pairing> {
 }
 
 impl<E: Pairing> DecryptionSharePrecomputed<E> {
-    pub fn new(
+    /// Create a decryption share from the given parameters.
+    /// This function checks that the ciphertext is valid.
+    pub fn create(
         validator_index: usize,
         validator_decryption_key: &E::ScalarField,
         private_key_share: &PrivateKeyShare<E>,
@@ -174,6 +184,8 @@ impl<E: Pairing> DecryptionSharePrecomputed<E> {
         )
     }
 
+    /// Create a decryption share from the given parameters.
+    /// This function does not check that the ciphertext is valid.
     pub fn create_unchecked(
         validator_index: usize,
         validator_decryption_key: &E::ScalarField,

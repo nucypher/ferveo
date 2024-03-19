@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use ark_ec::pairing::Pairing;
 use ark_poly::EvaluationDomain;
@@ -155,8 +155,8 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
 
     /// Return a domain point for the share_index
     pub fn get_domain_point(&self, share_index: u32) -> Result<DomainPoint<E>> {
-        self.domain_points()
-            .get(share_index as usize)
+        self.domain_point_map()
+            .get(&share_index)
             .ok_or_else(|| Error::InvalidShareIndex(share_index))
             .copied()
     }
@@ -165,6 +165,15 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
     /// The number of domain points should be equal to the number of validators
     pub fn domain_points(&self) -> Vec<DomainPoint<E>> {
         self.domain.elements().take(self.validators.len()).collect()
+    }
+
+    /// Return a map of domain points for the DKG
+    pub fn domain_point_map(&self) -> HashMap<u32, DomainPoint<E>> {
+        self.domain
+            .elements()
+            .enumerate()
+            .map(|(i, point)| (i as u32, point))
+            .collect::<HashMap<_, _>>()
     }
 
     /// Verify PVSS transcripts against the set of validators in the DKG
@@ -189,16 +198,12 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
             transcript_set.insert(transcript.clone());
         }
 
-        if validator_set.len() > self.validators.len() {
+        if validator_set.len() > self.validators.len()
+            || transcript_set.len() > self.validators.len()
+        {
             return Err(Error::TooManyTranscripts(
                 self.validators.len() as u32,
                 validator_set.len() as u32,
-            ));
-        }
-        if transcript_set.len() > self.validators.len() {
-            return Err(Error::TooManyTranscripts(
-                self.validators.len() as u32,
-                transcript_set.len() as u32,
             ));
         }
 
@@ -233,7 +238,6 @@ mod test_dkg_init {
             &unknown_validator,
         )
         .unwrap_err();
-
         assert_eq!(err.to_string(), "Expected validator to be a part of the DKG validator set: 0x0000000000000000000000000000000000000005")
     }
 }
@@ -278,7 +282,6 @@ mod test_dealing {
         let rng = &mut ark_std::test_rng();
         let (dkg, _) = setup_dkg(0);
         let messages = make_messages(rng, &dkg);
-
         assert!(dkg.verify_transcripts(&messages).is_ok());
     }
 
@@ -334,14 +337,11 @@ mod test_dealing {
 /// Test aggregating transcripts into final key
 #[cfg(test)]
 mod test_aggregation {
-    use test_case::test_case;
-
     use crate::test_common::*;
 
     /// Test that if the security threshold is met, we can create a final key
-    #[test_case(4, 4; "number of validators equal to the number of shares")]
-    #[test_case(4, 6; "number of validators greater than the number of shares")]
-    fn test_aggregate(_shares_num: u32, _validators_num: u32) {
+    #[test]
+    fn test_aggregate() {
         let rng = &mut ark_std::test_rng();
         let (dkg, _) = setup_dkg(0);
         let all_messages = make_messages(rng, &dkg);
@@ -356,7 +356,7 @@ mod test_aggregation {
 
         let enough_messages = all_messages
             .iter()
-            .take((dkg.dkg_params.security_threshold) as usize)
+            .take(dkg.dkg_params.security_threshold as usize)
             .cloned()
             .collect::<Vec<_>>();
         let good_aggregate_1 =

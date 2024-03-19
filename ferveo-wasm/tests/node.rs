@@ -1,4 +1,4 @@
-//! Test suite for the Nodejs.
+//! Test suite for the Node.js.
 
 extern crate wasm_bindgen_test;
 
@@ -45,7 +45,6 @@ fn setup_dkg(
         )
         .unwrap();
         let transcript = validator_dkg.generate_transcript().unwrap();
-
         ValidatorMessage::new(sender, &transcript).unwrap()
     });
 
@@ -61,6 +60,8 @@ fn setup_dkg(
     )
     .unwrap();
 
+    // We only need `shares_num` messages to aggregate the transcripts
+    let messages = messages.take(shares_num as usize).collect::<Vec<_>>();
     let messages_js = into_js_array(messages);
 
     // Server can aggregate the transcripts and verify them
@@ -125,7 +126,6 @@ fn tdec_simple() {
                 let is_valid =
                     aggregate.verify(validators_num, &messages_js).unwrap();
                 assert!(is_valid);
-
                 aggregate
                     .create_decryption_share_simple(
                         &dkg,
@@ -135,16 +135,16 @@ fn tdec_simple() {
                     )
                     .unwrap()
             })
+            // We only need `security_threshold` decryption shares in simple variant
+            .take(security_threshold as usize)
             .collect::<Vec<DecryptionShareSimple>>();
+
         let decryption_shares_js = into_js_array(decryption_shares);
 
-        // Now, the decryption share can be used to decrypt the ciphertext
-        // This part is in the client API
-
+        // Now, decryption shares can be used to decrypt the ciphertext
+        // This part happens in the client API
         let shared_secret =
             combine_decryption_shares_simple(&decryption_shares_js).unwrap();
-
-        // The client should have access to the public parameters of the DKG
         let plaintext =
             decrypt_with_shared_secret(&ciphertext, &aad, &shared_secret)
                 .unwrap();
@@ -155,7 +155,7 @@ fn tdec_simple() {
 #[wasm_bindgen_test]
 fn tdec_precomputed() {
     let shares_num = 16;
-    let security_threshold = shares_num; // Must be equal to shares_num in precomputed variant
+    let security_threshold = shares_num * 2 / 3;
     for validators_num in [shares_num, shares_num + 2] {
         let (
             validator_keypairs,
@@ -166,6 +166,11 @@ fn tdec_precomputed() {
             aad,
             ciphertext,
         ) = setup_dkg(shares_num, validators_num, security_threshold);
+
+        // In precomputed variant, the client selects a subset of validators to create decryption shares
+        let selected_validators =
+            validators[..(security_threshold as usize)].to_vec();
+        let selected_validators_js = into_js_array(selected_validators);
 
         // Having aggregated the transcripts, the validators can now create decryption shares
         let decryption_shares = zip_eq(validators, validator_keypairs)
@@ -178,32 +183,31 @@ fn tdec_precomputed() {
                     &validator,
                 )
                 .unwrap();
-                let aggregate =
+                let server_aggregate =
                     dkg.aggregate_transcripts(&messages_js).unwrap();
-                let is_valid =
-                    aggregate.verify(validators_num, &messages_js).unwrap();
-                assert!(is_valid);
-
-                aggregate
+                assert!(server_aggregate
+                    .verify(validators_num, &messages_js)
+                    .unwrap());
+                server_aggregate
                     .create_decryption_share_precomputed(
                         &dkg,
                         &ciphertext.header().unwrap(),
                         &aad,
                         &keypair,
+                        &selected_validators_js,
                     )
                     .unwrap()
             })
+            // We need `security_threshold` decryption shares to decrypt
+            .take(security_threshold as usize)
             .collect::<Vec<DecryptionSharePrecomputed>>();
         let decryption_shares_js = into_js_array(decryption_shares);
 
-        // Now, the decryption share can be used to decrypt the ciphertext
-        // This part is in the client API
-
+        // Now, decryption shares can be used to decrypt the ciphertext
+        // This part happens in the client API
         let shared_secret =
             combine_decryption_shares_precomputed(&decryption_shares_js)
                 .unwrap();
-
-        // The client should have access to the public parameters of the DKG
         let plaintext =
             decrypt_with_shared_secret(&ciphertext, &aad, &shared_secret)
                 .unwrap();

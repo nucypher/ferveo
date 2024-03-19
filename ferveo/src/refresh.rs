@@ -1,4 +1,4 @@
-use std::{ops::Mul, usize};
+use std::{collections::HashMap, ops::Mul, usize};
 
 use ark_ec::{pairing::Pairing, CurveGroup};
 use ark_ff::Zero;
@@ -8,7 +8,7 @@ use ferveo_tdec::{
     lagrange_basis_at, prepare_combine_simple, CiphertextHeader,
     DecryptionSharePrecomputed, DecryptionShareSimple,
 };
-use itertools::zip_eq;
+use itertools::{zip_eq, Itertools};
 use rand_core::RngCore;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use zeroize::ZeroizeOnDrop;
@@ -54,15 +54,35 @@ impl<E: Pairing> PrivateKeyShare<E> {
     /// `x_r` is the point at which the share is to be recovered
     pub fn recover_share_from_updated_private_shares(
         x_r: &DomainPoint<E>,
-        domain_points: &[DomainPoint<E>],
-        updated_private_shares: &[UpdatedPrivateKeyShare<E>],
-    ) -> PrivateKeyShare<E> {
+        domain_points: &HashMap<u32, DomainPoint<E>>,
+        updated_shares: &HashMap<u32, UpdatedPrivateKeyShare<E>>,
+    ) -> Result<PrivateKeyShare<E>> {
+        // Pick the domain points and updated shares according to share index
+        let mut domain_points_ = vec![];
+        let mut updated_shares_ = vec![];
+        for share_index in updated_shares.keys().sorted() {
+            domain_points_.push(
+                *domain_points
+                    .get(share_index)
+                    .ok_or(Error::InvalidShareIndex(*share_index))?,
+            );
+            updated_shares_.push(
+                updated_shares
+                    .get(share_index)
+                    .ok_or(Error::InvalidShareIndex(*share_index))?
+                    .0
+                    .clone(),
+            );
+        }
+
         // Interpolate new shares to recover y_r
-        let lagrange = lagrange_basis_at::<E>(domain_points, x_r);
-        let prods = zip_eq(updated_private_shares, lagrange)
-            .map(|(y_j, l)| y_j.0 .0.mul(l));
+        let lagrange = lagrange_basis_at::<E>(&domain_points_, x_r);
+        let prods =
+            zip_eq(updated_shares_, lagrange).map(|(y_j, l)| y_j.0.mul(l));
         let y_r = prods.fold(E::G2::zero(), |acc, y_j| acc + y_j);
-        PrivateKeyShare(ferveo_tdec::PrivateKeyShare(y_r.into_affine()))
+        Ok(PrivateKeyShare(ferveo_tdec::PrivateKeyShare(
+            y_r.into_affine(),
+        )))
     }
 
     pub fn create_decryption_share_simple(
@@ -82,22 +102,52 @@ impl<E: Pairing> PrivateKeyShare<E> {
         .map_err(|e| e.into())
     }
 
-    pub fn create_decryption_share_simple_precomputed(
+    /// In precomputed variant, we offload some of the decryption related computation to the server-side:
+    /// We use the `prepare_combine_simple` function to precompute the lagrange coefficients
+    pub fn create_decryption_share_precomputed(
         &self,
         ciphertext_header: &CiphertextHeader<E>,
         aad: &[u8],
         validator_keypair: &Keypair<E>,
         share_index: u32,
-        domain_points: &[DomainPoint<E>],
+        domain_points_map: &HashMap<u32, DomainPoint<E>>,
     ) -> Result<DecryptionSharePrecomputed<E>> {
-        let g_inv = PubliclyVerifiableParams::<E>::default().g_inv();
-        // In precomputed variant, we offload some of the decryption related computation to the server-side:
-        // We use the `prepare_combine_simple` function to precompute the lagrange coefficients
-        let lagrange_coeffs = prepare_combine_simple::<E>(domain_points);
-        let lagrange_coeff = &lagrange_coeffs
-            .get(share_index as usize)
+        // We need to turn the domain points into a vector, and sort it by share index
+        let mut domain_points = domain_points_map
+            .iter()
+            .map(|(share_index, domain_point)| (*share_index, *domain_point))
+            .collect::<Vec<_>>();
+        domain_points.sort_by_key(|(share_index, _)| *share_index);
+
+        // Now, we have to pass the domain points to the `prepare_combine_simple` function
+        // and use the resulting lagrange coefficients to create the decryption share
+
+        let only_domain_points = domain_points
+            .iter()
+            .map(|(_, domain_point)| *domain_point)
+            .collect::<Vec<_>>();
+        let lagrange_coeffs = prepare_combine_simple::<E>(&only_domain_points);
+
+        // Before we pick the lagrange coefficient for the current share index, we need
+        // to map the share index to the index in the domain points vector
+        // Given that we sorted the domain points by share index, the first element in the vector
+        // will correspond to the smallest share index, second to the second smallest, and so on
+
+        let sorted_share_indices = domain_points
+            .iter()
+            .enumerate()
+            .map(|(adjusted_share_index, (share_index, _))| {
+                (*share_index, adjusted_share_index)
+            })
+            .collect::<HashMap<u32, usize>>();
+        let adjusted_share_index = *sorted_share_indices
+            .get(&share_index)
             .ok_or(Error::InvalidShareIndex(share_index))?;
-        DecryptionSharePrecomputed::new(
+
+        // Finally, pick the lagrange coefficient for the current share index
+        let lagrange_coeff = &lagrange_coeffs[adjusted_share_index];
+        let g_inv = PubliclyVerifiableParams::<E>::default().g_inv();
+        DecryptionSharePrecomputed::create(
             share_index as usize,
             &validator_keypair.decryption_key,
             &self.0,
@@ -154,12 +204,12 @@ impl<E: Pairing> PrivateKeyShareUpdate<E> for ShareRecoveryUpdate<E> {
 impl<E: Pairing> ShareRecoveryUpdate<E> {
     /// From PSS paper, section 4.2.1, (https://link.springer.com/content/pdf/10.1007/3-540-44750-4_27.pdf)
     pub fn create_share_updates(
-        domain_points: &[DomainPoint<E>],
+        domain_points: &HashMap<u32, DomainPoint<E>>,
         h: &E::G2Affine,
         x_r: &DomainPoint<E>,
         threshold: u32,
         rng: &mut impl RngCore,
-    ) -> Vec<ShareRecoveryUpdate<E>> {
+    ) -> HashMap<u32, ShareRecoveryUpdate<E>> {
         // Update polynomial has root at x_r
         prepare_share_updates_with_root::<E>(
             domain_points,
@@ -168,8 +218,8 @@ impl<E: Pairing> ShareRecoveryUpdate<E> {
             threshold,
             rng,
         )
-        .iter()
-        .map(|p| Self(p.clone()))
+        .into_iter()
+        .map(|(share_index, share_update)| (share_index, Self(share_update)))
         .collect()
     }
 }
@@ -195,11 +245,11 @@ impl<E: Pairing> PrivateKeyShareUpdate<E> for ShareRefreshUpdate<E> {
 impl<E: Pairing> ShareRefreshUpdate<E> {
     /// From PSS paper, section 4.2.1, (https://link.springer.com/content/pdf/10.1007/3-540-44750-4_27.pdf)
     pub fn create_share_updates(
-        domain_points: &[DomainPoint<E>],
+        domain_points: &HashMap<u32, DomainPoint<E>>,
         h: &E::G2Affine,
         threshold: u32,
         rng: &mut impl RngCore,
-    ) -> Vec<ShareRefreshUpdate<E>> {
+    ) -> HashMap<u32, ShareRefreshUpdate<E>> {
         // Update polynomial has root at 0
         prepare_share_updates_with_root::<E>(
             domain_points,
@@ -208,9 +258,10 @@ impl<E: Pairing> ShareRefreshUpdate<E> {
             threshold,
             rng,
         )
-        .iter()
-        .cloned()
-        .map(|p| ShareRefreshUpdate(p))
+        .into_iter()
+        .map(|(share_index, share_update)| {
+            (share_index, ShareRefreshUpdate(share_update))
+        })
         .collect()
     }
 }
@@ -221,24 +272,25 @@ impl<E: Pairing> ShareRefreshUpdate<E> {
 /// The result is a list of share updates.
 /// We represent the share updates as `InnerPrivateKeyShare` to avoid dependency on the concrete implementation of `PrivateKeyShareUpdate`.
 fn prepare_share_updates_with_root<E: Pairing>(
-    domain_points: &[DomainPoint<E>],
+    domain_points: &HashMap<u32, DomainPoint<E>>,
     h: &E::G2Affine,
     root: &DomainPoint<E>,
     threshold: u32,
     rng: &mut impl RngCore,
-) -> Vec<InnerPrivateKeyShare<E>> {
-    // Generate a new random polynomial with defined root
+) -> HashMap<u32, InnerPrivateKeyShare<E>> {
+    // Generate a new random polynomial with a defined root
     let d_i = make_random_polynomial_with_root::<E>(threshold - 1, root, rng);
 
     // Now, we need to evaluate the polynomial at each of participants' indices
     domain_points
         .iter()
-        .map(|x_i| {
+        .map(|(share_index, x_i)| {
             let eval = d_i.evaluate(x_i);
-            h.mul(eval).into_affine()
+            let share_update =
+                ferveo_tdec::PrivateKeyShare(h.mul(eval).into_affine());
+            (*share_index, share_update)
         })
-        .map(ferveo_tdec::PrivateKeyShare)
-        .collect()
+        .collect::<HashMap<_, _>>()
 }
 
 /// Generate a random polynomial with a given root
@@ -288,13 +340,14 @@ mod tests_refresh {
         threshold: u32,
         x_r: &Fr,
         remaining_participants: &[PrivateDecryptionContextSimple<E>],
-    ) -> Vec<UpdatedPrivateKeyShare<E>> {
+    ) -> HashMap<u32, UpdatedPrivateKeyShare<E>> {
         // Each participant prepares an update for each other participant
-        let domain_points = remaining_participants[0]
-            .public_decryption_contexts
+        let domain_points = remaining_participants
             .iter()
-            .map(|c| c.domain)
-            .collect::<Vec<_>>();
+            .map(|c| {
+                (c.index as u32, c.public_decryption_contexts[c.index].domain)
+            })
+            .collect::<HashMap<_, _>>();
         let h = remaining_participants[0].public_decryption_contexts[0].h;
         let share_updates = remaining_participants
             .iter()
@@ -306,25 +359,29 @@ mod tests_refresh {
                     threshold,
                     rng,
                 );
-                (p.index, share_updates)
+                (p.index as u32, share_updates)
             })
-            .collect::<HashMap<_, _>>();
+            .collect::<HashMap<u32, _>>();
 
         // Participants share updates and update their shares
-        let updated_private_key_shares: Vec<_> = remaining_participants
+        let updated_private_key_shares = remaining_participants
             .iter()
             .map(|p| {
                 // Current participant receives updates from other participants
                 let updates_for_participant: Vec<_> = share_updates
                     .values()
-                    .map(|updates| updates.get(p.index).cloned().unwrap())
+                    .map(|updates| {
+                        updates.get(&(p.index as u32)).cloned().unwrap()
+                    })
                     .collect();
 
                 // And updates their share
-                PrivateKeyShare(p.private_key_share.clone())
-                    .create_updated_key_share(&updates_for_participant)
+                let updated_share =
+                    PrivateKeyShare(p.private_key_share.clone())
+                        .create_updated_key_share(&updates_for_participant);
+                (p.index as u32, updated_share)
             })
-            .collect();
+            .collect::<HashMap<u32, _>>();
 
         updated_private_key_shares
     }
@@ -341,8 +398,8 @@ mod tests_refresh {
         let security_threshold = shares_num * 2 / 3;
 
         let (_, _, mut contexts) = setup_simple::<E>(
-            security_threshold as usize,
             shares_num as usize,
+            security_threshold as usize,
             rng,
         );
 
@@ -371,53 +428,64 @@ mod tests_refresh {
             &x_r,
             &remaining_participants,
         );
+        // We only need `security_threshold` updates to recover the original share
+        let updated_private_key_shares = updated_private_key_shares
+            .into_iter()
+            .take(security_threshold as usize)
+            .collect::<HashMap<_, _>>();
 
         // Now, we have to combine new share fragments into a new share
-        let domain_points = &remaining_participants[0]
-            .public_decryption_contexts
-            .iter()
-            .map(|ctxt| ctxt.domain)
-            .collect::<Vec<_>>();
+        let domain_points = remaining_participants
+            .into_iter()
+            .map(|ctxt| {
+                (
+                    ctxt.index as u32,
+                    ctxt.public_decryption_contexts[ctxt.index].domain,
+                )
+            })
+            .collect::<HashMap<u32, _>>();
         let new_private_key_share =
             PrivateKeyShare::recover_share_from_updated_private_shares(
                 &x_r,
-                &domain_points[..security_threshold as usize],
-                &updated_private_key_shares[..security_threshold as usize],
-            );
-
+                &domain_points,
+                &updated_private_key_shares,
+            )
+            .unwrap();
         assert_eq!(new_private_key_share, original_private_key_share);
 
         // If we don't have enough private share updates, the resulting private share will be incorrect
-        assert_eq!(domain_points.len(), updated_private_key_shares.len());
+        let not_enough_shares = updated_private_key_shares
+            .into_iter()
+            .take(security_threshold as usize - 1)
+            .collect::<HashMap<_, _>>();
         let incorrect_private_key_share =
             PrivateKeyShare::recover_share_from_updated_private_shares(
                 &x_r,
-                &domain_points[..(security_threshold - 1) as usize],
-                &updated_private_key_shares
-                    [..(security_threshold - 1) as usize],
-            );
-
+                &domain_points,
+                &not_enough_shares,
+            )
+            .unwrap();
         assert_ne!(incorrect_private_key_share, original_private_key_share);
     }
 
     /// Ñ parties (where t <= Ñ <= N) jointly execute a "share recovery" algorithm, and the output is 1 new share.
     /// The new share is independent of the previously existing shares. We can use this to on-board a new participant into an existing cohort.
-    #[test_case(4, 4; "number of shares (validators) is a power of 2")]
-    #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
-    fn tdec_simple_variant_share_recovery_at_random_point(
-        shares_num: u32,
-        _validators_num: u32,
-    ) {
+    #[test_case(4; "number of shares (validators) is a power of 2")]
+    #[test_case(7; "number of shares (validators) is not a power of 2")]
+    fn tdec_simple_variant_share_recovery_at_random_point(shares_num: u32) {
         let rng = &mut test_rng();
-        let threshold = shares_num * 2 / 3;
+        let security_threshold = shares_num * 2 / 3;
 
-        let (_, shared_private_key, mut contexts) =
-            setup_simple::<E>(threshold as usize, shares_num as usize, rng);
+        let (_, shared_private_key, mut contexts) = setup_simple::<E>(
+            shares_num as usize,
+            security_threshold as usize,
+            rng,
+        );
 
         // Prepare participants
 
         // Remove one participant from the contexts and all nested structures
-        contexts.pop().unwrap();
+        let removed_participant = contexts.pop().unwrap();
         let mut remaining_participants = contexts.clone();
         for p in &mut remaining_participants {
             p.public_decryption_contexts.pop().unwrap();
@@ -428,52 +496,65 @@ mod tests_refresh {
         // Our random point
         let x_r = ScalarField::rand(rng);
 
-        // Each participant prepares an update for each other participant, and uses it to create a new share fragment
-        let share_recovery_fragmetns = create_updated_private_key_shares(
+        // Each remaining participant prepares an update for every other participant, and uses it to create a new share fragment
+        let share_recovery_updates = create_updated_private_key_shares(
             rng,
-            threshold,
+            security_threshold,
             &x_r,
             &remaining_participants,
         );
+        // We only need `threshold` updates to recover the original share
+        let share_recovery_updates = share_recovery_updates
+            .into_iter()
+            .take(security_threshold as usize)
+            .collect::<HashMap<_, _>>();
+        let domain_points = &mut remaining_participants
+            .into_iter()
+            .map(|ctxt| {
+                (
+                    ctxt.index as u32,
+                    ctxt.public_decryption_contexts[ctxt.index].domain,
+                )
+            })
+            .collect::<HashMap<_, _>>();
 
         // Now, we have to combine new share fragments into a new share
-        let domain_points = &mut remaining_participants[0]
-            .public_decryption_contexts
-            .iter()
-            .map(|ctxt| ctxt.domain)
-            .collect::<Vec<_>>();
         let recovered_private_key_share =
             PrivateKeyShare::recover_share_from_updated_private_shares(
                 &x_r,
-                &domain_points[..threshold as usize],
-                &share_recovery_fragmetns[..threshold as usize],
-            );
-
-        let mut private_shares = contexts
-            .iter()
-            .cloned()
-            .map(|ctxt| ctxt.private_key_share)
-            .collect::<Vec<_>>();
+                domain_points,
+                &share_recovery_updates,
+            )
+            .unwrap();
 
         // Finally, let's recreate the shared private key from some original shares and the recovered one
-        domain_points.push(x_r);
-        private_shares.push(recovered_private_key_share.0.clone());
+        let mut private_shares = contexts
+            .into_iter()
+            .map(|ctxt| (ctxt.index as u32, ctxt.private_key_share))
+            .collect::<HashMap<u32, _>>();
+
+        // Need to update these to account for recovered private key share
+        domain_points.insert(removed_participant.index as u32, x_r);
+        private_shares.insert(
+            removed_participant.index as u32,
+            recovered_private_key_share.0.clone(),
+        );
 
         // This is a workaround for a type mismatch - We need to convert the private shares to updated private shares
         // This is just to test that we are able to recover the shared private key from the updated private shares
         let updated_private_key_shares = private_shares
-            .iter()
-            .cloned()
-            .map(UpdatedPrivateKeyShare::new)
-            .collect::<Vec<_>>();
-        let start_from = shares_num - threshold;
+            .into_iter()
+            .map(|(share_index, share)| {
+                (share_index, UpdatedPrivateKeyShare(share))
+            })
+            .collect::<HashMap<u32, _>>();
         let new_shared_private_key =
             PrivateKeyShare::recover_share_from_updated_private_shares(
                 &ScalarField::zero(),
-                &domain_points[start_from as usize..],
-                &updated_private_key_shares[start_from as usize..],
-            );
-
+                domain_points,
+                &updated_private_key_shares,
+            )
+            .unwrap();
         assert_eq!(shared_private_key, new_shared_private_key.0);
     }
 
@@ -483,16 +564,19 @@ mod tests_refresh {
     #[test_matrix([4, 7, 11, 16])]
     fn tdec_simple_variant_share_refreshing(shares_num: usize) {
         let rng = &mut test_rng();
-        let threshold = shares_num * 2 / 3;
+        let security_threshold = shares_num * 2 / 3;
 
         let (_, private_key_share, contexts) =
-            setup_simple::<E>(threshold, shares_num, rng);
-
-        let domain_points = &contexts[0]
-            .public_decryption_contexts
+            setup_simple::<E>(shares_num, security_threshold, rng);
+        let domain_points = &contexts
             .iter()
-            .map(|ctxt| ctxt.domain)
-            .collect::<Vec<_>>();
+            .map(|ctxt| {
+                (
+                    ctxt.index as u32,
+                    ctxt.public_decryption_contexts[ctxt.index].domain,
+                )
+            })
+            .collect::<HashMap<u32, _>>();
         let h = contexts[0].public_decryption_contexts[0].h;
 
         // Each participant prepares an update for each other participant:
@@ -503,37 +587,43 @@ mod tests_refresh {
                     ShareRefreshUpdate::<E>::create_share_updates(
                         domain_points,
                         &h,
-                        threshold as u32,
+                        security_threshold as u32,
                         rng,
                     );
-                (p.index, share_updates)
+                (p.index as u32, share_updates)
             })
-            .collect::<HashMap<_, _>>();
+            .collect::<HashMap<u32, _>>();
 
-        // Participants "refresh" their shares with the updates from each other:
-        let refreshed_shares: Vec<_> = contexts
+        // Participants refresh their shares with the updates from each other:
+        let refreshed_shares = contexts
             .iter()
             .map(|p| {
                 // Current participant receives updates from other participants
                 let updates_for_participant: Vec<_> = share_updates
                     .values()
-                    .map(|updates| updates.get(p.index).cloned().unwrap())
+                    .map(|updates| {
+                        updates.get(&(p.index as u32)).cloned().unwrap()
+                    })
                     .collect();
 
                 // And creates a new, refreshed share
-                PrivateKeyShare(p.private_key_share.clone())
-                    .create_updated_key_share(&updates_for_participant)
+                let updated_share =
+                    PrivateKeyShare(p.private_key_share.clone())
+                        .create_updated_key_share(&updates_for_participant);
+                (p.index as u32, updated_share)
             })
-            .collect();
+            // We only need `threshold` refreshed shares to recover the original share
+            .take(security_threshold)
+            .collect::<HashMap<u32, UpdatedPrivateKeyShare<E>>>();
 
         // Finally, let's recreate the shared private key from the refreshed shares
         let new_shared_private_key =
             PrivateKeyShare::recover_share_from_updated_private_shares(
                 &ScalarField::zero(),
-                &domain_points[..threshold],
-                &refreshed_shares[..threshold],
-            );
-
+                domain_points,
+                &refreshed_shares,
+            )
+            .unwrap();
         assert_eq!(private_key_share, new_shared_private_key.0);
     }
 }

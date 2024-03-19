@@ -39,6 +39,9 @@ for sender in validators:
     )
     messages.append(ValidatorMessage(sender, dkg.generate_transcript()))
 
+# We only need `shares_num` messages to aggregate the transcript
+messages = messages[:shares_num]
+
 # Every validator can aggregate the transcripts
 dkg = Dkg(
     tau=tau,
@@ -61,9 +64,13 @@ msg = "abc".encode()
 aad = "my-aad".encode()
 ciphertext = encrypt(msg, aad, client_aggregate.public_key)
 
+# In precomputed variant, the client selects a subset of validators to use for decryption
+selected_validators = validators[:security_threshold]
+selected_keypairs = validator_keypairs[:security_threshold]
+
 # Having aggregated the transcripts, the validators can now create decryption shares
 decryption_shares = []
-for validator, validator_keypair in zip(validators, validator_keypairs):
+for validator, validator_keypair in zip(selected_validators, selected_keypairs):
     dkg = Dkg(
         tau=tau,
         shares_num=shares_num,
@@ -80,13 +87,15 @@ for validator, validator_keypair in zip(validators, validator_keypairs):
 
     # Create a decryption share for the ciphertext
     decryption_share = aggregate.create_decryption_share_precomputed(
-        dkg, ciphertext.header, aad, validator_keypair
+        dkg, ciphertext.header, aad, validator_keypair, selected_validators
     )
     decryption_shares.append(decryption_share)
 
+# We need at most `security_threshold` decryption shares
+decryption_shares = decryption_shares[:security_threshold]
+
 # Now, the decryption share can be used to decrypt the ciphertext
 # This part is in the client API
-
 shared_secret = combine_decryption_shares_precomputed(decryption_shares)
 
 # The client should have access to the public parameters of the DKG

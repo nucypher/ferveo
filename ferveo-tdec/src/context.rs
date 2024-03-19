@@ -92,15 +92,16 @@ impl<E: Pairing> PrivateDecryptionContextSimple<E> {
         &self,
         ciphertext_header: &CiphertextHeader<E>,
         aad: &[u8],
+        selected_participants: &[usize],
     ) -> Result<DecryptionSharePrecomputed<E>> {
-        let domain = self
-            .public_decryption_contexts
+        let selected_domain_points = selected_participants
             .iter()
-            .map(|c| c.domain)
+            .map(|i| self.public_decryption_contexts[*i].domain)
             .collect::<Vec<_>>();
-        let lagrange_coeffs = prepare_combine_simple::<E>(&domain);
+        let lagrange_coeffs =
+            prepare_combine_simple::<E>(&selected_domain_points);
 
-        DecryptionSharePrecomputed::new(
+        DecryptionSharePrecomputed::create(
             self.index,
             &self.setup_params.b,
             &self.private_key_share,

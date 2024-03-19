@@ -536,8 +536,15 @@ impl AggregatedTranscript {
         ciphertext_header: &CiphertextHeader,
         aad: &[u8],
         validator_keypair: &Keypair,
+        selected_validators_js: &ValidatorArray,
     ) -> JsResult<DecryptionSharePrecomputed> {
         set_panic_hook();
+        let selected_validators =
+            try_from_js_array::<Validator>(selected_validators_js)?;
+        let selected_validators = selected_validators
+            .into_iter()
+            .map(|v| v.to_inner())
+            .collect::<JsResult<Vec<_>>>()?;
         let decryption_share = self
             .0
             .create_decryption_share_precomputed(
@@ -545,6 +552,7 @@ impl AggregatedTranscript {
                 &ciphertext_header.0,
                 aad,
                 &validator_keypair.0,
+                &selected_validators,
             )
             .map_err(map_js_err)?;
         Ok(DecryptionSharePrecomputed(decryption_share))

@@ -123,6 +123,7 @@ class AggregatedTranscript:
         ciphertext_header: CiphertextHeader,
         aad: bytes,
         validator_keypair: Keypair,
+        selected_validators: Sequence[Validator],
     ) -> DecryptionSharePrecomputed: ...
     @staticmethod
     def from_bytes(data: bytes) -> AggregatedTranscript: ...
