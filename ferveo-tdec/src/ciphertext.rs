@@ -261,7 +261,7 @@ mod tests {
         let aad: &[u8] = "my-aad".as_bytes();
 
         let (pubkey, privkey, contexts) =
-            setup_fast::<E>(threshold, shares_num, rng);
+            setup_simple::<E>(threshold, shares_num, rng);
         let g_inv = &contexts[0].setup_params.g_inv;
 
         let ciphertext =
@@ -285,7 +285,8 @@ mod tests {
         let threshold = shares_num * 2 / 3;
         let msg = "my-msg".as_bytes().to_vec();
         let aad: &[u8] = "my-aad".as_bytes();
-        let (pubkey, _, contexts) = setup_fast::<E>(threshold, shares_num, rng);
+        let (pubkey, _, contexts) =
+            setup_simple::<E>(threshold, shares_num, rng);
         let g_inv = contexts[0].setup_params.g_inv.clone();
         let mut ciphertext =
             encrypt::<E>(SecretBox::new(msg), aad, &pubkey, rng).unwrap();

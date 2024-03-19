@@ -72,7 +72,7 @@ pub enum Error {
     #[error("Invalid variant: {0}")]
     InvalidVariant(String),
 
-    /// DKG parameters validaiton failed
+    /// DKG parameters validation failed
     #[error("Invalid DKG parameters: number of shares {0}, threshold {1}")]
     InvalidDkgParameters(u32, u32),
 
