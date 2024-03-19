@@ -640,6 +640,7 @@ impl PrivateKeyShare {
 mod test_ferveo_api {
     use std::collections::HashMap;
 
+    use ark_std::iterable::Iterable;
     use ferveo_tdec::SecretBox;
     use itertools::{izip, Itertools};
     use rand::{

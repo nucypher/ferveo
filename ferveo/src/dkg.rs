@@ -752,6 +752,75 @@ mod test_aggregation {
         let sender = dkg.me.clone();
         assert!(dkg.verify_message(&sender, &aggregate).is_err());
     }
+
+    /// Size of the domain should be equal a power of 2
+    #[test]
+    fn test_domain_points_size_is_power_of_2() {
+        // Using a validators number which is not a power of 2
+        let validators_num = 6;
+        let (dkg, _) = setup_dealt_dkg_with_n_validators(
+            validators_num,
+            validators_num,
+            validators_num,
+        );
+        // This should cause the domain to be of size that is a power of 2
+        assert_eq!(dkg.domain.elements().count(), 8);
+    }
+
+    /// For the same number of validators, we should get the same domain points
+    /// in two different DKG instances
+    #[test]
+    fn test_domain_point_determinism_for_share_number() {
+        let validators_num = 6;
+        let (dkg1, _) = setup_dealt_dkg_with_n_validators(
+            validators_num,
+            validators_num,
+            validators_num,
+        );
+        let (dkg2, _) = setup_dealt_dkg_with_n_validators(
+            validators_num,
+            validators_num,
+            validators_num,
+        );
+        assert_eq!(dkg1.domain_points(), dkg2.domain_points());
+    }
+
+    /// For a different number of validators, two DKG instances should have different domain points
+    /// This is because the number of share determines the generator of the domain
+    #[test]
+    fn test_domain_points_different_for_different_domain_size() {
+        // In the first case, both DKG should have the same domain points despite different
+        // number of validators. This is because the domain size is the nearest power of 2
+        // and both 6 and 7 are rounded to 8
+        let validators_num = 6;
+        let (dkg1, _) = setup_dealt_dkg_with_n_validators(
+            validators_num,
+            validators_num,
+            validators_num,
+        );
+        let (dkg2, _) = setup_dealt_dkg_with_n_validators(
+            validators_num + 1,
+            validators_num + 1,
+            validators_num + 1,
+        );
+        assert_eq!(dkg1.domain.elements().count(), 8);
+        assert_eq!(dkg2.domain.elements().count(), 8);
+        assert_eq!(
+            dkg1.domain_points()[..validators_num as usize],
+            dkg2.domain_points()[..validators_num as usize]
+        );
+
+        // In the second case, the domain size is different and so the domain points
+        // should be different
+        let validators_num_different = 15;
+        let (dkg3, _) = setup_dealt_dkg_with_n_validators(
+            validators_num_different,
+            validators_num_different,
+            validators_num_different,
+        );
+        assert_eq!(dkg3.domain.elements().count(), 16);
+        assert_ne!(dkg1.domain_points(), dkg3.domain_points());
+    }
 }
 
 /// Test DKG parameters
