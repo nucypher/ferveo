@@ -337,6 +337,8 @@ mod test_dealing {
 /// Test aggregating transcripts into final key
 #[cfg(test)]
 mod test_aggregation {
+    use ark_poly::EvaluationDomain;
+
     use crate::test_common::*;
 
     /// Test that if the security threshold is met, we can create a final key
@@ -373,7 +375,7 @@ mod test_aggregation {
     fn test_domain_points_size_is_power_of_2() {
         // Using a validators number which is not a power of 2
         let validators_num = 6;
-        let (dkg, _) = setup_dealt_dkg_with_n_validators(
+        let (dkg, _, _) = setup_dealt_dkg_with_n_validators(
             validators_num,
             validators_num,
             validators_num,
@@ -387,12 +389,12 @@ mod test_aggregation {
     #[test]
     fn test_domain_point_determinism_for_share_number() {
         let validators_num = 6;
-        let (dkg1, _) = setup_dealt_dkg_with_n_validators(
+        let (dkg1, _, _) = setup_dealt_dkg_with_n_validators(
             validators_num,
             validators_num,
             validators_num,
         );
-        let (dkg2, _) = setup_dealt_dkg_with_n_validators(
+        let (dkg2, _, _) = setup_dealt_dkg_with_n_validators(
             validators_num,
             validators_num,
             validators_num,
@@ -408,12 +410,12 @@ mod test_aggregation {
         // number of validators. This is because the domain size is the nearest power of 2
         // and both 6 and 7 are rounded to 8
         let validators_num = 6;
-        let (dkg1, _) = setup_dealt_dkg_with_n_validators(
+        let (dkg1, _, _) = setup_dealt_dkg_with_n_validators(
             validators_num,
             validators_num,
             validators_num,
         );
-        let (dkg2, _) = setup_dealt_dkg_with_n_validators(
+        let (dkg2, _, _) = setup_dealt_dkg_with_n_validators(
             validators_num + 1,
             validators_num + 1,
             validators_num + 1,
@@ -428,7 +430,7 @@ mod test_aggregation {
         // In the second case, the domain size is different and so the domain points
         // should be different
         let validators_num_different = 15;
-        let (dkg3, _) = setup_dealt_dkg_with_n_validators(
+        let (dkg3, _, _) = setup_dealt_dkg_with_n_validators(
             validators_num_different,
             validators_num_different,
             validators_num_different,
