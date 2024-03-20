@@ -477,12 +477,13 @@ mod test_dkg_full {
             .keys()
             .map(|v_addr| {
                 let deltas_i =
-                    crate::refresh::ShareUpdate::create_recovery_updates(
+                    crate::refresh::UpdateTranscript::create_recovery_updates(
                         &dkg.domain_and_key_map(),
                         &x_r,
                         dkg.dkg_params.security_threshold(),
                         rng,
-                    );
+                    )
+                    .updates;
                 (v_addr.clone(), deltas_i)
             })
             .collect::<HashMap<_, _>>();
@@ -650,11 +651,12 @@ mod test_dkg_full {
             .validators
             .keys()
             .map(|v_addr| {
-                let deltas_i = ShareUpdate::create_refresh_updates(
+                let deltas_i = UpdateTranscript::create_refresh_updates(
                     &dkg.domain_and_key_map(),
                     dkg.dkg_params.security_threshold(),
                     rng,
-                );
+                )
+                .updates;
                 (v_addr.clone(), deltas_i)
             })
             .collect::<HashMap<_, _>>();
