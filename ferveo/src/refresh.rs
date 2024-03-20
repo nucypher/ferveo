@@ -345,8 +345,7 @@ mod tests_refresh {
     use test_case::{test_case, test_matrix};
 
     use crate::{
-        test_common::*, DomainPoint, PrivateKeyShare, ShareUpdate,
-        UpdatedPrivateKeyShare,
+        test_common::*, DomainPoint, PrivateKeyShare, UpdateTranscript, UpdatedPrivateKeyShare
     };
 
     /// Using tdec test utilities here instead of PVSS to test the internals of the shared key recovery
@@ -367,13 +366,13 @@ mod tests_refresh {
         let share_updates = remaining_participants
             .iter()
             .map(|p| {
-                let share_updates = ShareUpdate::create_recovery_updates(
+                let share_updates = UpdateTranscript::create_recovery_updates(
                     &domain_points_and_keys,
                     x_r,
                     threshold,
                     rng,
                 );
-                (p.index as u32, share_updates)
+                (p.index as u32, share_updates.updates)
             })
             .collect::<HashMap<u32, _>>();
 
@@ -598,19 +597,19 @@ mod tests_refresh {
             })
             .collect::<HashMap<u32, _>>();
 
-        // Each participant prepares an update for each other participant:
-        let share_updates_by_producer = contexts
+        // Each participant prepares an update transcript for each other participant:
+        let update_transcripts_by_producer = contexts
             .iter()
             .map(|p| {
-                let a_share_updates_map: HashMap<u32, ShareUpdate<E>> =
-                    ShareUpdate::<E>::create_refresh_updates(
+                let updates_transcript =
+                    UpdateTranscript::<E>::create_refresh_updates(
                         domain_points_and_keys,
                         security_threshold as u32,
                         rng,
                     );
-                (p.index as u32, a_share_updates_map)
+                (p.index as u32, updates_transcript)
             })
-            .collect::<HashMap<u32, _>>();
+            .collect::<HashMap<u32, UpdateTranscript<E>>>();
 
         // Participants refresh their shares with the updates from each other:
         let refreshed_shares = contexts
@@ -622,11 +621,11 @@ mod tests_refresh {
                 let participant_public_key =
                     blinded_key_share.validator_public_key;
 
-                // Current participant receives updates from other participants
-                let updates_for_participant: Vec<_> = share_updates_by_producer
+                // Current participant receives update transcripts from other participants
+                let updates_for_participant: Vec<_> = update_transcripts_by_producer
                     .values()
-                    .map(|updates_from_producer| {
-                        let update_for_participant = updates_from_producer
+                    .map(|update_transcript_from_producer| {
+                        let update_for_participant = update_transcript_from_producer.updates
                             .get(&(p.index as u32))
                             .cloned()
                             .unwrap();

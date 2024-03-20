@@ -401,17 +401,20 @@ impl ShareRecoveryUpdate {
         x_r: &DomainPoint,
     ) -> Result<HashMap<u32, ShareRecoveryUpdate>> {
         let rng = &mut thread_rng();
-        let update_map = crate::refresh::ShareUpdate::create_recovery_updates(
-            &dkg.0.domain_and_key_map(),
-            x_r,
-            dkg.0.dkg_params.security_threshold(),
-            rng,
-        )
-        .into_iter()
-        .map(|(share_index, share_update)| {
-            (share_index, ShareRecoveryUpdate(share_update)) // TODO: Do we need to clone?
-        })
-        .collect();
+        let update_transcript =
+            crate::refresh::UpdateTranscript::create_recovery_updates(
+                &dkg.0.domain_and_key_map(),
+                x_r,
+                dkg.0.dkg_params.security_threshold(),
+                rng,
+            );
+        let update_map = update_transcript
+            .updates
+            .into_iter()
+            .map(|(share_index, share_update)| {
+                (share_index, ShareRecoveryUpdate(share_update)) // TODO: Do we need to clone?
+            })
+            .collect();
         Ok(update_map)
     }
 
@@ -432,16 +435,19 @@ impl ShareRefreshUpdate {
         dkg: &Dkg,
     ) -> Result<HashMap<u32, ShareRefreshUpdate>> {
         let rng = &mut thread_rng();
-        let updates = crate::refresh::ShareUpdate::create_refresh_updates(
-            &dkg.0.domain_and_key_map(),
-            dkg.0.dkg_params.security_threshold(),
-            rng,
-        )
-        .into_iter()
-        .map(|(share_index, share_update)| {
-            (share_index, ShareRefreshUpdate(share_update)) // TODO: Do we need to clone?
-        })
-        .collect::<HashMap<_, _>>();
+        let update_transcript =
+            crate::refresh::UpdateTranscript::create_refresh_updates(
+                &dkg.0.domain_and_key_map(),
+                dkg.0.dkg_params.security_threshold(),
+                rng,
+            );
+        let updates = update_transcript
+            .updates
+            .into_iter()
+            .map(|(share_index, share_update)| {
+                (share_index, ShareRefreshUpdate(share_update)) // TODO: Do we need to clone?
+            })
+            .collect::<HashMap<_, _>>();
         Ok(updates)
     }
 
