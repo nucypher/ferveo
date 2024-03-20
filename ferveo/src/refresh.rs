@@ -2,7 +2,10 @@ use std::{collections::HashMap, ops::Mul, usize};
 
 use ark_ec::{pairing::Pairing, CurveGroup, Group};
 use ark_ff::Zero;
-use ark_poly::{univariate::DensePolynomial, DenseUVPolynomial, Polynomial};
+use ark_poly::{
+    univariate::DensePolynomial, DenseUVPolynomial, EvaluationDomain,
+    Polynomial,
+};
 use ferveo_common::{serialization, Keypair};
 use ferveo_tdec::{
     lagrange_basis_at, prepare_combine_simple, CiphertextHeader,
@@ -15,7 +18,10 @@ use serde_with::serde_as;
 use subproductdomain::fast_multiexp;
 use zeroize::ZeroizeOnDrop;
 
-use crate::{DomainPoint, Error, PubliclyVerifiableParams, Result};
+use crate::{
+    batch_to_projective_g1, DomainPoint, Error, PubliclyVerifiableParams,
+    Result,
+};
 
 // TODO: Rename refresh.rs to key_share.rs?
 
@@ -267,17 +273,31 @@ impl<E: Pairing> UpdateTranscript<E> {
     }
 
     // TODO: Unit tests
-    pub fn verify(&self, validator_public_keys: &HashMap<u32, E::G2>) -> Result<bool> {
+    pub fn verify(
+        &self,
+        validator_public_keys: &HashMap<u32, E::G2>,
+        domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
+    ) -> Result<bool> {
 
         // TODO: Make sure input validators and transcript validators match
 
         // TODO: Validate update polynomial commitments C_i are consistent with the type of update
 
-        // TODO: Validate share updates against their polynomial commitments
+        // Validate consistency between share updates, validator keys and polynomial commitments.
+        // Let's first reconstruct the expected update commitments from the polynomial commitments:
+        let mut reconstructed_commitments = batch_to_projective_g1::<E>(&self.coeffs);
+        domain.fft_in_place(&mut reconstructed_commitments);
 
-        // Validate share updates against their corresponding target validators
         for (index, update) in self.updates.iter(){
+            // Next, validate share updates against their corresponding target validators
             update.verify(*validator_public_keys.get(&index).unwrap()).unwrap();
+
+            // Finally, validate update commitments against update polynomial commitments
+            let expected_commitment = reconstructed_commitments
+                .get(*index as usize)
+                .ok_or(Error::InvalidShareIndex(*index))?;
+            assert_eq!(expected_commitment.into_affine(), update.commitment);
+            // TODO: Error handling of everything in this block
         }
 
         // TODO: Handle errors properly
@@ -354,6 +374,7 @@ mod tests_refresh {
     use std::collections::HashMap;
 
     use ark_bls12_381::Fr;
+    use ark_poly::EvaluationDomain;
     use ark_std::{test_rng, UniformRand, Zero};
     use ferveo_tdec::{
         test_common::setup_simple, BlindedKeyShare,
@@ -363,8 +384,12 @@ mod tests_refresh {
     use test_case::{test_case, test_matrix};
 
     use crate::{
-        test_common::*, DomainPoint, PrivateKeyShare, UpdateTranscript, UpdatedPrivateKeyShare
+        test_common::*, DomainPoint, PrivateKeyShare, UpdateTranscript,
+        UpdatedPrivateKeyShare,
     };
+
+    type ScalarField =
+        <ark_bls12_381::Bls12_381 as ark_ec::pairing::Pairing>::ScalarField;
 
     /// Using tdec test utilities here instead of PVSS to test the internals of the shared key recovery
     fn create_updated_private_key_shares<R: RngCore>(
@@ -601,6 +626,11 @@ mod tests_refresh {
 
         let (_, shared_private_key, contexts) =
             setup_simple::<E>(shares_num, security_threshold, rng);
+
+        let fft_domain =
+            ark_poly::GeneralEvaluationDomain::<ScalarField>::new(shares_num)
+                .unwrap();
+
         let domain_points_and_keys = &contexts
             .iter()
             .map(|ctxt| {
@@ -655,7 +685,7 @@ mod tests_refresh {
                     .map(|update_transcript_from_producer| {
                         // First, verify that the update transcript is valid
                         // TODO: Find a better way to ensure they're always validated
-                        update_transcript_from_producer.verify(validator_keys_map).unwrap();
+                        update_transcript_from_producer.verify(validator_keys_map, &fft_domain).unwrap();
                         
                         let update_for_participant = update_transcript_from_producer.updates
                             .get(&(p.index as u32))
