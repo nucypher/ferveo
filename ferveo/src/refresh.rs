@@ -12,6 +12,7 @@ use itertools::{zip_eq, Itertools};
 use rand_core::RngCore;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::serde_as;
+use subproductdomain::fast_multiexp;
 use zeroize::ZeroizeOnDrop;
 
 use crate::{DomainPoint, Error, PubliclyVerifiableParams, Result};
@@ -215,7 +216,7 @@ impl<E: Pairing> ShareUpdate<E> {
         domain_points_and_keys: &HashMap<u32, (DomainPoint<E>, E::G2)>, // FIXME: eeewww
         threshold: u32,
         rng: &mut impl RngCore,
-    ) -> HashMap<u32, ShareUpdate<E>> {
+    ) -> UpdateTranscript<E> {
         // Update polynomial has root at 0
         prepare_share_updates_with_root::<E>(
             domain_points_and_keys,
@@ -231,7 +232,7 @@ impl<E: Pairing> ShareUpdate<E> {
         x_r: &DomainPoint<E>,
         threshold: u32,
         rng: &mut impl RngCore,
-    ) -> HashMap<u32, ShareUpdate<E>> {
+    ) -> UpdateTranscript<E> {
         // Update polynomial has root at x_r
         prepare_share_updates_with_root::<E>(
             domain_points_and_keys,
@@ -254,7 +255,18 @@ impl<E: Pairing> ShareUpdate<E> {
     }
 }
 
-// TODO: working here
+
+// TODO: Reconsider naming
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UpdateTranscript<E: Pairing> {
+    /// Used in Feldman commitment to the update polynomial
+    pub coeffs: Vec<E::G1Affine>,
+
+    /// The share updates to be dealt to each validator
+    pub updates: HashMap<u32, ShareUpdate<E>>,
+}
+
+
 /// Prepare share updates with a given root (0 for refresh, some x coord for recovery)
 /// This is a helper function for `ShareUpdate::create_share_updates_for_recovery` and `ShareUpdate::create_share_updates_for_refresh`
 /// It generates a new random polynomial with a defined root and evaluates it at each of the participants' indices.
@@ -266,13 +278,14 @@ fn prepare_share_updates_with_root<E: Pairing>(
     root: &DomainPoint<E>,
     threshold: u32,
     rng: &mut impl RngCore,
-) -> HashMap<u32, ShareUpdate<E>> {
-    // Generate a new random polynomial with defined root
+) -> UpdateTranscript<E> {
+    // Generate a new random update polynomial with defined root
     let update_poly =
         make_random_polynomial_with_root::<E>(threshold - 1, root, rng);
 
-    // TODO: pvss.rs L145 (not needed now)
+    // Commit to the update polynomial
     let g = E::G1::generator();
+    let coeff_commitments = fast_multiexp(&update_poly.coeffs, g);
 
     // Now, we need to evaluate the polynomial at each of participants' indices
     let share_updates = domain_points_and_keys
@@ -287,7 +300,10 @@ fn prepare_share_updates_with_root<E: Pairing>(
         })
         .collect::<HashMap<_, _>>();
 
-    share_updates
+    UpdateTranscript {
+        coeffs: coeff_commitments,
+        updates: share_updates,
+    }
 }
 
 /// Generate a random polynomial with a given root
