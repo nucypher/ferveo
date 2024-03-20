@@ -265,6 +265,24 @@ impl<E: Pairing> UpdateTranscript<E> {
         )
         // TODO: Cast return elements into ShareRecoveryUpdate
     }
+
+    // TODO: Unit tests
+    pub fn verify(&self, validator_public_keys: &HashMap<u32, E::G2>) -> Result<bool> {
+
+        // TODO: Make sure input validators and transcript validators match
+
+        // TODO: Validate update polynomial commitments C_i are consistent with the type of update
+
+        // TODO: Validate share updates against their polynomial commitments
+
+        // Validate share updates against their corresponding target validators
+        for (index, update) in self.updates.iter(){
+            update.verify(*validator_public_keys.get(&index).unwrap()).unwrap();
+        }
+
+        // TODO: Handle errors properly
+        Ok(true)
+    }
 }
 
 
@@ -596,6 +614,16 @@ mod tests_refresh {
                 )
             })
             .collect::<HashMap<u32, _>>();
+        let validator_keys_map = &contexts
+            .iter()
+            .map(|ctxt| {
+                (
+                    ctxt.index as u32,
+                    ctxt.public_decryption_contexts[ctxt.index]
+                            .validator_public_key,
+                )
+            })
+            .collect::<HashMap<u32, _>>();
 
         // Each participant prepares an update transcript for each other participant:
         let update_transcripts_by_producer = contexts
@@ -625,14 +653,14 @@ mod tests_refresh {
                 let updates_for_participant: Vec<_> = update_transcripts_by_producer
                     .values()
                     .map(|update_transcript_from_producer| {
+                        // First, verify that the update transcript is valid
+                        // TODO: Find a better way to ensure they're always validated
+                        update_transcript_from_producer.verify(validator_keys_map).unwrap();
+                        
                         let update_for_participant = update_transcript_from_producer.updates
                             .get(&(p.index as u32))
                             .cloned()
                             .unwrap();
-                        // Verify that the share update is valid for this participant
-                        // TODO: Refine this later – for the moment, it's enough for testing
-                        let _is_update_valid = update_for_participant
-                            .verify(participant_public_key.into()).unwrap();
                         update_for_participant
                     })
                     .collect();
