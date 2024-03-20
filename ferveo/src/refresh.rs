@@ -216,12 +216,11 @@ pub struct ShareUpdate<E: Pairing> {
 }
 
 impl<E: Pairing> ShareUpdate<E> {
-
     // TODO: Unit tests
     pub fn verify(&self, target_validator_public_key: E::G2) -> Result<bool> {
         let is_valid = E::pairing(E::G1::generator(), self.update)
             == E::pairing(self.commitment, target_validator_public_key);
-        if is_valid{
+        if is_valid {
             Ok(true)
         } else {
             Err(Error::InvalidShareUpdate)
@@ -278,19 +277,21 @@ impl<E: Pairing> UpdateTranscript<E> {
         validator_public_keys: &HashMap<u32, E::G2>,
         domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
     ) -> Result<bool> {
-
         // TODO: Make sure input validators and transcript validators match
 
         // TODO: Validate update polynomial commitments C_i are consistent with the type of update
 
         // Validate consistency between share updates, validator keys and polynomial commitments.
         // Let's first reconstruct the expected update commitments from the polynomial commitments:
-        let mut reconstructed_commitments = batch_to_projective_g1::<E>(&self.coeffs);
+        let mut reconstructed_commitments =
+            batch_to_projective_g1::<E>(&self.coeffs);
         domain.fft_in_place(&mut reconstructed_commitments);
 
-        for (index, update) in self.updates.iter(){
+        for (index, update) in self.updates.iter() {
             // Next, validate share updates against their corresponding target validators
-            update.verify(*validator_public_keys.get(&index).unwrap()).unwrap();
+            update
+                .verify(*validator_public_keys.get(index).unwrap())
+                .unwrap();
 
             // Finally, validate update commitments against update polynomial commitments
             let expected_commitment = reconstructed_commitments
@@ -304,7 +305,6 @@ impl<E: Pairing> UpdateTranscript<E> {
         Ok(true)
     }
 }
-
 
 /// Prepare share updates with a given root (0 for refresh, some x coord for recovery)
 /// This is a helper function for `ShareUpdate::create_share_updates_for_recovery` and `ShareUpdate::create_share_updates_for_refresh`
@@ -650,7 +650,7 @@ mod tests_refresh {
                 (
                     ctxt.index as u32,
                     ctxt.public_decryption_contexts[ctxt.index]
-                            .validator_public_key,
+                        .validator_public_key,
                 )
             })
             .collect::<HashMap<u32, _>>();
@@ -680,20 +680,25 @@ mod tests_refresh {
                     blinded_key_share.validator_public_key;
 
                 // Current participant receives update transcripts from other participants
-                let updates_for_participant: Vec<_> = update_transcripts_by_producer
-                    .values()
-                    .map(|update_transcript_from_producer| {
-                        // First, verify that the update transcript is valid
-                        // TODO: Find a better way to ensure they're always validated
-                        update_transcript_from_producer.verify(validator_keys_map, &fft_domain).unwrap();
-                        
-                        let update_for_participant = update_transcript_from_producer.updates
-                            .get(&(p.index as u32))
-                            .cloned()
-                            .unwrap();
-                        update_for_participant
-                    })
-                    .collect();
+                let updates_for_participant: Vec<_> =
+                    update_transcripts_by_producer
+                        .values()
+                        .map(|update_transcript_from_producer| {
+                            // First, verify that the update transcript is valid
+                            // TODO: Find a better way to ensure they're always validated
+                            update_transcript_from_producer
+                                .verify(validator_keys_map, &fft_domain)
+                                .unwrap();
+
+                            let update_for_participant =
+                                update_transcript_from_producer
+                                    .updates
+                                    .get(&(p.index as u32))
+                                    .cloned()
+                                    .unwrap();
+                            update_for_participant
+                        })
+                        .collect();
 
                 // And creates a new, refreshed share
 
