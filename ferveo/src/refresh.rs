@@ -210,8 +210,31 @@ pub struct ShareUpdate<E: Pairing> {
 }
 
 impl<E: Pairing> ShareUpdate<E> {
+
+    // TODO: Unit tests
+    pub fn verify(&self, target_validator_public_key: E::G2) -> Result<bool> {
+        let is_valid = E::pairing(E::G1::generator(), self.update)
+            == E::pairing(self.commitment, target_validator_public_key);
+        if is_valid{
+            Ok(true)
+        } else {
+            Err(Error::InvalidShareUpdate)
+        }
+    }
+}
+
+// TODO: Reconsider naming
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UpdateTranscript<E: Pairing> {
+    /// Used in Feldman commitment to the update polynomial
+    pub coeffs: Vec<E::G1Affine>,
+
+    /// The share updates to be dealt to each validator
+    pub updates: HashMap<u32, ShareUpdate<E>>,
+}
+
+impl<E: Pairing> UpdateTranscript<E> {
     /// From PSS paper, section 4.2.1, (https://link.springer.com/content/pdf/10.1007/3-540-44750-4_27.pdf)
-    // TODO: working
     pub fn create_refresh_updates(
         domain_points_and_keys: &HashMap<u32, (DomainPoint<E>, E::G2)>, // FIXME: eeewww
         threshold: u32,
@@ -242,28 +265,6 @@ impl<E: Pairing> ShareUpdate<E> {
         )
         // TODO: Cast return elements into ShareRecoveryUpdate
     }
-
-    // TODO: Unit tests
-    pub fn verify(&self, target_validator_public_key: E::G2) -> Result<bool> {
-        let is_valid = E::pairing(E::G1::generator(), self.update)
-            == E::pairing(self.commitment, target_validator_public_key);
-        if is_valid{
-            Ok(true)
-        } else {
-            Err(Error::InvalidShareUpdate)
-        }
-    }
-}
-
-
-// TODO: Reconsider naming
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct UpdateTranscript<E: Pairing> {
-    /// Used in Feldman commitment to the update polynomial
-    pub coeffs: Vec<E::G1Affine>,
-
-    /// The share updates to be dealt to each validator
-    pub updates: HashMap<u32, ShareUpdate<E>>,
 }
 
 
