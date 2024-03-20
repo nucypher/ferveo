@@ -15,7 +15,7 @@ default = ["extension-module"]
 
 [dependencies]
 ferveo = { package = "ferveo-pre-release", path = "../ferveo", features = ["bindings-python"] }
-pyo3 = "0.18.2"
+pyo3 = { workspace = true }
 
 [build-dependencies]
-pyo3-build-config = "*"
+pyo3-build-config = { workspace = true }
