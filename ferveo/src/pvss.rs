@@ -159,6 +159,8 @@ impl<E: Pairing, T> PubliclyVerifiableSS<E, T> {
 
         // commitment to coeffs, F_i
         let coeffs = fast_multiexp(&phi.0.coeffs, dkg.pvss_params.g);
+
+        // blinded key shares, Y_i
         let shares = dkg
             .validators
             .values()
@@ -236,6 +238,8 @@ pub fn do_verify_full<E: Pairing>(
 ) -> Result<bool> {
     assert_no_share_duplicates(validators)?;
 
+    // Generate the share commitment vector A from the polynomial commitments F
+    // See https://github.com/nucypher/ferveo/issues/44#issuecomment-1721550475
     let mut commitment = batch_to_projective_g1::<E>(pvss_coefficients);
     domain.fft_in_place(&mut commitment);
 
