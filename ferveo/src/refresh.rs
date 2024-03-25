@@ -23,8 +23,6 @@ use crate::{
     Result,
 };
 
-// TODO: Rename refresh.rs to key_share.rs?
-
 type InnerPrivateKeyShare<E> = ferveo_tdec::PrivateKeyShare<E>;
 
 /// Private key share held by a participant in the DKG protocol.
