@@ -43,9 +43,7 @@ impl<E: Pairing> PrivateKeyShare<E> {
     pub fn new(private_key_share: InnerPrivateKeyShare<E>) -> Self {
         Self(private_key_share)
     }
-}
 
-impl<E: Pairing> PrivateKeyShare<E> {
     /// From PSS paper, section 4.2.3, (https://link.springer.com/content/pdf/10.1007/3-540-44750-4_27.pdf)
     pub fn create_updated_key_share(
         &self,
@@ -192,9 +190,7 @@ impl<E: Pairing> UpdatedPrivateKeyShare<E> {
     pub fn inner(&self) -> PrivateKeyShare<E> {
         PrivateKeyShare(self.0.clone())
     }
-}
 
-impl<E: Pairing> UpdatedPrivateKeyShare<E> {
     pub fn new(private_key_share: InnerPrivateKeyShare<E>) -> Self {
         Self(private_key_share)
     }
