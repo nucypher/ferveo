@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ops::Mul, usize};
 
-use ark_ec::{pairing::Pairing, CurveGroup, Group};
+use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
 use ark_ff::Zero;
 use ark_poly::{
     univariate::DensePolynomial, DenseUVPolynomial, EvaluationDomain,
@@ -272,14 +272,15 @@ impl<E: Pairing> UpdateTranscript<E> {
     }
 
     // TODO: Unit tests
-    pub fn verify(
+    pub fn verify_recovery(
         &self,
         validator_public_keys: &HashMap<u32, E::G2>,
         domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
+        root: E::ScalarField,
     ) -> Result<bool> {
         // TODO: Make sure input validators and transcript validators match
 
-        // TODO: Validate update polynomial commitments C_i are consistent with the type of update
+        // TODO: Validate that update polynomial commitments have proper length
 
         // Validate consistency between share updates, validator keys and polynomial commitments.
         // Let's first reconstruct the expected update commitments from the polynomial commitments:
@@ -301,8 +302,40 @@ impl<E: Pairing> UpdateTranscript<E> {
             // TODO: Error handling of everything in this block
         }
 
+        // Validate update polynomial commitments C_i are consistent with the type of update
+        // * For refresh  (root 0): f(0) = 0  ==>  a_0 = 0  ==>  C_0 = [0]G = 1
+        // * For recovery (root z): f(z) = 0  ==>  sum{a_i * z^i} = 0  ==>  [sum{...}]G = 1  ==> sum{[z^i]C_i} = 1
+
+        if root.is_zero() {
+            // Refresh
+            assert!(self.coeffs[0].is_zero());
+            // TODO: Check remaining are not zero? Only if we disallow producing zero coeffs
+        } else {
+            // Recovery
+            // TODO: There's probably a much better way to do this
+            let mut reverse_coeffs = self.coeffs.iter().rev();
+            let mut acc: E::G1Affine = *reverse_coeffs.next().unwrap();
+            for &coeff in reverse_coeffs {
+                let b = acc.mul(root).into_affine();
+                acc = (coeff + b).into();
+            }
+            assert!(acc.is_zero());
+        }
+
         // TODO: Handle errors properly
         Ok(true)
+    }
+
+    pub fn verify_refresh(
+        &self,
+        validator_public_keys: &HashMap<u32, E::G2>,
+        domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
+    ) -> Result<bool> {
+        self.verify_recovery(
+            validator_public_keys,
+            domain,
+            E::ScalarField::zero(),
+        )
     }
 }
 
@@ -687,7 +720,7 @@ mod tests_refresh {
                             // First, verify that the update transcript is valid
                             // TODO: Find a better way to ensure they're always validated
                             update_transcript_from_producer
-                                .verify(validator_keys_map, &fft_domain)
+                                .verify_refresh(validator_keys_map, &fft_domain)
                                 .unwrap();
 
                             let update_for_participant =
