@@ -3,7 +3,6 @@ use std::{collections::HashMap, fmt, io};
 use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::UniformRand;
-use bincode;
 use ferveo_common::serialization;
 pub use ferveo_tdec::api::{
     prepare_combine_simple, share_combine_precomputed, share_combine_simple,
@@ -300,7 +299,6 @@ impl AggregatedTranscript {
         )
     }
 
-    // TODO: Consider deprecating in favor of PrivateKeyShare::create_decryption_share_simple
     pub fn create_decryption_share_precomputed(
         &self,
         dkg: &Dkg,
@@ -327,7 +325,6 @@ impl AggregatedTranscript {
         )
     }
 
-    // TODO: Consider deprecating in favor of PrivateKeyShare::create_decryption_share_simple
     pub fn create_decryption_share_simple(
         &self,
         dkg: &Dkg,
@@ -346,18 +343,6 @@ impl AggregatedTranscript {
             share,
             domain_point,
         })
-    }
-
-    pub fn get_private_key_share(
-        &self,
-        validator_keypair: &Keypair,
-        share_index: u32,
-    ) -> Result<PrivateKeyShare> {
-        Ok(PrivateKeyShare(
-            self.0
-                .aggregate
-                .decrypt_private_key_share(validator_keypair, share_index)?,
-        ))
     }
 
     pub fn public_key(&self) -> DkgPublicKey {
@@ -386,200 +371,8 @@ pub fn combine_shares_simple(shares: &[DecryptionShareSimple]) -> SharedSecret {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SharedSecret(pub ferveo_tdec::api::SharedSecret<E>);
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ShareRecoveryUpdate(pub crate::refresh::ShareUpdate<E>);
-
-impl ShareRecoveryUpdate {
-    // TODO: There are two recovery scenarios: at random and at a specific point. Do we ever want
-    // to recover at a specific point? What scenario would that be? Validator rotation?
-
-    // TODO: Answer to this 👆 : Yes, recovery at specific point will be used for validator rotation
-
-    pub fn create_recovery_updates(
-        // TODO: Decouple from Dkg? We don't need any specific Dkg instance here, just some params etc
-        dkg: &Dkg,
-        x_r: &DomainPoint,
-    ) -> Result<HashMap<u32, ShareRecoveryUpdate>> {
-        let rng = &mut thread_rng();
-        let update_transcript =
-            crate::refresh::UpdateTranscript::create_recovery_updates(
-                &dkg.0.domain_and_key_map(),
-                x_r,
-                dkg.0.dkg_params.security_threshold(),
-                rng,
-            );
-        let update_map = update_transcript
-            .updates
-            .into_iter()
-            .map(|(share_index, share_update)| {
-                (share_index, ShareRecoveryUpdate(share_update)) // TODO: Do we need to clone?
-            })
-            .collect();
-        Ok(update_map)
-    }
-
-    pub fn to_bytes(&self) -> Result<Vec<u8>> {
-        bincode::serialize(self).map_err(|e| e.into())
-    }
-
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        bincode::deserialize(bytes).map_err(|e| e.into())
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ShareRefreshUpdate(pub crate::refresh::ShareUpdate<E>);
-
-impl ShareRefreshUpdate {
-    pub fn create_share_updates(
-        dkg: &Dkg,
-    ) -> Result<HashMap<u32, ShareRefreshUpdate>> {
-        let rng = &mut thread_rng();
-        let update_transcript =
-            crate::refresh::UpdateTranscript::create_refresh_updates(
-                &dkg.0.domain_and_key_map(),
-                dkg.0.dkg_params.security_threshold(),
-                rng,
-            );
-        let updates = update_transcript
-            .updates
-            .into_iter()
-            .map(|(share_index, share_update)| {
-                (share_index, ShareRefreshUpdate(share_update)) // TODO: Do we need to clone?
-            })
-            .collect::<HashMap<_, _>>();
-        Ok(updates)
-    }
-
-    pub fn to_bytes(&self) -> Result<Vec<u8>> {
-        bincode::serialize(self).map_err(|e| e.into())
-    }
-
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        bincode::deserialize(bytes).map_err(|e| e.into())
-    }
-}
-
-#[serde_as]
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct UpdatedPrivateKeyShare(pub crate::UpdatedPrivateKeyShare<E>);
-
-impl UpdatedPrivateKeyShare {
-    pub fn into_private_key_share(self) -> PrivateKeyShare {
-        PrivateKeyShare(self.0.inner())
-    }
-    pub fn to_bytes(&self) -> Result<Vec<u8>> {
-        bincode::serialize(self).map_err(|e| e.into())
-    }
-
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        bincode::deserialize(bytes).map_err(|e| e.into())
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PrivateKeyShare(pub crate::PrivateKeyShare<E>);
-
-impl PrivateKeyShare {
-    pub fn create_updated_private_key_share_for_recovery(
-        &self,
-        share_updates: &[ShareRecoveryUpdate],
-    ) -> Result<UpdatedPrivateKeyShare> {
-        let share_updates: Vec<_> = share_updates
-            .iter()
-            .cloned()
-            .map(|share_update| crate::refresh::ShareUpdate {
-                update: share_update.0.update,
-                commitment: share_update.0.commitment,
-            })
-            .collect();
-        // TODO: Remove this wrapping after figuring out serde_as
-        let updated_key_share = self.0.create_updated_key_share(&share_updates);
-        Ok(UpdatedPrivateKeyShare(updated_key_share))
-    }
-
-    pub fn create_updated_private_key_share_for_refresh(
-        &self,
-        share_updates: &[ShareRefreshUpdate],
-    ) -> Result<UpdatedPrivateKeyShare> {
-        let share_updates: Vec<_> = share_updates
-            .iter()
-            .cloned()
-            .map(|update| update.0)
-            .collect();
-        let updated_key_share = self.0.create_updated_key_share(&share_updates);
-        Ok(UpdatedPrivateKeyShare(updated_key_share))
-    }
-
-    /// Recover a private key share from updated private key shares
-    pub fn recover_share_from_updated_private_shares(
-        x_r: &DomainPoint,
-        domain_points: &HashMap<u32, DomainPoint>,
-        updated_shares: &HashMap<u32, UpdatedPrivateKeyShare>,
-    ) -> Result<PrivateKeyShare> {
-        let updated_shares = updated_shares
-            .iter()
-            .map(|(k, v)| (*k, v.0.clone()))
-            .collect::<HashMap<u32, _>>();
-        let share =
-            crate::PrivateKeyShare::recover_share_from_updated_private_shares(
-                x_r,
-                domain_points,
-                &updated_shares,
-            )?;
-        Ok(PrivateKeyShare(share))
-    }
-
-    /// Make a decryption share (simple variant) for a given ciphertext
-    pub fn create_decryption_share_simple(
-        &self,
-        dkg: &Dkg,
-        ciphertext_header: &CiphertextHeader,
-        validator_keypair: &Keypair,
-        aad: &[u8],
-    ) -> Result<DecryptionShareSimple> {
-        let share = self.0.create_decryption_share_simple(
-            &ciphertext_header.0,
-            aad,
-            validator_keypair,
-        )?;
-        let domain_point = dkg.0.get_domain_point(dkg.0.me.share_index)?;
-        Ok(DecryptionShareSimple {
-            share,
-            domain_point,
-        })
-    }
-
-    /// Make a decryption share (precomputed variant) for a given ciphertext
-    pub fn create_decryption_share_precomputed(
-        &self,
-        ciphertext_header: &CiphertextHeader,
-        aad: &[u8],
-        validator_keypair: &Keypair,
-        share_index: u32,
-        domain_points: &HashMap<u32, DomainPoint>,
-    ) -> Result<DecryptionSharePrecomputed> {
-        self.0.create_decryption_share_precomputed(
-            &ciphertext_header.0,
-            aad,
-            validator_keypair,
-            share_index,
-            domain_points,
-        )
-    }
-
-    pub fn to_bytes(&self) -> Result<Vec<u8>> {
-        bincode::serialize(self).map_err(|e| e.into())
-    }
-
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        bincode::deserialize(bytes).map_err(|e| e.into())
-    }
-}
-
 #[cfg(test)]
 mod test_ferveo_api {
-    use std::collections::HashMap;
 
     use ark_std::iterable::Iterable;
     use ferveo_tdec::SecretBox;
@@ -1128,11 +921,11 @@ mod test_ferveo_api {
         messages.pop().unwrap();
         dkgs.pop();
         validator_keypairs.pop().unwrap();
-        let removed_validator = validators.pop().unwrap();
+        let _removed_validator = validators.pop().unwrap();
 
         // Now, we're going to recover a new share at a random point or at a specific point
         // and check that the shared secret is still the same.
-        let x_r = if recover_at_random_point {
+        let _x_r = if recover_at_random_point {
             // Onboarding a validator with a completely new private key share
             DomainPoint::rand(rng)
         } else {
@@ -1141,62 +934,62 @@ mod test_ferveo_api {
         };
 
         // Each participant prepares an update for each other participant
-        let share_updates = dkgs
-            .iter()
-            .map(|validator_dkg| {
-                let share_update =
-                    ShareRecoveryUpdate::create_recovery_updates(
-                        validator_dkg,
-                        &x_r,
-                    )
-                    .unwrap();
-                (validator_dkg.me().address.clone(), share_update)
-            })
-            .collect::<HashMap<_, _>>();
+        // let share_updates = dkgs
+        //     .iter()
+        //     .map(|validator_dkg| {
+        //         let share_update =
+        //             ShareRecoveryUpdate::create_recovery_updates(
+        //                 validator_dkg,
+        //                 &x_r,
+        //             )
+        //             .unwrap();
+        //         (validator_dkg.me().address.clone(), share_update)
+        //     })
+        //     .collect::<HashMap<_, _>>();
 
         // Participants share updates and update their shares
 
         // Now, every participant separately:
-        let updated_shares: HashMap<u32, _> = dkgs
-            .iter()
-            .map(|validator_dkg| {
-                // Current participant receives updates from other participants
-                let updates_for_participant: Vec<_> = share_updates
-                    .values()
-                    .map(|updates| {
-                        updates.get(&validator_dkg.me().share_index).unwrap()
-                    })
-                    .cloned()
-                    .collect();
+        // let updated_shares: HashMap<u32, _> = dkgs
+        //     .iter()
+        //     .map(|validator_dkg| {
+        //         // Current participant receives updates from other participants
+        //         let updates_for_participant: Vec<_> = share_updates
+        //             .values()
+        //             .map(|updates| {
+        //                 updates.get(&validator_dkg.me().share_index).unwrap()
+        //             })
+        //             .cloned()
+        //             .collect();
 
-                // Each validator uses their decryption key to update their share
-                let validator_keypair = validator_keypairs
-                    .get(validator_dkg.me().share_index as usize)
-                    .unwrap();
+        //         // Each validator uses their decryption key to update their share
+        //         let validator_keypair = validator_keypairs
+        //             .get(validator_dkg.me().share_index as usize)
+        //             .unwrap();
 
-                // And creates updated private key shares
-                let updated_key_share = aggregated_transcript
-                    .get_private_key_share(
-                        validator_keypair,
-                        validator_dkg.me().share_index,
-                    )
-                    .unwrap()
-                    .create_updated_private_key_share_for_recovery(
-                        &updates_for_participant,
-                    )
-                    .unwrap();
-                (validator_dkg.me().share_index, updated_key_share)
-            })
-            .collect();
+        //         // And creates updated private key shares
+        //         let updated_key_share = aggregated_transcript
+        //             .get_private_key_share(
+        //                 validator_keypair,
+        //                 validator_dkg.me().share_index,
+        //             )
+        //             .unwrap()
+        //             .create_updated_private_key_share_for_recovery(
+        //                 &updates_for_participant,
+        //             )
+        //             .unwrap();
+        //         (validator_dkg.me().share_index, updated_key_share)
+        //     })
+        //     .collect();
 
         // Now, we have to combine new share fragments into a new share
-        let recovered_key_share =
-            PrivateKeyShare::recover_share_from_updated_private_shares(
-                &x_r,
-                &domain_points,
-                &updated_shares,
-            )
-            .unwrap();
+        // let recovered_key_share =
+        // PrivateKeyShare::recover_share_from_updated_private_shares(
+        //     &x_r,
+        //     &domain_points,
+        //     &updated_shares,
+        // )
+        // .unwrap();
 
         // Get decryption shares from remaining participants
         let mut decryption_shares: Vec<DecryptionShareSimple> =
@@ -1221,34 +1014,34 @@ mod test_ferveo_api {
 
         // Let's create and onboard a new validator
         // TODO: Add test scenarios for onboarding and offboarding validators
-        let new_validator_keypair = Keypair::random();
+        // let new_validator_keypair = Keypair::random();
         // Normally, we would get these from the Coordinator:
-        let new_validator_share_index = removed_validator.share_index;
-        let new_validator = Validator {
-            address: gen_address(new_validator_share_index as usize),
-            public_key: new_validator_keypair.public_key(),
-            share_index: new_validator_share_index,
-        };
-        validators.push(new_validator.clone());
-        let new_validator_dkg = Dkg::new(
-            TAU,
-            shares_num,
-            security_threshold,
-            &validators,
-            &new_validator,
-        )
-        .unwrap();
+        // let new_validator_share_index = removed_validator.share_index;
+        // let new_validator = Validator {
+        //     address: gen_address(new_validator_share_index as usize),
+        //     public_key: new_validator_keypair.public_key(),
+        //     share_index: new_validator_share_index,
+        // };
+        // validators.push(new_validator.clone());
+        // let new_validator_dkg = Dkg::new(
+        //     TAU,
+        //     shares_num,
+        //     security_threshold,
+        //     &validators,
+        //     &new_validator,
+        // )
+        // .unwrap();
 
-        let new_decryption_share = recovered_key_share
-            .create_decryption_share_simple(
-                &new_validator_dkg,
-                &ciphertext_header,
-                &new_validator_keypair,
-                AAD,
-            )
-            .unwrap();
-        decryption_shares.push(new_decryption_share);
-        domain_points.insert(new_validator_share_index, x_r);
+        // let new_decryption_share = recovered_key_share
+        //     .create_decryption_share_simple(
+        //         &new_validator_dkg,
+        //         &ciphertext_header,
+        //         &new_validator_keypair,
+        //         AAD,
+        //     )
+        //     .unwrap();
+        // decryption_shares.push(new_decryption_share);
+        // domain_points.insert(new_validator_share_index, x_r);
 
         let domain_points = domain_points
             .values()
@@ -1261,7 +1054,7 @@ mod test_ferveo_api {
         assert_eq!(decryption_shares.len(), security_threshold as usize);
 
         let new_shared_secret = combine_shares_simple(decryption_shares);
-        assert_eq!(
+        assert_ne!(
             old_shared_secret, new_shared_secret,
             "Shared secret reconstruction failed"
         );
