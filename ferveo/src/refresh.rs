@@ -55,6 +55,38 @@ impl<E: Pairing> PrivateKeyShare<E> {
             .fold(self.0 .0, |acc, delta| (acc + delta.update).into());
         let updated_key_share = ferveo_tdec::PrivateKeyShare(updated_key_share);
         UpdatedPrivateKeyShare(updated_key_share)
+
+        // let updates_for_participant: Vec<_> =
+        //             update_transcripts_by_producer
+        //                 .values()
+        //                 .map(|update_transcript_from_producer| {
+        //                     // First, verify that the update transcript is valid
+        //                     // TODO: Find a better way to ensure they're always validated
+        //                     update_transcript_from_producer
+        //                         .verify_refresh(validator_keys_map, &fft_domain)
+        //                         .unwrap();
+
+        //                     let update_for_participant =
+        //                         update_transcript_from_producer
+        //                             .updates
+        //                             .get(&(p.index as u32))
+        //                             .cloned()
+        //                             .unwrap();
+        //                     update_for_participant
+        //                 })
+        //                 .collect();
+
+        //         // And creates a new, refreshed share
+
+        //         // TODO: Encapsulate this somewhere, originally from PrivateKeyShare.create_updated_key_share
+        //         let updated_blinded_key_share: BlindedKeyShare<E> =
+        //             BlindedKeyShare {
+        //                 validator_public_key: participant_public_key,
+        //                 blinded_key_share: updates_for_participant.iter().fold(
+        //                     blinded_key_share.blinded_key_share,
+        //                     |acc, delta| (acc + delta.update).into(),
+        //                 ),
+        //             };
     }
 
     // TODO: Input should be named somthing different than UpdatedPrivateKeyShare
@@ -264,6 +296,14 @@ impl<E: Pairing> UpdateTranscript<E> {
         )
         // TODO: Cast return elements into ShareRecoveryUpdate
     }
+
+    // let validator_set = HashSet::from_iter(validator_public_keys.values().cloned());
+    // let transcript_validators = self.updates.values()
+    // .map(|share_update| {
+    //     updates.get(&(p.index as u32)).cloned().unwrap()
+    // })
+    // .collect();
+    // let transcript_validator_set = HashSet::from_iter(.cloned());
 
     // TODO: Unit tests
     pub fn verify_recovery(
