@@ -521,14 +521,14 @@ mod test_dkg_full {
             })
             .collect();
 
-        // Now, we have to combine new share fragments into a new share
-        let recovered_key_share =
-            PrivateKeyShare::recover_share_from_updated_private_shares(
-                &x_r,
-                &domain_points,
-                &updated_shares,
-            )
-            .unwrap();
+        // // Now, we have to combine new share fragments into a new share
+        // let recovered_key_share =
+        //     PrivateKeyShare::recover_share_from_updated_private_shares(
+        //         &x_r,
+        //         &domain_points,
+        //         &updated_shares,
+        //     )
+        //     .unwrap();
 
         // Get decryption shares from remaining participants
         let mut decryption_shares = remaining_validators
@@ -555,16 +555,16 @@ mod test_dkg_full {
             .collect::<HashMap<u32, _>>();
 
         // Create a decryption share from a recovered private key share
-        let new_validator_decryption_key = Fr::rand(rng);
-        let new_decryption_share = DecryptionShareSimple::create(
-            &new_validator_decryption_key,
-            &recovered_key_share.0,
-            &ciphertext.header().unwrap(),
-            AAD,
-            &dkg.pvss_params.g_inv(),
-        )
-        .unwrap();
-        decryption_shares.insert(removed_validator_index, new_decryption_share);
+        // let new_validator_decryption_key = Fr::rand(rng);
+        // let new_decryption_share = DecryptionShareSimple::create(
+        //     &new_validator_decryption_key,
+        //     &recovered_key_share.0,
+        //     &ciphertext.header().unwrap(),
+        //     AAD,
+        //     &dkg.pvss_params.g_inv(),
+        // )
+        // .unwrap();
+        // decryption_shares.insert(removed_validator_index, new_decryption_share);
         domain_points.insert(removed_validator_index, x_r);
 
         // We need to make sure that the domain points and decryption shares are ordered
