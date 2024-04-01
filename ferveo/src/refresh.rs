@@ -1,14 +1,14 @@
 use std::{collections::HashMap, ops::Mul, usize};
 
 use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
-use ark_ff::Zero;
+use ark_ff::{Field, Zero};
 use ark_poly::{
     univariate::DensePolynomial, DenseUVPolynomial, EvaluationDomain,
     Polynomial,
 };
 use ferveo_common::{serialization, Keypair};
 use ferveo_tdec::{
-    lagrange_basis_at, prepare_combine_simple, CiphertextHeader,
+    lagrange_basis_at, prepare_combine_simple, BlindedKeyShare, CiphertextHeader, 
     DecryptionSharePrecomputed, DecryptionShareSimple,
 };
 use itertools::{zip_eq, Itertools};
@@ -23,38 +23,39 @@ use crate::{
     Result,
 };
 
-type InnerPrivateKeyShare<E> = ferveo_tdec::PrivateKeyShare<E>;
+type InnerBlindedKeyShare<E> = ferveo_tdec::BlindedKeyShare<E>;
 
-/// Private key share held by a participant in the DKG protocol.
+/// Blinded key share held by a participant in the DKG protocol
+// TODO: What about the commented macros?
 #[derive(
-    Debug, Clone, PartialEq, Eq, ZeroizeOnDrop, Serialize, Deserialize,
+    Debug, Clone, //PartialEq, Eq, ZeroizeOnDrop, Serialize, Deserialize,
 )]
-
-// Q to Piotr: Why do we need this?
-pub struct PrivateKeyShare<E: Pairing>(
-    #[serde(bound(
-        serialize = "ferveo_tdec::PrivateKeyShare<E>: Serialize",
-        deserialize = "ferveo_tdec::PrivateKeyShare<E>: DeserializeOwned"
-    ))]
-    pub InnerPrivateKeyShare<E>,
+pub struct UpdatableBlindedKeyShare<E: Pairing>(
+    // #[serde(bound(
+    //     serialize = "ferveo_tdec::PrivateKeyShare<E>: Serialize",
+    //     deserialize = "ferveo_tdec::PrivateKeyShare<E>: DeserializeOwned"
+    // ))]
+    pub InnerBlindedKeyShare<E>,
 );
 
-impl<E: Pairing> PrivateKeyShare<E> {
-    pub fn new(private_key_share: InnerPrivateKeyShare<E>) -> Self {
-        Self(private_key_share)
+impl<E: Pairing> UpdatableBlindedKeyShare<E> {
+    pub fn new(blinded_key_share: InnerBlindedKeyShare<E>) -> Self {
+        Self(blinded_key_share)
     }
 
     /// From PSS paper, section 4.2.3, (https://link.springer.com/content/pdf/10.1007/3-540-44750-4_27.pdf)
-    pub fn create_updated_key_share(
+    pub fn apply_share_updates(
         &self,
         share_updates: &[ShareUpdate<E>],
-    ) -> UpdatedPrivateKeyShare<E> {
+    ) -> UpdatableBlindedKeyShare<E> {
         // TODO: Validate commitments from share update  // FIXME: Don't forget!!!!!
         let updated_key_share = share_updates
             .iter()
-            .fold(self.0 .0, |acc, delta| (acc + delta.update).into());
-        let updated_key_share = ferveo_tdec::PrivateKeyShare(updated_key_share);
-        UpdatedPrivateKeyShare(updated_key_share)
+            .fold(self.0.blinded_key_share, |acc, delta| (acc + delta.update).into());
+        UpdatableBlindedKeyShare(BlindedKeyShare{
+            validator_public_key: self.0.validator_public_key,
+            blinded_key_share: updated_key_share
+        })
 
         // let updates_for_participant: Vec<_> =
         //             update_transcripts_by_producer
@@ -129,6 +130,20 @@ impl<E: Pairing> PrivateKeyShare<E> {
         )))
     }
 
+    pub fn unblind_private_key_share(
+        &self,
+        validator_keypair: &Keypair<E>,
+    ) -> Result<ferveo_tdec::PrivateKeyShare<E>> {
+        // Decrypt private key share https://nikkolasg.github.io/ferveo/pvss.html#validator-decryption-of-private-key-shares
+        let blinded_key_share = &self.0;
+        let private_key_share = blinded_key_share.unblind(
+                validator_keypair.decryption_key.inverse().expect(
+                    "Validator decryption key must have an inverse",
+                )
+            );
+        Ok(private_key_share)
+    }
+
     pub fn create_decryption_share_simple(
         &self,
         ciphertext_header: &CiphertextHeader<E>,
@@ -136,9 +151,10 @@ impl<E: Pairing> PrivateKeyShare<E> {
         validator_keypair: &Keypair<E>,
     ) -> Result<DecryptionShareSimple<E>> {
         let g_inv = PubliclyVerifiableParams::<E>::default().g_inv();
+        let private_key_share = self.unblind_private_key_share(validator_keypair);
         DecryptionShareSimple::create(
             &validator_keypair.decryption_key,
-            &self.0,
+            &private_key_share.unwrap(),
             ciphertext_header,
             aad,
             &g_inv,
@@ -191,10 +207,11 @@ impl<E: Pairing> PrivateKeyShare<E> {
         // Finally, pick the lagrange coefficient for the current share index
         let lagrange_coeff = &lagrange_coeffs[adjusted_share_index];
         let g_inv = PubliclyVerifiableParams::<E>::default().g_inv();
+        let private_key_share = self.unblind_private_key_share(validator_keypair);
         DecryptionSharePrecomputed::create(
             share_index as usize,
             &validator_keypair.decryption_key,
-            &self.0,
+            &private_key_share.unwrap(),
             ciphertext_header,
             aad,
             lagrange_coeff,
@@ -204,29 +221,6 @@ impl<E: Pairing> PrivateKeyShare<E> {
     }
 }
 
-/// An updated private key share, resulting from an intermediate step in a share recovery or refresh operation.
-#[derive(
-    Debug, Clone, PartialEq, Eq, ZeroizeOnDrop, Serialize, Deserialize,
-)]
-pub struct UpdatedPrivateKeyShare<E: Pairing>(
-    #[serde(bound(
-        serialize = "ferveo_tdec::PrivateKeyShare<E>: Serialize",
-        deserialize = "ferveo_tdec::PrivateKeyShare<E>: DeserializeOwned"
-    ))]
-    pub(crate) InnerPrivateKeyShare<E>,
-);
-
-impl<E: Pairing> UpdatedPrivateKeyShare<E> {
-    /// One-way conversion from `UpdatedPrivateKeyShare` to `PrivateKeyShare`.
-    /// Use this method to eject from the `UpdatedPrivateKeyShare` type and use the resulting `PrivateKeyShare` in further operations.
-    pub fn inner(&self) -> PrivateKeyShare<E> {
-        PrivateKeyShare(self.0.clone())
-    }
-
-    pub fn new(private_key_share: InnerPrivateKeyShare<E>) -> Self {
-        Self(private_key_share)
-    }
-}
 
 /// An update to a private key share generated by a participant in a share refresh operation.
 #[serde_as]
@@ -451,8 +445,7 @@ mod tests_refresh {
     use test_case::{test_case, test_matrix};
 
     use crate::{
-        test_common::*, DomainPoint, PrivateKeyShare, UpdateTranscript,
-        UpdatedPrivateKeyShare,
+        test_common::*, DomainPoint, UpdateTranscript,
     };
 
     type ScalarField =
@@ -535,8 +528,7 @@ mod tests_refresh {
             .last()
             .unwrap()
             .domain;
-        let original_private_key_share =
-            PrivateKeyShare(selected_participant.private_key_share);
+        let original_private_key_share = selected_participant.private_key_share;
 
         // Remove the selected participant from the contexts and all nested structures
         let mut remaining_participants = contexts;
