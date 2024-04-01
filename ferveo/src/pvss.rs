@@ -8,6 +8,7 @@ use ark_poly::{
 };
 use ferveo_common::{serialization, Keypair};
 use ferveo_tdec::{
+    BlindedKeyShare, 
     CiphertextHeader, DecryptionSharePrecomputed, DecryptionShareSimple,
 };
 use itertools::Itertools;
@@ -19,8 +20,8 @@ use zeroize::{self, Zeroize, ZeroizeOnDrop};
 
 use crate::{
     assert_no_share_duplicates, batch_to_projective_g1, batch_to_projective_g2,
-    DomainPoint, Error, PrivateKeyShare, PubliclyVerifiableDkg, Result,
-    ShareUpdate, UpdatedPrivateKeyShare, Validator,
+    DomainPoint, Error, PubliclyVerifiableDkg, Result,
+    ShareUpdate, UpdatableBlindedKeyShare, Validator
 };
 
 /// These are the blinded evaluations of shares of a single random polynomial
@@ -105,11 +106,11 @@ impl<E: Pairing> ZeroizeOnDrop for SecretPolynomial<E> {}
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct PubliclyVerifiableSS<E: Pairing, T = Unaggregated> {
-    /// Used in Feldman commitment to the VSS polynomial, F = g^{\phi}
+    /// Used in Feldman commitment to the VSS polynomial, F_i = g^{a_i}, where a_i are poly coefficients
     #[serde_as(as = "serialization::SerdeAs")]
     pub coeffs: Vec<E::G1Affine>,
 
-    /// The shares to be dealt to each validator
+    /// The blinded shares to be dealt to each validator, Y_i
     #[serde_as(as = "serialization::SerdeAs")]
     // TODO: Using a custom type instead of referring to E:G2Affine breaks the serialization
     // pub shares: Vec<ShareEncryptions<E>>,
@@ -322,30 +323,25 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         )
     }
 
-    pub fn decrypt_private_key_share(
+    fn get_blinded_key_share(
         &self,
         validator_keypair: &Keypair<E>,
         share_index: u32,
-    ) -> Result<PrivateKeyShare<E>> {
-        // Decrypt private key share https://nikkolasg.github.io/ferveo/pvss.html#validator-decryption-of-private-key-shares
-        let private_key_share =
-            self.shares
-                .get(share_index as usize)
-                .ok_or(Error::InvalidShareIndex(share_index))?
-                .mul(
-                    validator_keypair.decryption_key.inverse().expect(
-                        "Validator decryption key must have an inverse",
-                    ),
-                )
-                .into_affine();
-        Ok(PrivateKeyShare(ferveo_tdec::PrivateKeyShare(
-            private_key_share,
-        )))
+    ) -> Result<UpdatableBlindedKeyShare<E>> {
+        let blinded_key_share = self
+            .shares
+            .get(share_index as usize)
+            .ok_or(Error::InvalidShareIndex(share_index));
+        let validator_public_key = validator_keypair.public_key();
+        let blinded_key_share = BlindedKeyShare {
+            validator_public_key: validator_public_key.encryption_key,
+            blinded_key_share: *blinded_key_share.unwrap(),
+        };
+        let blinded_key_share = UpdatableBlindedKeyShare(blinded_key_share);
+        Ok(blinded_key_share)
     }
 
     /// Make a decryption share (simple variant) for a given ciphertext
-    /// With this method, we wrap the PrivateKeyShare method to avoid exposing the private key share
-    // TODO: Consider deprecating to use PrivateKeyShare method directly
     pub fn create_decryption_share_simple(
         &self,
         ciphertext_header: &CiphertextHeader<E>,
@@ -353,7 +349,7 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         validator_keypair: &Keypair<E>,
         share_index: u32,
     ) -> Result<DecryptionShareSimple<E>> {
-        self.decrypt_private_key_share(validator_keypair, share_index)?
+        self.get_blinded_key_share(validator_keypair, share_index)?
             .create_decryption_share_simple(
                 ciphertext_header,
                 aad,
@@ -362,8 +358,6 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
     }
 
     /// Make a decryption share (precomputed variant) for a given ciphertext
-    /// With this method, we wrap the PrivateKeyShare method to avoid exposing the private key share
-    // TODO: Consider deprecating to use PrivateKeyShare method directly
     pub fn create_decryption_share_precomputed(
         &self,
         ciphertext_header: &CiphertextHeader<E>,
@@ -372,7 +366,7 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         share_index: u32,
         domain_points: &HashMap<u32, DomainPoint<E>>,
     ) -> Result<DecryptionSharePrecomputed<E>> {
-        self.decrypt_private_key_share(validator_keypair, share_index)?
+        self.get_blinded_key_share(validator_keypair, share_index)?
             .create_decryption_share_precomputed(
                 ciphertext_header,
                 aad,
