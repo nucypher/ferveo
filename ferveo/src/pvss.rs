@@ -376,18 +376,6 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
             )
     }
 
-    // TODO: Consider deprecating to use PrivateKeyShare method directly
-    pub fn create_updated_private_key_share(
-        &self,
-        validator_keypair: &Keypair<E>,
-        share_index: u32,
-        share_updates: &[ShareUpdate<E>],
-    ) -> Result<UpdatedPrivateKeyShare<E>> {
-        // Retrieve the private key share and apply the updates
-        Ok(self
-            .decrypt_private_key_share(validator_keypair, share_index)?
-            .create_updated_key_share(share_updates))
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
