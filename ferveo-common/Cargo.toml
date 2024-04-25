@@ -7,14 +7,14 @@ authors = ["Heliax AG <hello@heliax.dev>", "Piotr Roslaniec <p.roslaniec@gmail.c
 description = "Common types and traits for Ferveo"
 
 [dependencies]
-ark-ec = "0.4"
-ark-serialize = { version = "0.4", features = ["derive"] }
-ark-std = "0.4"
-bincode = "1.3.3"
-generic-array = "0.14.7"
-rand = "0.8"
-serde = { version = "1.0", features = ["derive"] }
-serde_with = "2.2.0"
+ark-ec = { workspace = true }
+ark-serialize = { workspace = true, features = ["derive"] }
+ark-std = { workspace = true }
+bincode = { workspace = true }
+generic-array = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_with = { workspace = true }
 
 [dev-dependencies]
-ark-bls12-381 = "0.4.0"
+ark-bls12-381 = { workspace = true }

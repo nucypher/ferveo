@@ -5,6 +5,7 @@ from ferveo import (
     DkgPublicKey,
     FerveoPublicKey,
     FerveoVariant,
+    ValidatorMessage
 )
 
 
@@ -32,7 +33,10 @@ def make_dkg_public_key():
         validators=validators,
         me=me,
     )
-    return dkg.public_key
+    transcripts = [ValidatorMessage(v, dkg.generate_transcript()) for v in validators]
+    aggregate = dkg.aggregate_transcripts(transcripts)
+    assert aggregate.verify(shares_num, transcripts)
+    return aggregate.public_key
 
 
 def make_shared_secret():

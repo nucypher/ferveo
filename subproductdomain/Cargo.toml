@@ -7,11 +7,11 @@ authors = ["Heliax AG <hello@heliax.dev>", "Piotr Roslaniec <p.roslaniec@gmail.c
 description = "Implements subproduct domain algorithm"
 
 [dependencies]
-anyhow = "1.0.47"
-ark-ec = "0.4"
-ark-ff = "0.4"
-ark-poly = "0.4"
-ark-std = "0.4"
+anyhow = { workspace = true }
+ark-ec = { workspace = true }
+ark-ff = { workspace = true }
+ark-poly = { workspace = true }
+ark-std = { workspace = true }
 
 [dev-dependencies]
-ark-bls12-381 = "0.4"
+ark-bls12-381 = { workspace = true }

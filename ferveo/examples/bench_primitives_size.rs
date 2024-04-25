@@ -91,20 +91,18 @@ fn setup(
     shares_num: u32,
     security_threshold: u32,
     rng: &mut StdRng,
-) -> PubliclyVerifiableDkg<EllipticCurve> {
+) -> (
+    PubliclyVerifiableDkg<EllipticCurve>,
+    Vec<PubliclyVerifiableSS<EllipticCurve>>,
+) {
     let mut transcripts = vec![];
     for i in 0..shares_num {
-        let mut dkg = setup_dkg(i as usize, shares_num, security_threshold);
-        let message = dkg.share(rng).expect("Test failed");
-        let sender = dkg.get_validator(&dkg.me.public_key).unwrap();
-        transcripts.push((sender.clone(), message.clone()));
+        let dkg = setup_dkg(i as usize, shares_num, security_threshold);
+        let transcript = dkg.generate_transcript(rng).expect("Test failed");
+        transcripts.push(transcript.clone());
     }
-
-    let mut dkg = setup_dkg(0, shares_num, security_threshold);
-    for (sender, pvss) in transcripts.into_iter() {
-        dkg.apply_message(&sender, &pvss).expect("Setup failed");
-    }
-    dkg
+    let dkg = setup_dkg(0, shares_num, security_threshold);
+    (dkg, transcripts)
 }
 
 fn main() {
@@ -128,9 +126,8 @@ fn main() {
 
     for (shares_num, threshold) in configs {
         println!("shares_num: {shares_num}, threshold: {threshold}");
-        let dkg = setup(*shares_num as u32, threshold, rng);
-        let transcript = &dkg.vss.values().next().unwrap();
-        let transcript_bytes = bincode::serialize(&transcript).unwrap();
+        let (_, transcripts) = setup(*shares_num as u32, threshold, rng);
+        let transcript_bytes = bincode::serialize(&transcripts[0]).unwrap();
 
         save_data(
             *shares_num as usize,

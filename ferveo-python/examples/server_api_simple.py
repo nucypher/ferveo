@@ -40,6 +40,9 @@ for sender in validators:
     )
     messages.append(ValidatorMessage(sender, dkg.generate_transcript()))
 
+# We only need `shares_num` messages to aggregate the transcript
+messages = messages[:shares_num]
+
 # Now that every validator holds a dkg instance and a transcript for every other validator,
 # every validator can aggregate the transcripts
 me = validators[0]
@@ -62,7 +65,7 @@ assert client_aggregate.verify(validators_num, messages)
 # In the meantime, the client creates a ciphertext and decryption request
 msg = "abc".encode()
 aad = "my-aad".encode()
-ciphertext = encrypt(msg, aad, dkg.public_key)
+ciphertext = encrypt(msg, aad, client_aggregate.public_key)
 
 # The client can serialize/deserialize ciphertext for transport
 ciphertext_ser = bytes(ciphertext)
@@ -89,6 +92,9 @@ for validator, validator_keypair in zip(validators, validator_keypairs):
         dkg, ciphertext.header, aad, validator_keypair
     )
     decryption_shares.append(decryption_share)
+
+# We only need `threshold` decryption shares in simple variant
+decryption_shares = decryption_shares[:security_threshold]
 
 # Now, the decryption share can be used to decrypt the ciphertext
 # This part is in the client API

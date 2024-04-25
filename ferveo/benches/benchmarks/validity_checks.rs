@@ -55,11 +55,14 @@ fn setup_dkg(
 fn setup(
     shares_num: u32,
     rng: &mut StdRng,
-) -> (PubliclyVerifiableDkg<Bls12_381>, Message<Bls12_381>) {
+) -> (
+    PubliclyVerifiableDkg<Bls12_381>,
+    PubliclyVerifiableSS<Bls12_381>,
+) {
     let mut transcripts = vec![];
     for i in 0..shares_num {
-        let mut dkg = setup_dkg(i as usize, shares_num);
-        transcripts.push(dkg.share(rng).expect("Test failed"));
+        let dkg = setup_dkg(i as usize, shares_num);
+        transcripts.push(dkg.generate_transcript(rng).expect("Test failed"));
     }
     let dkg = setup_dkg(0, shares_num);
     let transcript = transcripts[0].clone();
@@ -78,20 +81,12 @@ pub fn bench_verify_full(c: &mut Criterion) {
 
         let pvss_verify_optimistic = {
             move || {
-                if let Message::Deal(ss) = transcript {
-                    black_box(ss.verify_optimistic());
-                } else {
-                    panic!("Expected Deal");
-                }
+                black_box(transcript.verify_optimistic());
             }
         };
         let pvss_verify_full = {
             move || {
-                if let Message::Deal(ss) = transcript {
-                    black_box(ss.verify_full(&dkg));
-                } else {
-                    panic!("Expected Deal");
-                }
+                black_box(transcript.verify_full(&dkg).unwrap());
             }
         };
 

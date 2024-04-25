@@ -17,6 +17,6 @@ crate-type = ["cdylib", "rlib"]
 ferveo = { package = "ferveo-pre-release", path = "../ferveo", features = ["bindings-wasm"] }
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3.28"
-itertools = "0.10.5"
+wasm-bindgen-test = { workspace = true }
+itertools = { workspace = true }
 

@@ -18,10 +18,6 @@ from ._ferveo import (
     ValidatorMessage,
     FerveoVariant,
     ThresholdEncryptionError,
-    InvalidDkgStateToDeal,
-    InvalidDkgStateToAggregate,
-    InvalidDkgStateToVerify,
-    InvalidDkgStateToIngest,
     DealerNotInValidatorSet,
     UnknownDealer,
     DuplicateDealer,
@@ -39,4 +35,7 @@ from ._ferveo import (
     DuplicatedShareIndex,
     NoTranscriptsToAggregate,
     InvalidAggregateVerificationParameters,
+    UnknownValidator,
+    TooManyTranscripts,
+    DuplicateTranscript,
 )

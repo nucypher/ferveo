@@ -37,18 +37,6 @@ impl From<FerveoPythonError> for PyErr {
                 Error::ThresholdEncryptionError(err) => {
                     ThresholdEncryptionError::new_err(err.to_string())
                 }
-                Error::InvalidDkgStateToDeal => {
-                    InvalidDkgStateToDeal::new_err("")
-                }
-                Error::InvalidDkgStateToAggregate => {
-                    InvalidDkgStateToAggregate::new_err("")
-                }
-                Error::InvalidDkgStateToVerify => {
-                    InvalidDkgStateToVerify::new_err("")
-                }
-                Error::InvalidDkgStateToIngest => {
-                    InvalidDkgStateToIngest::new_err("")
-                }
                 Error::DealerNotInValidatorSet(dealer) => {
                     DealerNotInValidatorSet::new_err(dealer.to_string())
                 }
@@ -58,16 +46,9 @@ impl From<FerveoPythonError> for PyErr {
                 Error::DuplicateDealer(dealer) => {
                     DuplicateDealer::new_err(dealer.to_string())
                 }
-                Error::InvalidPvssTranscript => {
-                    InvalidPvssTranscript::new_err("")
+                Error::InvalidPvssTranscript(validator_addr) => {
+                    InvalidPvssTranscript::new_err(validator_addr.to_string())
                 }
-                Error::InsufficientTranscriptsForAggregate(
-                    expected,
-                    actual,
-                ) => InsufficientTranscriptsForAggregate::new_err(format!(
-                    "expected: {expected}, actual: {actual}"
-                )),
-                Error::InvalidDkgPublicKey => InvalidDkgPublicKey::new_err(""),
                 Error::InsufficientValidators(expected, actual) => {
                     InsufficientValidators::new_err(format!(
                         "expected: {expected}, actual: {actual}"
@@ -120,7 +101,17 @@ impl From<FerveoPythonError> for PyErr {
                     InvalidAggregateVerificationParameters::new_err(format!(
                         "validators_num: {validators_num}, messages_num: {messages_num}"
                     ))
+                },
+                Error::TooManyTranscripts(expected, received) => {
+                    TooManyTranscripts::new_err(format!(
+                        "expected: {expected}, received: {received}"
+                    ))
                 }
+                Error::DuplicateTranscript(validator) => {
+                    DuplicateTranscript::new_err(validator.to_string())
+                }
+                // Remember to create Python exceptions using `create_exception!` macro, and to register them in the
+                // `make_ferveo_py_module` function. You will have to update the `ferveo/__init__.{py, pyi}` files too.
             },
             _ => default(),
         }
@@ -168,6 +159,9 @@ create_exception!(
     InvalidAggregateVerificationParameters,
     PyValueError
 );
+create_exception!(exceptions, UnknownValidator, PyValueError);
+create_exception!(exceptions, TooManyTranscripts, PyValueError);
+create_exception!(exceptions, DuplicateTranscript, PyValueError);
 
 fn from_py_bytes<T: FromBytes>(bytes: &[u8]) -> PyResult<T> {
     T::from_bytes(bytes)
@@ -510,11 +504,6 @@ impl Dkg {
         Ok(Self(dkg))
     }
 
-    #[getter]
-    pub fn public_key(&self) -> DkgPublicKey {
-        DkgPublicKey(self.0.public_key())
-    }
-
     pub fn generate_transcript(&mut self) -> PyResult<Transcript> {
         let rng = &mut thread_rng();
         let transcript = self
@@ -632,7 +621,10 @@ impl AggregatedTranscript {
         ciphertext_header: &CiphertextHeader,
         aad: &[u8],
         validator_keypair: &Keypair,
+        selected_validators: Vec<Validator>,
     ) -> PyResult<DecryptionSharePrecomputed> {
+        let selected_validators: Vec<_> =
+            selected_validators.into_iter().map(|v| v.0).collect();
         let decryption_share = self
             .0
             .create_decryption_share_precomputed(
@@ -640,6 +632,7 @@ impl AggregatedTranscript {
                 &ciphertext_header.0,
                 aad,
                 &validator_keypair.0,
+                &selected_validators,
             )
             .map_err(FerveoPythonError::FerveoError)?;
         Ok(DecryptionSharePrecomputed(decryption_share))
@@ -662,6 +655,11 @@ impl AggregatedTranscript {
             )
             .map_err(FerveoPythonError::FerveoError)?;
         Ok(DecryptionShareSimple(decryption_share))
+    }
+
+    #[getter]
+    pub fn public_key(&self) -> DkgPublicKey {
+        DkgPublicKey(self.0.public_key())
     }
 }
 
@@ -782,6 +780,9 @@ pub fn make_ferveo_py_module(py: Python<'_>, m: &PyModule) -> PyResult<()> {
         "InvalidAggregateVerificationParameters",
         py.get_type::<InvalidAggregateVerificationParameters>(),
     )?;
+    m.add("UnknownValidator", py.get_type::<UnknownValidator>())?;
+    m.add("TooManyTranscripts", py.get_type::<TooManyTranscripts>())?;
+    m.add("DuplicateTranscript", py.get_type::<DuplicateTranscript>())?;
 
     Ok(())
 }
@@ -819,7 +820,7 @@ mod test_ferveo_python {
             .collect();
 
         // Each validator holds their own DKG instance and generates a transcript every
-        // every validator, including themselves
+        // validator, including themselves
         let messages: Vec<_> = validators
             .iter()
             .cloned()
@@ -844,9 +845,7 @@ mod test_ferveo_python {
     #[test_case(4, 4; "number of validators equal to the number of shares")]
     #[test_case(4, 6; "number of validators greater than the number of shares")]
     fn test_server_api_tdec_precomputed(shares_num: u32, validators_num: u32) {
-        // In precomputed variant, the security threshold is equal to the number of shares
-        let security_threshold = shares_num;
-
+        let security_threshold = shares_num * 2 / 3;
         let (messages, validators, validator_keypairs) = make_test_inputs(
             TAU,
             security_threshold,
@@ -867,19 +866,22 @@ mod test_ferveo_python {
         )
         .unwrap();
 
-        // Lets say that we've only received `security_threshold` transcripts
+        // Let's say that we've only received `security_threshold` transcripts
         let messages = messages[..security_threshold as usize].to_vec();
-        let pvss_aggregated =
+        let local_aggregate =
             dkg.aggregate_transcripts(messages.clone()).unwrap();
-        assert!(pvss_aggregated
+        assert!(local_aggregate
             .verify(validators_num, messages.clone())
             .unwrap());
 
         // At this point, any given validator should be able to provide a DKG public key
-        let dkg_public_key = dkg.public_key();
+        let dkg_public_key = local_aggregate.public_key();
 
         // In the meantime, the client creates a ciphertext and decryption request
         let ciphertext = encrypt(MSG.to_vec(), AAD, &dkg_public_key).unwrap();
+
+        // TODO: Adjust the subset of validators to be used in the decryption for precomputed
+        // variant
 
         // Having aggregated the transcripts, the validators can now create decryption shares
         let decryption_shares: Vec<_> =
@@ -894,18 +896,19 @@ mod test_ferveo_python {
                         &validator,
                     )
                     .unwrap();
-                    let aggregate = validator_dkg
+                    let server_aggregate = validator_dkg
                         .aggregate_transcripts(messages.clone())
                         .unwrap();
-                    assert!(pvss_aggregated
+                    assert!(server_aggregate
                         .verify(validators_num, messages.clone())
                         .is_ok());
-                    aggregate
+                    server_aggregate
                         .create_decryption_share_precomputed(
                             &validator_dkg,
                             &ciphertext.header().unwrap(),
                             AAD,
                             validator_keypair,
+                            validators.clone(),
                         )
                         .unwrap()
                 })
@@ -915,7 +918,6 @@ mod test_ferveo_python {
         // This part is part of the client API
         let shared_secret =
             combine_decryption_shares_precomputed(decryption_shares);
-
         let plaintext =
             decrypt_with_shared_secret(&ciphertext, AAD, &shared_secret)
                 .unwrap();
@@ -945,7 +947,7 @@ mod test_ferveo_python {
         )
         .unwrap();
 
-        // Lets say that we've only receives `security_threshold` transcripts
+        // Let's say that we've only receives `security_threshold` transcripts
         let messages = messages[..security_threshold as usize].to_vec();
         let pvss_aggregated =
             dkg.aggregate_transcripts(messages.clone()).unwrap();
@@ -954,7 +956,7 @@ mod test_ferveo_python {
             .unwrap());
 
         // At this point, any given validator should be able to provide a DKG public key
-        let dkg_public_key = dkg.public_key();
+        let dkg_public_key = pvss_aggregated.public_key();
 
         // In the meantime, the client creates a ciphertext and decryption request
         let ciphertext = encrypt(MSG.to_vec(), AAD, &dkg_public_key).unwrap();
@@ -992,9 +994,7 @@ mod test_ferveo_python {
 
         // Now, the decryption share can be used to decrypt the ciphertext
         // This part is part of the client API
-
         let shared_secret = combine_decryption_shares_simple(decryption_shares);
-
         let plaintext =
             decrypt_with_shared_secret(&ciphertext, AAD, &shared_secret)
                 .unwrap();

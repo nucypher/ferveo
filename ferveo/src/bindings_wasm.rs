@@ -360,11 +360,6 @@ impl Dkg {
         Ok(Self(dkg))
     }
 
-    #[wasm_bindgen(js_name = "publicKey")]
-    pub fn public_key(&self) -> DkgPublicKey {
-        DkgPublicKey(self.0.public_key())
-    }
-
     #[wasm_bindgen(js_name = "generateTranscript")]
     pub fn generate_transcript(&mut self) -> JsResult<Transcript> {
         let rng = &mut thread_rng();
@@ -460,7 +455,6 @@ impl Validator {
     }
 }
 
-// TODO: Consider removing and replacing with tuple
 #[derive(TryFromJsValue)]
 #[wasm_bindgen]
 #[derive(Clone, Debug, derive_more::AsRef, derive_more::From)]
@@ -496,6 +490,14 @@ impl ValidatorMessage {
 #[wasm_bindgen]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AggregatedTranscript(api::AggregatedTranscript);
+
+#[wasm_bindgen]
+impl AggregatedTranscript {
+    #[wasm_bindgen(getter, js_name = "publicKey")]
+    pub fn public_key(&self) -> DkgPublicKey {
+        DkgPublicKey(self.0.public_key())
+    }
+}
 
 generate_common_methods!(AggregatedTranscript);
 
@@ -534,8 +536,15 @@ impl AggregatedTranscript {
         ciphertext_header: &CiphertextHeader,
         aad: &[u8],
         validator_keypair: &Keypair,
+        selected_validators_js: &ValidatorArray,
     ) -> JsResult<DecryptionSharePrecomputed> {
         set_panic_hook();
+        let selected_validators =
+            try_from_js_array::<Validator>(selected_validators_js)?;
+        let selected_validators = selected_validators
+            .into_iter()
+            .map(|v| v.to_inner())
+            .collect::<JsResult<Vec<_>>>()?;
         let decryption_share = self
             .0
             .create_decryption_share_precomputed(
@@ -543,6 +552,7 @@ impl AggregatedTranscript {
                 &ciphertext_header.0,
                 aad,
                 &validator_keypair.0,
+                &selected_validators,
             )
             .map_err(map_js_err)?;
         Ok(DecryptionSharePrecomputed(decryption_share))

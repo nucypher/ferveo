@@ -13,7 +13,10 @@ use serde_with::serde_as;
 use sha2::{digest::Digest, Sha256};
 use zeroize::ZeroizeOnDrop;
 
-use crate::{htp_bls12381_g2, Error, Result, SecretBox, SharedSecret};
+use crate::{
+    htp_bls12381_g2, Error, PrivateKeyShare, PublicKey, Result, SecretBox,
+    SharedSecret,
+};
 
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -95,7 +98,7 @@ impl<E: Pairing> CiphertextHeader<E> {
 pub fn encrypt<E: Pairing>(
     message: SecretBox<Vec<u8>>,
     aad: &[u8],
-    pubkey: &E::G1Affine,
+    pubkey: &PublicKey<E>,
     rng: &mut impl rand::Rng,
 ) -> Result<Ciphertext<E>> {
     // r
@@ -105,7 +108,7 @@ pub fn encrypt<E: Pairing>(
     // h
     let h_gen = E::G2Affine::generator();
 
-    let ry_prep = E::G1Prepared::from(pubkey.mul(rand_element).into());
+    let ry_prep = E::G1Prepared::from(pubkey.0.mul(rand_element).into());
     // s
     let product = E::pairing(ry_prep, h_gen).0;
     // u
@@ -140,13 +143,13 @@ pub fn encrypt<E: Pairing>(
 pub fn decrypt_symmetric<E: Pairing>(
     ciphertext: &Ciphertext<E>,
     aad: &[u8],
-    private_key: &E::G2Affine,
+    private_key: &PrivateKeyShare<E>,
     g_inv: &E::G1Prepared,
 ) -> Result<Vec<u8>> {
     ciphertext.check(aad, g_inv)?;
     let shared_secret = E::pairing(
         E::G1Prepared::from(ciphertext.commitment),
-        E::G2Prepared::from(*private_key),
+        E::G2Prepared::from(private_key.0),
     )
     .0;
     let shared_secret = SharedSecret(shared_secret);
@@ -258,7 +261,7 @@ mod tests {
         let aad: &[u8] = "my-aad".as_bytes();
 
         let (pubkey, privkey, contexts) =
-            setup_fast::<E>(threshold, shares_num, rng);
+            setup_simple::<E>(threshold, shares_num, rng);
         let g_inv = &contexts[0].setup_params.g_inv;
 
         let ciphertext =
@@ -282,7 +285,8 @@ mod tests {
         let threshold = shares_num * 2 / 3;
         let msg = "my-msg".as_bytes().to_vec();
         let aad: &[u8] = "my-aad".as_bytes();
-        let (pubkey, _, contexts) = setup_fast::<E>(threshold, shares_num, rng);
+        let (pubkey, _, contexts) =
+            setup_simple::<E>(threshold, shares_num, rng);
         let g_inv = contexts[0].setup_params.g_inv.clone();
         let mut ciphertext =
             encrypt::<E>(SecretBox::new(msg), aad, &pubkey, rng).unwrap();

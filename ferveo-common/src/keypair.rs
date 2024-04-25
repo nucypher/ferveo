@@ -6,7 +6,10 @@ use ark_std::{
     rand::{prelude::StdRng, RngCore, SeedableRng},
     UniformRand,
 };
-use generic_array::{typenum::U96, GenericArray};
+use generic_array::{
+    typenum::{Unsigned, U96},
+    GenericArray,
+};
 use serde::*;
 use serde_with::serde_as;
 
@@ -55,7 +58,7 @@ impl<E: Pairing> PublicKey<E> {
     }
 
     pub fn serialized_size() -> usize {
-        96
+        U96::to_usize()
     }
 }
 
@@ -106,7 +109,6 @@ impl<E: Pairing> Ord for Keypair<E> {
 
 impl<E: Pairing> Keypair<E> {
     /// Returns the public session key for the publicly verifiable DKG participant
-
     pub fn public_key(&self) -> PublicKey<E> {
         PublicKey::<E> {
             encryption_key: E::G2Affine::generator()
@@ -116,7 +118,6 @@ impl<E: Pairing> Keypair<E> {
     }
 
     /// Creates a new ephemeral session key for participating in the DKG
-
     pub fn new<R: RngCore>(rng: &mut R) -> Self {
         Self {
             decryption_key: E::ScalarField::rand(rng),
