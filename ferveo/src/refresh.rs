@@ -8,7 +8,7 @@ use ark_poly::{
 };
 use ferveo_common::{serialization, Keypair};
 use ferveo_tdec::{
-    prepare_combine_simple, BlindedKeyShare, CiphertextHeader, 
+    prepare_combine_simple, BlindedKeyShare, CiphertextHeader,
     DecryptionSharePrecomputed, DecryptionShareSimple,
 };
 use itertools::{zip_eq, Itertools};
@@ -46,48 +46,33 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
     /// From PSS paper, section 4.2.3, (https://link.springer.com/content/pdf/10.1007/3-540-44750-4_27.pdf)
     pub fn apply_share_updates(
         &self,
-        share_updates: &[ShareUpdate<E>],
-    ) -> UpdatableBlindedKeyShare<E> {
-        // TODO: Validate commitments from share update  // FIXME: Don't forget!!!!!
+        update_transcripts: &HashMap<u32, UpdateTranscript<E>>,
+        index: u32,
+    ) -> Self {
+        // Current participant receives update transcripts from other participants
+        let share_updates: Vec<_> = update_transcripts
+            .values()
+            .map(|update_transcript_from_producer| {
+                let update_for_participant = update_transcript_from_producer
+                    .updates
+                    .get(&index)
+                    .cloned()
+                    .unwrap();
+                update_for_participant
+            })
+            .collect();
+
+        // TODO: Validate commitments from share update
+        // FIXME: Don't forget!!!!!
         let updated_key_share = share_updates
             .iter()
-            .fold(self.0.blinded_key_share, |acc, delta| (acc + delta.update).into());
-        UpdatableBlindedKeyShare(BlindedKeyShare{
+            .fold(self.0.blinded_key_share, |acc, delta| {
+                (acc + delta.update).into()
+            });
+        Self(BlindedKeyShare {
             validator_public_key: self.0.validator_public_key,
-            blinded_key_share: updated_key_share
+            blinded_key_share: updated_key_share,
         })
-
-        // let updates_for_participant: Vec<_> =
-        //             update_transcripts_by_producer
-        //                 .values()
-        //                 .map(|update_transcript_from_producer| {
-        //                     // First, verify that the update transcript is valid
-        //                     // TODO: Find a better way to ensure they're always validated
-        //                     update_transcript_from_producer
-        //                         .verify_refresh(validator_keys_map, &fft_domain)
-        //                         .unwrap();
-
-        //                     let update_for_participant =
-        //                         update_transcript_from_producer
-        //                             .updates
-        //                             .get(&(p.index as u32))
-        //                             .cloned()
-        //                             .unwrap();
-        //                     update_for_participant
-        //                 })
-        //                 .collect();
-
-        //         // And creates a new, refreshed share
-
-        //         // TODO: Encapsulate this somewhere, originally from PrivateKeyShare.create_updated_key_share
-        //         let updated_blinded_key_share: BlindedKeyShare<E> =
-        //             BlindedKeyShare {
-        //                 validator_public_key: participant_public_key,
-        //                 blinded_key_share: updates_for_participant.iter().fold(
-        //                     blinded_key_share.blinded_key_share,
-        //                     |acc, delta| (acc + delta.update).into(),
-        //                 ),
-        //             };
     }
 
     pub fn unblind_private_key_share(
@@ -97,10 +82,11 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
         // Decrypt private key share https://nikkolasg.github.io/ferveo/pvss.html#validator-decryption-of-private-key-shares
         let blinded_key_share = &self.0;
         let private_key_share = blinded_key_share.unblind(
-                validator_keypair.decryption_key.inverse().expect(
-                    "Validator decryption key must have an inverse",
-                )
-            );
+            validator_keypair
+                .decryption_key
+                .inverse()
+                .expect("Validator decryption key must have an inverse"),
+        );
         Ok(private_key_share)
     }
 
@@ -111,7 +97,8 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
         validator_keypair: &Keypair<E>,
     ) -> Result<DecryptionShareSimple<E>> {
         let g_inv = PubliclyVerifiableParams::<E>::default().g_inv();
-        let private_key_share = self.unblind_private_key_share(validator_keypair);
+        let private_key_share =
+            self.unblind_private_key_share(validator_keypair);
         DecryptionShareSimple::create(
             &validator_keypair.decryption_key,
             &private_key_share.unwrap(),
@@ -167,7 +154,8 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
         // Finally, pick the lagrange coefficient for the current share index
         let lagrange_coeff = &lagrange_coeffs[adjusted_share_index];
         let g_inv = PubliclyVerifiableParams::<E>::default().g_inv();
-        let private_key_share = self.unblind_private_key_share(validator_keypair);
+        let private_key_share =
+            self.unblind_private_key_share(validator_keypair);
         DecryptionSharePrecomputed::create(
             share_index as usize,
             &validator_keypair.decryption_key,
@@ -180,7 +168,6 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
         .map_err(|e| e.into())
     }
 }
-
 
 /// An update to a private key share generated by a participant in a share refresh operation.
 #[serde_as]
@@ -392,22 +379,19 @@ fn make_random_polynomial_with_root<E: Pairing>(
 
 #[cfg(test)]
 mod tests_refresh {
-    use std::collections::HashMap;
-    use std::ops::Mul;
+    use std::{collections::HashMap, ops::Mul};
 
     use ark_bls12_381::Fr;
     use ark_ec::CurveGroup;
     use ark_poly::EvaluationDomain;
     use ark_std::{test_rng, UniformRand, Zero};
-    use ferveo_tdec::{
-        lagrange_basis_at, test_common::setup_simple
-    };
+    use ferveo_tdec::{lagrange_basis_at, test_common::setup_simple};
     use itertools::{zip_eq, Itertools};
     use rand_core::RngCore;
     use test_case::{test_case, test_matrix};
 
     use crate::{
-        test_common::*, DomainPoint, UpdatableBlindedKeyShare, UpdateTranscript
+        test_common::*, DomainPoint, UpdatableBlindedKeyShare, UpdateTranscript,
     };
 
     type ScalarField =
@@ -712,44 +696,38 @@ mod tests_refresh {
             })
             .collect::<HashMap<u32, UpdateTranscript<E>>>();
 
+        // Participants validate first all the update transcripts.
+        // TODO: Find a better way to ensure they're always validated
+        for update_transcript in update_transcripts_by_producer.values() {
+            update_transcript
+                .verify_refresh(validator_keys_map, &fft_domain)
+                .unwrap();
+        }
+
         // Participants refresh their shares with the updates from each other:
         let refreshed_shares = contexts
             .iter()
             .map(|p| {
+                let participant_index = p.index as u32;
                 let blinded_key_share =
                     p.public_decryption_contexts[p.index].blinded_key_share;
 
-                // Current participant receives update transcripts from other participants
-                let updates_for_participant: Vec<_> =
-                    update_transcripts_by_producer
-                        .values()
-                        .map(|update_transcript_from_producer| {
-                            // First, verify that the update transcript is valid
-                            // TODO: Find a better way to ensure they're always validated
-                            update_transcript_from_producer
-                                .verify_refresh(validator_keys_map, &fft_domain)
-                                .unwrap();
-
-                            let update_for_participant =
-                                update_transcript_from_producer
-                                    .updates
-                                    .get(&(p.index as u32))
-                                    .cloned()
-                                    .unwrap();
-                            update_for_participant
-                        })
-                        .collect();
-
                 // And creates a new, refreshed share
-                let updated_blinded_key_share = UpdatableBlindedKeyShare(blinded_key_share)
-                    .apply_share_updates(&updates_for_participant);
+                let updated_blinded_key_share =
+                    UpdatableBlindedKeyShare(blinded_key_share)
+                        .apply_share_updates(
+                            &update_transcripts_by_producer,
+                            participant_index,
+                        );
 
-                let validator_keypair = ferveo_common::Keypair{
-                    decryption_key: p.setup_params.b
+                let validator_keypair = ferveo_common::Keypair {
+                    decryption_key: p.setup_params.b,
                 };
-                let updated_private_share = updated_blinded_key_share.unblind_private_key_share(&validator_keypair).unwrap();
+                let updated_private_share = updated_blinded_key_share
+                    .unblind_private_key_share(&validator_keypair)
+                    .unwrap();
 
-                (p.index as u32, updated_private_share)
+                (participant_index, updated_private_share)
             })
             // We only need `threshold` refreshed shares to recover the original share
             .take(security_threshold)
@@ -763,11 +741,8 @@ mod tests_refresh {
             .collect::<HashMap<u32, DomainPoint<E>>>();
 
         let x_r = ScalarField::zero();
-        let new_shared_private_key = combine_private_shares_at(
-            &x_r,
-            &domain_points,
-            &refreshed_shares
-        );
+        let new_shared_private_key =
+            combine_private_shares_at(&x_r, &domain_points, &refreshed_shares);
         assert_eq!(shared_private_key, new_shared_private_key);
     }
 }
