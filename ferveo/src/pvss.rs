@@ -8,8 +8,8 @@ use ark_poly::{
 };
 use ferveo_common::{serialization, Keypair};
 use ferveo_tdec::{
-    BlindedKeyShare, 
-    CiphertextHeader, DecryptionSharePrecomputed, DecryptionShareSimple,
+    BlindedKeyShare, CiphertextHeader, DecryptionSharePrecomputed,
+    DecryptionShareSimple,
 };
 use itertools::Itertools;
 use rand::RngCore;
@@ -21,7 +21,7 @@ use zeroize::{self, Zeroize, ZeroizeOnDrop};
 use crate::{
     assert_no_share_duplicates, batch_to_projective_g1, batch_to_projective_g2,
     DomainPoint, Error, PubliclyVerifiableDkg, Result,
-    ShareUpdate, UpdatableBlindedKeyShare, Validator
+    UpdatableBlindedKeyShare, UpdateTranscript, Validator,
 };
 
 /// These are the blinded evaluations of shares of a single random polynomial
@@ -376,6 +376,58 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
             )
     }
 
+    pub fn refresh(
+        &self,
+        update_transcripts: &HashMap<u32, UpdateTranscript<E>>,
+        validator_keys_map: &HashMap<u32, E::G2>,
+    ) -> Result<Self> {
+        let num_shares = self.shares.len();
+        let fft_domain =
+            ark_poly::GeneralEvaluationDomain::<E::ScalarField>::new(
+                num_shares,
+            )
+            .unwrap();
+
+        // First, verify that all update transcript are valid
+        // TODO: Consider what to do with failed verifications
+        // TODO: Find a better way to ensure they're always validated
+        for update_transcript in update_transcripts.values() {
+            update_transcript
+                .verify_refresh(validator_keys_map, &fft_domain)
+                .unwrap();
+        }
+
+        // Participants refresh their shares with the updates from each other:
+        // TODO: Here we're just iterating over all current shares,
+        //       implicitly assuming all of them will be refreshed.
+        //       Generalize to allow refreshing just a subset of the shares.
+        let updated_blinded_shares: Vec<E::G2Affine> = self
+            .shares
+            .iter()
+            .enumerate()
+            .map(|(index, share)| {
+                let blinded_key_share = ferveo_tdec::BlindedKeyShare {
+                    blinded_key_share: *share,
+                    validator_public_key: validator_keys_map
+                        .get(&(index as u32))
+                        .unwrap()
+                        .into_affine(),
+                };
+                let updated_share = UpdatableBlindedKeyShare(blinded_key_share)
+                    .apply_share_updates(update_transcripts, index as u32);
+                updated_share.0.blinded_key_share
+            })
+            .collect();
+
+        let refresed_aggregate_transcript = Self {
+            coeffs: self.coeffs.clone(),
+            shares: updated_blinded_shares,
+            sigma: self.sigma,
+            phantom: Default::default(),
+        };
+
+        Ok(refresed_aggregate_transcript)
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
