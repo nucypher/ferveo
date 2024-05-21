@@ -419,14 +419,14 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
             })
             .collect();
 
-        let refresed_aggregate_transcript = Self {
-            coeffs: self.coeffs.clone(),
+        let refreshed_aggregate_transcript = Self {
+            coeffs: self.coeffs.clone(), // FIXME: coeffs need to be updated too
             shares: updated_blinded_shares,
             sigma: self.sigma,
             phantom: Default::default(),
         };
 
-        Ok(refresed_aggregate_transcript)
+        Ok(refreshed_aggregate_transcript)
     }
 }
 
