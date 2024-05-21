@@ -131,6 +131,8 @@ mod test_dkg_full {
     use super::*;
     use crate::test_common::*;
 
+    type G2 = <ark_bls12_381::Bls12_381 as ark_ec::pairing::Pairing>::G2;
+
     pub fn create_shared_secret_simple_tdec(
         dkg: &PubliclyVerifiableDkg<E>,
         aad: &[u8],
@@ -623,12 +625,17 @@ mod test_dkg_full {
             .take(shares_num as usize)
             .map(|m| m.1.clone())
             .collect::<Vec<_>>();
+
+        // Initially, each participant creates a transcript, which is
+        // combined into a joint AggregateTranscript.
         let local_aggregate =
             AggregatedTranscript::from_transcripts(&transcripts).unwrap();
         assert!(local_aggregate
             .aggregate
             .verify_aggregation(&dkg, &transcripts)
             .unwrap());
+
+        // Ciphertext created from the aggregate public key
         let ciphertext = ferveo_tdec::encrypt::<E>(
             SecretBox::new(MSG.to_vec()),
             AAD,
@@ -637,7 +644,8 @@ mod test_dkg_full {
         )
         .unwrap();
 
-        // Create an initial shared secret
+        // The set of transcripts (or equivalently, the AggregateTranscript),
+        // represents a (blinded) shared secret.
         let (_, _, old_shared_secret) = create_shared_secret_simple_tdec(
             &dkg,
             AAD,
@@ -646,74 +654,56 @@ mod test_dkg_full {
             &transcripts,
         );
 
-        // Each participant prepares an update for each other participant
-        let share_updates = dkg
-            .validators
-            .keys()
-            .map(|v_addr| {
-                let deltas_i = UpdateTranscript::create_refresh_updates(
-                    &dkg.domain_and_key_map(),
-                    dkg.dkg_params.security_threshold(),
-                    rng,
-                )
-                .updates;
-                (v_addr.clone(), deltas_i)
-            })
-            .collect::<HashMap<_, _>>();
+        // When the share refresh protocol is necessary, each participant
+        // prepares an UpdateTranscript, containing updates for each other.
+        let mut update_transcripts: HashMap<u32, UpdateTranscript<E>> =
+            HashMap::new();
+        let mut validator_map: HashMap<u32, _> = HashMap::new();
 
-        // Participants share updates and update their shares
+        for validator in dkg.validators.values() {
+            update_transcripts.insert(
+                validator.share_index,
+                dkg.generate_refresh_transcript(rng).unwrap(),
+            );
+            validator_map.insert(
+                validator.share_index,
+                // TODO: Probably should consume public keys. See domain_and_key_map() in dkg.rs
+                G2::from(
+                    validator_keypairs
+                        .get(validator.share_index as usize)
+                        .unwrap()
+                        .public_key()
+                        .encryption_key,
+                ),
+            );
+        }
 
-        // Now, every participant separately:
-        let updated_private_key_shares: Vec<_> = dkg
-            .validators
-            .values()
-            .map(|validator| {
-                // Current participant receives updates from other participants
-                let updates_for_participant: Vec<_> = share_updates
-                    .values()
-                    .map(|updates| {
-                        updates.get(&validator.share_index).cloned().unwrap()
-                    })
-                    .collect();
+        // Participants distribute UpdateTranscripts and update their shares
+        // accordingly. The result is a new, joint AggregatedTranscript.
+        let new_aggregate = local_aggregate
+            .aggregate
+            .refresh(&update_transcripts, &validator_map)
+            .unwrap();
 
-                // Each validator uses their decryption key to update their share
-                let validator_keypair = validator_keypairs
-                    .get(validator.share_index as usize)
-                    .unwrap();
+        // TODO: Assert new aggregate is different than original
+        // TODO: Show that all participants obtain the same new aggregate transcript.
 
-                // Creates updated private key shares
-                AggregatedTranscript::from_transcripts(&transcripts)
-                    .unwrap()
-                    .aggregate
-                    .create_updated_private_key_share(
-                        validator_keypair,
-                        validator.share_index,
-                        updates_for_participant.as_slice(),
-                    )
-                    .unwrap()
-            })
-            .collect();
-
-        // Get decryption shares, now with refreshed private shares:
+        // Get decryption shares, now with the refreshed aggregate transcript:
         let decryption_shares: Vec<DecryptionShareSimple<E>> =
             validator_keypairs
                 .iter()
-                .enumerate()
-                .map(|(share_index, validator_keypair)| {
-                    // In order to proceed with the decryption, we need to convert the updated private key shares
-                    let private_key_share = &updated_private_key_shares
-                        .get(share_index)
+                .map(|validator_keypair| {
+                    let validator = dkg
+                        .get_validator(&validator_keypair.public_key())
+                        .unwrap();
+                    new_aggregate
+                        .create_decryption_share_simple(
+                            &ciphertext.header().unwrap(),
+                            AAD,
+                            validator_keypair,
+                            validator.share_index,
+                        )
                         .unwrap()
-                        .inner()
-                        .0;
-                    DecryptionShareSimple::create(
-                        &validator_keypair.decryption_key,
-                        private_key_share,
-                        &ciphertext.header().unwrap(),
-                        AAD,
-                        &dkg.pvss_params.g_inv(),
-                    )
-                    .unwrap()
                 })
                 // We take only the first `security_threshold` decryption shares
                 .take(dkg.dkg_params.security_threshold() as usize)
