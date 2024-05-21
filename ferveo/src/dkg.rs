@@ -185,7 +185,7 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
             .values()
             .map(|v| {
                 let domain_point = map.get(&v.share_index).unwrap();
-                // TODO: Use PublicKey directly
+                // TODO: Use PublicKey directly. See same problem in lib.rs::test_dkg_simple_tdec_share_refreshing
                 (
                     v.share_index,
                     (*domain_point, E::G2::from(v.public_key.encryption_key)),
