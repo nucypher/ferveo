@@ -685,7 +685,9 @@ mod test_dkg_full {
             .refresh(&update_transcripts, &validator_map)
             .unwrap();
 
-        // TODO: Assert new aggregate is different than original
+        // TODO: Assert new aggregate is different than original, including coefficients
+        assert_ne!(local_aggregate.aggregate, new_aggregate);
+
         // TODO: Show that all participants obtain the same new aggregate transcript.
 
         // Get decryption shares, now with the refreshed aggregate transcript:
