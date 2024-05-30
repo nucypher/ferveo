@@ -447,12 +447,14 @@ mod tests_refresh {
     use ark_ec::CurveGroup;
     use ark_poly::EvaluationDomain;
     use ark_std::{test_rng, UniformRand, Zero};
+    use ferveo_common::Keypair;
     use ferveo_tdec::{lagrange_basis_at, test_common::setup_simple};
     use itertools::{zip_eq, Itertools};
     use test_case::test_case;
 
     use crate::{
-        test_common::*, DomainPoint, UpdatableBlindedKeyShare, UpdateTranscript,
+        test_common::*, DomainPoint, HandoverTranscript,
+        UpdatableBlindedKeyShare, UpdateTranscript,
     };
 
     type ScalarField =
@@ -813,6 +815,82 @@ mod tests_refresh {
         let x_r = ScalarField::zero();
         let new_shared_private_key =
             combine_private_shares_at(&x_r, &domain_points, &refreshed_shares);
+        assert_eq!(shared_private_key, new_shared_private_key);
+    }
+
+    /// 2 parties follow a handover protocol. The output is a new blind share
+    /// that replaces the original share, using the same domain point
+    /// but different validator key.
+    #[test_case(4; "N is not a power of 2, t=N")]
+    fn tdec_simple_variant_share_handover(shares_num: usize) {
+        // Test setup
+        let rng = &mut test_rng();
+        let security_threshold = shares_num;
+        let (_, shared_private_key, private_contexts) =
+            setup_simple::<E>(shares_num, security_threshold, rng);
+        let domain_points = &private_contexts
+            .iter()
+            .map(|ctxt| {
+                (
+                    ctxt.index as u32,
+                    ctxt.public_decryption_contexts[ctxt.index].domain,
+                )
+            })
+            .collect::<HashMap<u32, DomainPoint<E>>>();
+
+        // New participant that will receive the handover
+        let incoming_validator_keypair = Keypair::<E>::new(rng);
+
+        // For simplicity, we're going to do the handover with the last participant
+        let departing_participant = private_contexts.last().unwrap();
+        let departing_public_context = departing_participant
+            .public_decryption_contexts
+            .get(departing_participant.index)
+            .unwrap();
+
+        // First, create a handover transcript
+        let outgoing_blinded_share = departing_public_context.blinded_key_share;
+        let outgoing_public_key = ferveo_common::PublicKey {
+            encryption_key: departing_public_context
+                .blinded_key_share
+                .validator_public_key,
+        };
+
+        let handover_transcript = HandoverTranscript::<E>::new(
+            &outgoing_blinded_share,
+            outgoing_public_key,
+            &incoming_validator_keypair,
+            rng,
+        );
+
+        // Make sure handover transcript is valid. This is publicly verifiable.
+        assert!(handover_transcript
+            .validate(departing_public_context.share_commitment.0.into())
+            .unwrap());
+
+        let domain_points = &contexts
+            .iter()
+        let shares = private_contexts
+            .iter()
+            .map(|p| {
+                let participant_index = p.index as u32;
+                let blinded_key_share =
+                    p.public_decryption_contexts[p.index].blinded_key_share;
+                let validator_keypair = ferveo_common::Keypair {
+                    decryption_key: p.setup_params.b,
+                };
+                let private_share =
+                    blinded_key_share.unblind(&validator_keypair);
+
+                (participant_index, private_share)
+            })
+            // We only need `threshold` refreshed shares to recover the original share
+            .take(security_threshold)
+            .collect::<HashMap<u32, ferveo_tdec::PrivateKeyShare<E>>>();
+
+        let x_r = ScalarField::zero();
+        let new_shared_private_key =
+            combine_private_shares_at(&x_r, domain_points, &shares);
         assert_eq!(shared_private_key, new_shared_private_key);
     }
 }
