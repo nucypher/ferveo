@@ -2,6 +2,7 @@
 
 #[cfg(feature = "bindings-wasm")]
 extern crate alloc;
+extern crate core;
 
 #[cfg(feature = "bindings-python")]
 pub mod bindings_python;
@@ -16,6 +17,8 @@ pub mod pvss;
 pub mod refresh;
 pub mod validator;
 
+#[cfg(test)]
+mod debug;
 #[cfg(test)]
 mod test_common;
 
