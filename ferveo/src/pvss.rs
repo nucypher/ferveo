@@ -267,7 +267,9 @@ pub fn do_verify_aggregation<E: Pairing>(
         return Err(Error::InvalidTranscriptAggregate);
     }
 
-    // Now, we verify that the aggregated PVSS transcript is a valid aggregation
+    // Now, we verify that the first element of the aggregated PVSS transcript 
+    // (i.e. the final DKG public key) is actually the sum of the first element
+    // of all the transcripts
     let mut y = E::G1::zero();
     for pvss in vss.values() {
         y += pvss.coeffs[0].into_group();
