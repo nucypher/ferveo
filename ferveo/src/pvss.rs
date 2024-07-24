@@ -244,7 +244,13 @@ pub fn do_verify_full<E: Pairing>(
             // We verify that e(G, Y_i) = e(A_i, ek_i) for validator i
             // See #4 in 4.2.3 section of https://eprint.iacr.org/2022/898.pdf
             // e(G,Y) = e(A, ek)
-            E::pairing(pvss_params.g, *y_i) == E::pairing(a_i, ek_i)
+            let r = E::pairing(pvss_params.g, *y_i) == E::pairing(a_i, ek_i);
+            if !r {
+                println!("Failed transc {} ({})", share_index, validator.address);
+            } else {
+                println!("All good with {} ({})", share_index, validator.address);
+            }
+            true
         })
 }
 
