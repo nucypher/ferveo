@@ -6,9 +6,10 @@ use std::{
 };
 
 use hex::FromHex;
-use crate::api::{PublicKey, Transcript};
+use crate::api::{PublicKey, Transcript, AggregatedTranscript};
 use ferveo_common::FromBytes;
 use crate::EthereumAddress;
+use crate::pvss::aggregate;
 
 #[derive(Debug)]
 struct ValidatorTranscript{
@@ -81,6 +82,8 @@ fn parse_file(file_path: &PathBuf) -> io::Result<Vec<ValidatorTranscript>> {
 
 #[cfg(test)]
 mod test {
+    use crate::{api::AggregatedTranscript, Validator};
+
     use super::*;
 
     #[test]
@@ -90,5 +93,25 @@ mod test {
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(filename);
         let records = parse_file(&file_path).unwrap();
         assert_eq!(records.len(), 30);
+
+        let mut transcripts = Vec::new();
+        let mut vmessages = Vec::new();
+
+        // verify_optimistic
+        for (i, record) in records.iter().enumerate(){
+            assert!(record.transcript.verify_optimistic());
+
+            transcripts.push(record.transcript.clone());
+
+            let validator = Validator::new(record.validator_address.to_string(), record.validator_pk, i as u32).unwrap();
+            vmessages.push((validator.clone(), record.transcript.clone()));
+        }
+
+        // Aggregate
+        let agg = aggregate(&transcripts).unwrap();
+        assert!(agg.verify_optimistic());
+
+        let at = AggregatedTranscript::new(&vmessages).unwrap();
+        assert!(at.verify(30, &vmessages).unwrap());
     }
 }
