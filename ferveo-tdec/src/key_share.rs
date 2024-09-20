@@ -76,16 +76,3 @@ impl<E: Pairing> BlindedKeyShare<E> {
 pub struct PrivateKeyShare<E: Pairing>(
     #[serde_as(as = "serialization::SerdeAs")] pub E::G2Affine,
 );
-
-// TODO: Check if we use it in test only, consider adding #[cfg(test)]
-// #[cfg(test)]
-impl<E: Pairing> PrivateKeyShare<E> {
-    pub fn blind(&self, b: E::ScalarField) -> BlindedKeyShare<E> {
-        let validator_public_key =
-            E::G2Affine::generator().mul(b).into_affine();
-        BlindedKeyShare::<E> {
-            validator_public_key,
-            blinded_key_share: self.0.mul(b).into_affine(),
-        }
-    }
-}
