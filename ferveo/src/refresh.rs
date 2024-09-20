@@ -233,14 +233,6 @@ impl<E: Pairing> UpdateTranscript<E> {
         // TODO: Cast return elements into ShareRecoveryUpdate
     }
 
-    // let validator_set = HashSet::from_iter(validator_public_keys.values().cloned());
-    // let transcript_validators = self.updates.values()
-    // .map(|share_update| {
-    //     updates.get(&(p.index as u32)).cloned().unwrap()
-    // })
-    // .collect();
-    // let transcript_validator_set = HashSet::from_iter(.cloned());
-
     // TODO: Unit tests
     pub fn verify_recovery(
         &self,

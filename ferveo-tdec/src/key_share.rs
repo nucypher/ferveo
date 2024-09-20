@@ -28,6 +28,7 @@ pub struct BlindedKeyShare<E: Pairing> {
 }
 
 impl<E: Pairing> BlindedKeyShare<E> {
+    // TODO: Salvage and cleanup
     // pub fn verify_blinding<R: RngCore>(
     //     &self,
     //     public_key: &PublicKey<E>,
