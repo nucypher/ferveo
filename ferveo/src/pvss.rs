@@ -208,6 +208,7 @@ impl<E: Pairing, T> PubliclyVerifiableSS<E, T> {
             pvss_params.g,
             self.sigma, // h^s
         )
+        // TODO: multipairing? - Issue #192
     }
 
     /// Part of checking the validity of an aggregated PVSS transcript
@@ -260,7 +261,7 @@ pub fn do_verify_full<E: Pairing>(
         // We verify that e(G, Y_i) = e(A_i, ek_i) for validator i
         // See #4 in 4.2.3 section of https://eprint.iacr.org/2022/898.pdf
         // e(G,Y) = e(A, ek)
-        // TODO: consider using multipairing
+        // TODO: consider using multipairing - Issue #192
         let is_valid = E::pairing(pvss_params.g, *y_i) == E::pairing(a_i, ek_i);
         if !is_valid {
             return Ok(false);
