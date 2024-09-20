@@ -178,6 +178,7 @@ pub struct ShareUpdate<E: Pairing> {
 }
 
 impl<E: Pairing> ShareUpdate<E> {
+    // TODO: Use multipairings? - #192
     // TODO: Unit tests
     pub fn verify(
         &self,
