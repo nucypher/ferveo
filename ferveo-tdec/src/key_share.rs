@@ -1,6 +1,7 @@
 use std::ops::Mul;
 
-use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
+use ark_ec::{pairing::Pairing, CurveGroup};
+use ark_ff::Field;
 use ferveo_common::{serialization, Keypair};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;

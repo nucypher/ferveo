@@ -1,7 +1,7 @@
 use std::{collections::HashMap, ops::Mul, usize};
 
 use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
-use ark_ff::{Field, Zero};
+use ark_ff::{Field, One, Zero};
 use ark_poly::{
     univariate::DensePolynomial, DenseUVPolynomial, EvaluationDomain,
     Polynomial,
@@ -11,9 +11,8 @@ use ferveo_tdec::{
     prepare_combine_simple, BlindedKeyShare, CiphertextHeader,
     DecryptionSharePrecomputed, DecryptionShareSimple,
 };
-use itertools::{zip_eq, Itertools};
 use rand_core::RngCore;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use subproductdomain::fast_multiexp;
 use zeroize::ZeroizeOnDrop;
@@ -28,7 +27,8 @@ type InnerBlindedKeyShare<E> = ferveo_tdec::BlindedKeyShare<E>;
 /// Blinded key share held by a participant in the DKG protocol
 // TODO: What about the commented macros?
 #[derive(
-    Debug, Clone, //PartialEq, Eq, ZeroizeOnDrop, Serialize, Deserialize,
+    Debug,
+    Clone, //PartialEq, Eq, ZeroizeOnDrop, Serialize, Deserialize,
 )]
 pub struct UpdatableBlindedKeyShare<E: Pairing>(
     // #[serde(bound(
