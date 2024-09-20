@@ -107,8 +107,10 @@ pub mod test_common {
         //let pubkey_share = g.mul(evals.evals[0]);
         //debug_assert!(share_commitments[0] == E::G1Affine::from(pubkey_share));
 
-        // Z_j, private key shares of participants (unblinded): [f(ω_j)] G
-        // NOTE: In production, these are never produced this way, but unblinding encrypted shares Y_j
+        // Z_j, private key shares of participants (unblinded): [f(ω_j)] H
+        // NOTE: In production, these are never produced this way, as the DKG
+        // directly generates blinded shares Y_j. Only then, node j can use their
+        // validator key to unblind Y_j and obtain the private key share Z_j.
         let privkey_shares = fast_multiexp(&evals.evals, h.into_group());
 
         // The shared secret is the free coefficient from threshold poly
@@ -137,8 +139,15 @@ pub mod test_common {
         {
             let private_key_share = PrivateKeyShare::<E>(*private_share);
             let blinding_factor = E::ScalarField::rand(rng);
-            let blinded_key_share: BlindedKeyShare<E> =
-                private_key_share.blind(blinding_factor);
+
+            let validator_public_key = h.mul(blinding_factor).into_affine();
+            let blinded_key_share = BlindedKeyShare::<E> {
+                validator_public_key,
+                blinded_key_share: private_key_share
+                    .0
+                    .mul(blinding_factor)
+                    .into_affine(),
+            };
 
             private_contexts.push(PrivateDecryptionContextSimple::<E> {
                 index,
