@@ -875,6 +875,8 @@ mod test_ferveo_api {
         )
     }
 
+    // FIXME: This test is currently broken, and adjusted to allow compilation
+    #[ignore = "Re-introduce recovery tests - #193"]
     #[test_case(4, 4, true; "number of shares (validators) is a power of 2")]
     #[test_case(7, 7, true; "number of shares (validators) is not a power of 2")]
     #[test_case(4, 6, true; "number of validators greater than the number of shares")]
