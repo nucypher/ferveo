@@ -1,7 +1,7 @@
 use std::ops::Mul;
 
 use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
-use ferveo_common::serialization;
+use ferveo_common::{serialization, Keypair};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -56,8 +56,12 @@ impl<E: Pairing> BlindedKeyShare<E> {
     // }
     pub fn unblind(
         &self,
-        unblinding_factor: E::ScalarField,
+        validator_keypair: &Keypair<E>,
     ) -> PrivateKeyShare<E> {
+        let unblinding_factor = validator_keypair
+            .decryption_key
+            .inverse()
+            .expect("Validator decryption key must have an inverse");
         PrivateKeyShare::<E>(
             self.blinded_key_share.mul(unblinding_factor).into_affine(),
         )
