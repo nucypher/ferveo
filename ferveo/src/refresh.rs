@@ -81,12 +81,7 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
     ) -> Result<ferveo_tdec::PrivateKeyShare<E>> {
         // Decrypt private key share https://nikkolasg.github.io/ferveo/pvss.html#validator-decryption-of-private-key-shares
         let blinded_key_share = &self.0;
-        let private_key_share = blinded_key_share.unblind(
-            validator_keypair
-                .decryption_key
-                .inverse()
-                .expect("Validator decryption key must have an inverse"),
-        );
+        let private_key_share = blinded_key_share.unblind(validator_keypair);
         Ok(private_key_share)
     }
 
