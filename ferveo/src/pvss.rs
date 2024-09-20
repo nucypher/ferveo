@@ -1,7 +1,7 @@
 use std::{collections::HashMap, hash::Hash, marker::PhantomData, ops::Mul};
 
 use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
-use ark_ff::{Field, Zero};
+use ark_ff::Zero;
 use ark_poly::{
     polynomial::univariate::DensePolynomial, DenseUVPolynomial,
     EvaluationDomain, Polynomial,

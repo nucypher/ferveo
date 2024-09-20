@@ -59,7 +59,7 @@ pub mod test_common {
     use std::{ops::Mul, usize};
 
     pub use ark_bls12_381::Bls12_381 as EllipticCurve;
-    use ark_ec::{pairing::Pairing, AffineRepr};
+    use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
     pub use ark_ff::UniformRand;
     use ark_ff::{Field, Zero};
     use ark_poly::{
