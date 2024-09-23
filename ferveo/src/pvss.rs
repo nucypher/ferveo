@@ -429,6 +429,22 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
 
         Ok(refreshed_aggregate_transcript)
     }
+
+    // pub fn handover(&self, index: u32, handover_transcript: &HandoverTranscript<E>) -> Result<Self> {
+
+    //     let shares_after_handover = self.shares.clone();
+
+    //     let new_share = ;
+
+    //     shares_after_handover[index] = new_share;
+
+    //     Ok(Self {
+    //         coeffs: self.coeffs.clone(),  // TODO: Make sure they're just the same
+    //         shares: shares_after_handover,
+    //         sigma: self.sigma,
+    //         phantom: Default::default(),
+    //     })
+    // }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
