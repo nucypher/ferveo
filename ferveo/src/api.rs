@@ -27,8 +27,8 @@ use crate::{
     PubliclyVerifiableSS, Result,
 };
 
-pub type PublicKey = ferveo_common::PublicKey<E>;
-pub type Keypair = ferveo_common::Keypair<E>;
+pub type ValidatorPublicKey = ferveo_common::PublicKey<E>;
+pub type ValidatorKeypair = ferveo_common::Keypair<E>;
 pub type Validator = crate::Validator<E>;
 pub type Transcript = PubliclyVerifiableSS<E>;
 pub type ValidatorMessage = (Validator, Transcript);
@@ -142,13 +142,13 @@ impl From<bindings_wasm::FerveoVariant> for FerveoVariant {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct DkgPublicKey(
     #[serde(bound(
-        serialize = "ferveo_tdec::PublicKey<E>: Serialize",
-        deserialize = "ferveo_tdec::PublicKey<E>: DeserializeOwned"
+        serialize = "ferveo_tdec::DkgPublicKey<E>: Serialize",
+        deserialize = "ferveo_tdec::DkgPublicKey<E>: DeserializeOwned"
     ))]
-    pub(crate) ferveo_tdec::PublicKey<E>,
+    pub(crate) ferveo_tdec::DkgPublicKey<E>,
 );
 
-// TODO: Consider moving these implementation details to ferveo_tdec::PublicKey
+// TODO: Consider moving these implementation details to ferveo_tdec::DkgPublicKey
 impl DkgPublicKey {
     pub fn to_bytes(&self) -> Result<GenericArray<u8, U48>> {
         let as_bytes = to_bytes(&self.0 .0)?;
@@ -165,7 +165,7 @@ impl DkgPublicKey {
                     )
                 })?;
         let pk: G1Affine = from_bytes(&bytes)?;
-        Ok(DkgPublicKey(ferveo_tdec::PublicKey(pk)))
+        Ok(DkgPublicKey(ferveo_tdec::DkgPublicKey(pk)))
     }
 
     pub fn serialized_size() -> usize {
@@ -177,7 +177,7 @@ impl DkgPublicKey {
     pub fn random() -> Self {
         let mut rng = thread_rng();
         let g1 = G1Affine::rand(&mut rng);
-        Self(ferveo_tdec::PublicKey(g1))
+        Self(ferveo_tdec::DkgPublicKey(g1))
     }
 }
 
@@ -304,7 +304,7 @@ impl AggregatedTranscript {
         dkg: &Dkg,
         ciphertext_header: &CiphertextHeader,
         aad: &[u8],
-        validator_keypair: &Keypair,
+        validator_keypair: &ValidatorKeypair,
         selected_validators: &[Validator],
     ) -> Result<DecryptionSharePrecomputed> {
         let selected_domain_points = selected_validators
@@ -330,7 +330,7 @@ impl AggregatedTranscript {
         dkg: &Dkg,
         ciphertext_header: &CiphertextHeader,
         aad: &[u8],
-        validator_keypair: &Keypair,
+        validator_keypair: &ValidatorKeypair,
     ) -> Result<DecryptionShareSimple> {
         let share = self.0.aggregate.create_decryption_share_simple(
             &ciphertext_header.0,
@@ -388,7 +388,8 @@ mod test_ferveo_api {
         test_common::{gen_address, gen_keypairs, AAD, MSG, TAU},
     };
 
-    type TestInputs = (Vec<ValidatorMessage>, Vec<Validator>, Vec<Keypair>);
+    type TestInputs =
+        (Vec<ValidatorMessage>, Vec<Validator>, Vec<ValidatorKeypair>);
 
     fn make_test_inputs(
         rng: &mut StdRng,
@@ -816,7 +817,7 @@ mod test_ferveo_api {
     ) -> (
         Vec<ValidatorMessage>,
         Vec<Validator>,
-        Vec<Keypair>,
+        Vec<ValidatorKeypair>,
         Vec<Dkg>,
         CiphertextHeader,
         SharedSecret,

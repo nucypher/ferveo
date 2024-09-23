@@ -438,10 +438,10 @@ pub struct AggregatedTranscript<E: Pairing> {
     ))]
     pub aggregate: PubliclyVerifiableSS<E, Aggregated>,
     #[serde(bound(
-        serialize = "ferveo_tdec::PublicKey<E>: Serialize",
-        deserialize = "ferveo_tdec::PublicKey<E>: DeserializeOwned"
+        serialize = "ferveo_tdec::DkgPublicKey<E>: Serialize",
+        deserialize = "ferveo_tdec::DkgPublicKey<E>: DeserializeOwned"
     ))]
-    pub public_key: ferveo_tdec::PublicKey<E>,
+    pub public_key: ferveo_tdec::DkgPublicKey<E>,
 }
 
 impl<E: Pairing> AggregatedTranscript<E> {
@@ -454,7 +454,7 @@ impl<E: Pairing> AggregatedTranscript<E> {
             .map(|pvss| pvss.coeffs[0].into_group())
             .sum::<E::G1>()
             .into_affine();
-        let public_key = ferveo_tdec::PublicKey::<E>(public_key);
+        let public_key = ferveo_tdec::DkgPublicKey::<E>(public_key);
         Ok(AggregatedTranscript {
             aggregate,
             public_key,

@@ -1,7 +1,7 @@
 use std::{collections::HashSet, fmt::Display, str::FromStr};
 
 use ark_ec::pairing::Pairing;
-use ferveo_common::PublicKey;
+use ferveo_common::PublicKey as ValidatorPublicKey;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -49,7 +49,7 @@ pub struct Validator<E: Pairing> {
     /// The established address of the validator
     pub address: EthereumAddress,
     /// The Public key
-    pub public_key: PublicKey<E>,
+    pub public_key: ValidatorPublicKey<E>,
     /// The index of the validator in the given ritual
     pub share_index: u32,
 }
@@ -57,7 +57,7 @@ pub struct Validator<E: Pairing> {
 impl<E: Pairing> Validator<E> {
     pub fn new(
         address: String,
-        public_key: PublicKey<E>,
+        public_key: ValidatorPublicKey<E>,
         share_index: u32,
     ) -> Result<Self, EthereumAddressParseError> {
         Ok(Self {
