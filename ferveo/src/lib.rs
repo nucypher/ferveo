@@ -131,8 +131,6 @@ mod test_dkg_full {
     use super::*;
     use crate::test_common::*;
 
-    type G2 = <ark_bls12_381::Bls12_381 as ark_ec::pairing::Pairing>::G2;
-
     pub fn create_shared_secret_simple_tdec(
         dkg: &PubliclyVerifiableDkg<E>,
         aad: &[u8],
@@ -669,14 +667,10 @@ mod test_dkg_full {
             );
             validator_map.insert(
                 validator.share_index,
-                // TODO: Probably should consume public keys. See domain_and_key_map() in dkg.rs
-                G2::from(
-                    validator_keypairs
-                        .get(validator.share_index as usize)
-                        .unwrap()
-                        .public_key()
-                        .encryption_key,
-                ),
+                validator_keypairs
+                    .get(validator.share_index as usize)
+                    .unwrap()
+                    .public_key(),
             );
         }
 

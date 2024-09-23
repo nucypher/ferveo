@@ -6,7 +6,7 @@ use ark_poly::{
     polynomial::univariate::DensePolynomial, DenseUVPolynomial,
     EvaluationDomain, Polynomial,
 };
-use ferveo_common::{serialization, Keypair};
+use ferveo_common::{serialization, Keypair, PublicKey};
 use ferveo_tdec::{
     BlindedKeyShare, CiphertextHeader, DecryptionSharePrecomputed,
     DecryptionShareSimple,
@@ -379,7 +379,7 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
     pub fn refresh(
         &self,
         update_transcripts: &HashMap<u32, UpdateTranscript<E>>,
-        validator_keys_map: &HashMap<u32, E::G2>,
+        validator_keys_map: &HashMap<u32, PublicKey<E>>,
     ) -> Result<Self> {
         let num_shares = self.shares.len();
         let fft_domain =
@@ -411,7 +411,7 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
                     validator_public_key: validator_keys_map
                         .get(&(index as u32))
                         .unwrap()
-                        .into_affine(),
+                        .encryption_key,
                 };
                 let updated_share = UpdatableBlindedKeyShare(blinded_key_share)
                     .apply_share_updates(update_transcripts, index as u32);

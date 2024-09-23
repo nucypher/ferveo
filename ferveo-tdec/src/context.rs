@@ -22,7 +22,7 @@ pub struct PublicDecryptionContextSimple<E: Pairing> {
     pub share_commitment: ShareCommitment<E>,
     pub blinded_key_share: BlindedKeyShare<E>,
     pub h: E::G2Affine,
-    pub validator_public_key: E::G2,
+    pub validator_public_key: ferveo_common::PublicKey<E>,
 }
 
 // TODO: Mark for removal
