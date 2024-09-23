@@ -2,7 +2,6 @@ use std::{collections::HashMap, fmt, io};
 
 use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use ark_std::UniformRand;
 use ferveo_common::serialization;
 pub use ferveo_tdec::api::{
     prepare_combine_simple, share_combine_precomputed, share_combine_simple,
@@ -170,14 +169,6 @@ impl DkgPublicKey {
 
     pub fn serialized_size() -> usize {
         U48::to_usize()
-    }
-
-    /// Generate a random DKG public key.
-    /// Use this for testing only.
-    pub fn random() -> Self {
-        let mut rng = thread_rng();
-        let g1 = G1Affine::rand(&mut rng);
-        Self(ferveo_tdec::DkgPublicKey(g1))
     }
 }
 
@@ -374,7 +365,7 @@ pub struct SharedSecret(pub ferveo_tdec::api::SharedSecret<E>);
 #[cfg(test)]
 mod test_ferveo_api {
 
-    use ark_std::iterable::Iterable;
+    use ark_std::{iterable::Iterable, UniformRand};
     use ferveo_tdec::SecretBox;
     use itertools::{izip, Itertools};
     use rand::{
@@ -429,9 +420,15 @@ mod test_ferveo_api {
         (messages, validators, validator_keypairs)
     }
 
+    fn random_dkg_public_key() -> DkgPublicKey {
+        let mut rng = thread_rng();
+        let g1 = G1Affine::rand(&mut rng);
+        DkgPublicKey(ferveo_tdec::DkgPublicKey(g1))
+    }
+
     #[test]
     fn test_dkg_pk_serialization() {
-        let dkg_pk = DkgPublicKey::random();
+        let dkg_pk = random_dkg_public_key();
         let serialized = dkg_pk.to_bytes().unwrap();
         let deserialized = DkgPublicKey::from_bytes(&serialized).unwrap();
         assert_eq!(serialized.len(), 48_usize);
