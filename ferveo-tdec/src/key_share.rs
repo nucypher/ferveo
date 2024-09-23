@@ -9,7 +9,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 #[serde_as]
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct PublicKey<E: Pairing>(
+pub struct DkgPublicKey<E: Pairing>(
     #[serde_as(as = "serialization::SerdeAs")] pub E::G1Affine,
 );
 

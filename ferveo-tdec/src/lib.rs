@@ -77,7 +77,7 @@ pub mod test_common {
         threshold: usize,
         rng: &mut impl rand::Rng,
     ) -> (
-        PublicKey<E>,
+        DkgPublicKey<E>,
         PrivateKeyShare<E>,
         Vec<PrivateDecryptionContextSimple<E>>,
     ) {
@@ -178,7 +178,7 @@ pub mod test_common {
         }
 
         (
-            PublicKey(group_pubkey.into()),
+            DkgPublicKey(group_pubkey.into()),
             PrivateKeyShare(group_privkey.into()), // TODO: Not the correct type, but whatever
             private_contexts,
         )
@@ -189,7 +189,7 @@ pub mod test_common {
         threshold: usize,
         rng: &mut impl rand::Rng,
     ) -> (
-        PublicKey<E>,
+        DkgPublicKey<E>,
         PrivateKeyShare<E>,
         Vec<PrivateDecryptionContextSimple<E>>,
     ) {

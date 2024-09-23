@@ -352,7 +352,7 @@ generate_bytes_serialization!(SharedSecret);
 
 #[pyclass(module = "ferveo")]
 #[derive(derive_more::From, derive_more::AsRef)]
-pub struct Keypair(api::Keypair);
+pub struct Keypair(api::ValidatorKeypair);
 
 generate_bytes_serialization!(Keypair);
 
@@ -360,20 +360,20 @@ generate_bytes_serialization!(Keypair);
 impl Keypair {
     #[staticmethod]
     pub fn random() -> Self {
-        Self(api::Keypair::random())
+        Self(api::ValidatorKeypair::random())
     }
 
     #[staticmethod]
     pub fn from_secure_randomness(secure_randomness: &[u8]) -> PyResult<Self> {
         let keypair =
-            api::Keypair::from_secure_randomness(secure_randomness)
+            api::ValidatorKeypair::from_secure_randomness(secure_randomness)
                 .map_err(|err| FerveoPythonError::Other(err.to_string()))?;
         Ok(Self(keypair))
     }
 
     #[staticmethod]
     pub fn secure_randomness_size() -> usize {
-        api::Keypair::secure_randomness_size()
+        api::ValidatorKeypair::secure_randomness_size()
     }
 
     pub fn public_key(&self) -> FerveoPublicKey {
@@ -381,7 +381,7 @@ impl Keypair {
     }
 }
 
-type InnerPublicKey = api::PublicKey;
+type InnerPublicKey = api::ValidatorPublicKey;
 
 #[pyclass(module = "ferveo")]
 #[derive(
