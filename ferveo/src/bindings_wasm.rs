@@ -324,14 +324,6 @@ generate_equals!(DkgPublicKey);
 generate_boxed_bytes_serialization!(DkgPublicKey, InnerDkgPublicKey);
 
 #[wasm_bindgen]
-impl DkgPublicKey {
-    #[wasm_bindgen]
-    pub fn random() -> DkgPublicKey {
-        Self(api::DkgPublicKey::random())
-    }
-}
-
-#[wasm_bindgen]
 pub struct Dkg(api::Dkg);
 
 #[wasm_bindgen]
