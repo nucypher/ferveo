@@ -179,17 +179,15 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
 
     // TODO: Revisit naming later
     /// Return a map of domain points for the DKG
-    pub fn domain_and_key_map(&self) -> HashMap<u32, (DomainPoint<E>, E::G2)> {
+    pub fn domain_and_key_map(
+        &self,
+    ) -> HashMap<u32, (DomainPoint<E>, PublicKey<E>)> {
         let map = self.domain_point_map();
         self.validators
             .values()
             .map(|v| {
                 let domain_point = map.get(&v.share_index).unwrap();
-                // TODO: Use PublicKey directly. See same problem in lib.rs::test_dkg_simple_tdec_share_refreshing
-                (
-                    v.share_index,
-                    (*domain_point, E::G2::from(v.public_key.encryption_key)),
-                )
+                (v.share_index, (*domain_point, v.public_key))
             })
             .collect::<_>()
     }

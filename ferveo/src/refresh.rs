@@ -7,7 +7,7 @@ use ark_poly::{
     Polynomial,
 };
 use ark_std::UniformRand;
-use ferveo_common::{serialization, Keypair};
+use ferveo_common::{serialization, Keypair, PublicKey};
 use ferveo_tdec::{
     prepare_combine_simple, BlindedKeyShare, CiphertextHeader,
     DecryptionSharePrecomputed, DecryptionShareSimple,
@@ -180,9 +180,14 @@ pub struct ShareUpdate<E: Pairing> {
 
 impl<E: Pairing> ShareUpdate<E> {
     // TODO: Unit tests
-    pub fn verify(&self, target_validator_public_key: E::G2) -> Result<bool> {
+    pub fn verify(
+        &self,
+        target_validator_public_key: &PublicKey<E>,
+    ) -> Result<bool> {
+        let public_key_point: E::G2Affine =
+            target_validator_public_key.encryption_key;
         let is_valid = E::pairing(E::G1::generator(), self.update)
-            == E::pairing(self.commitment, target_validator_public_key);
+            == E::pairing(self.commitment, public_key_point);
         if is_valid {
             Ok(true)
         } else {
@@ -204,7 +209,7 @@ pub struct UpdateTranscript<E: Pairing> {
 impl<E: Pairing> UpdateTranscript<E> {
     /// From PSS paper, section 4.2.1, (https://link.springer.com/content/pdf/10.1007/3-540-44750-4_27.pdf)
     pub fn create_refresh_updates(
-        domain_points_and_keys: &HashMap<u32, (DomainPoint<E>, E::G2)>, // FIXME: eeewww
+        domain_points_and_keys: &HashMap<u32, (DomainPoint<E>, PublicKey<E>)>,
         threshold: u32,
         rng: &mut impl RngCore,
     ) -> UpdateTranscript<E> {
@@ -219,7 +224,7 @@ impl<E: Pairing> UpdateTranscript<E> {
     }
 
     pub fn create_recovery_updates(
-        domain_points_and_keys: &HashMap<u32, (DomainPoint<E>, E::G2)>, // FIXME: eeewww
+        domain_points_and_keys: &HashMap<u32, (DomainPoint<E>, PublicKey<E>)>,
         x_r: &DomainPoint<E>,
         threshold: u32,
         rng: &mut impl RngCore,
@@ -237,7 +242,7 @@ impl<E: Pairing> UpdateTranscript<E> {
     // TODO: Unit tests
     pub fn verify_recovery(
         &self,
-        validator_public_keys: &HashMap<u32, E::G2>,
+        validator_public_keys: &HashMap<u32, PublicKey<E>>,
         domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
         root: E::ScalarField,
     ) -> Result<bool> {
@@ -254,7 +259,7 @@ impl<E: Pairing> UpdateTranscript<E> {
         for (index, update) in self.updates.iter() {
             // Next, validate share updates against their corresponding target validators
             update
-                .verify(*validator_public_keys.get(index).unwrap())
+                .verify(validator_public_keys.get(index).unwrap())
                 .unwrap();
 
             // Finally, validate update commitments against update polynomial commitments
@@ -291,7 +296,7 @@ impl<E: Pairing> UpdateTranscript<E> {
 
     pub fn verify_refresh(
         &self,
-        validator_public_keys: &HashMap<u32, E::G2>,
+        validator_public_keys: &HashMap<u32, PublicKey<E>>,
         domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
     ) -> Result<bool> {
         self.verify_recovery(
@@ -378,10 +383,9 @@ impl<E: Pairing> HandoverTranscript<E> {
 /// This is a helper function for `ShareUpdate::create_share_updates_for_recovery` and `ShareUpdate::create_share_updates_for_refresh`
 /// It generates a new random polynomial with a defined root and evaluates it at each of the participants' indices.
 /// The result is a map of share updates.
-// TODO: Use newtype type ??? = (DomainPoint<E>, E::G2)
-// TODO: Replace E::G2 with ferveo_common::PublicKey
+// TODO: Use newtype type for (DomainPoint<E>, PublicKey<E>)
 fn prepare_share_updates_with_root<E: Pairing>(
-    domain_points_and_keys: &HashMap<u32, (DomainPoint<E>, E::G2)>, // FIXME: eeewww
+    domain_points_and_keys: &HashMap<u32, (DomainPoint<E>, PublicKey<E>)>,
     root: &DomainPoint<E>,
     threshold: u32,
     rng: &mut impl RngCore,
@@ -400,7 +404,8 @@ fn prepare_share_updates_with_root<E: Pairing>(
         .map(|(share_index, tuple)| {
             let (x_i, pubkey_i) = tuple;
             let eval = update_poly.evaluate(x_i);
-            let update = pubkey_i.mul(eval).into_affine();
+            let update =
+                E::G2::from(pubkey_i.encryption_key).mul(eval).into_affine();
             let commitment = g.mul(eval).into_affine();
             let share_update = ShareUpdate { update, commitment };
             (*share_index, share_update)

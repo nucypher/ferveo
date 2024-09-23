@@ -234,7 +234,7 @@ pub fn verify_decryption_shares_simple<E: Pairing>(
     {
         let is_valid = decryption_share.verify(
             y_i,
-            &pub_context.validator_public_key.into_affine(),
+            &pub_context.validator_public_key.encryption_key,
             &pub_context.h.into(),
             ciphertext,
         );

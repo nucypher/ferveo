@@ -168,9 +168,9 @@ pub mod test_common {
                 share_commitment: ShareCommitment::<E>(*share_commit), // FIXME
                 blinded_key_share,
                 h,
-                validator_public_key: blinded_key_share
-                    .validator_public_key
-                    .into_group(),
+                validator_public_key: ferveo_common::PublicKey {
+                    encryption_key: blinded_key_share.validator_public_key,
+                },
             });
         }
         for private_ctxt in private_contexts.iter_mut() {
@@ -458,7 +458,7 @@ mod tests {
 
         assert!(!has_bad_checksum.verify(
             &pub_contexts[0].blinded_key_share.blinded_key_share,
-            &pub_contexts[0].validator_public_key.into_affine(),
+            &pub_contexts[0].validator_public_key.encryption_key,
             &pub_contexts[0].h.into_group(),
             &ciphertext,
         ));
@@ -469,7 +469,7 @@ mod tests {
 
         assert!(!has_bad_share.verify(
             &pub_contexts[0].blinded_key_share.blinded_key_share,
-            &pub_contexts[0].validator_public_key.into_affine(),
+            &pub_contexts[0].validator_public_key.encryption_key,
             &pub_contexts[0].h.into_group(),
             &ciphertext,
         ));
