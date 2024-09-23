@@ -14,7 +14,7 @@ use sha2::{digest::Digest, Sha256};
 use zeroize::ZeroizeOnDrop;
 
 use crate::{
-    htp_bls12381_g2, Error, PrivateKeyShare, PublicKey, Result, SecretBox,
+    htp_bls12381_g2, DkgPublicKey, Error, PrivateKeyShare, Result, SecretBox,
     SharedSecret,
 };
 
@@ -98,7 +98,7 @@ impl<E: Pairing> CiphertextHeader<E> {
 pub fn encrypt<E: Pairing>(
     message: SecretBox<Vec<u8>>,
     aad: &[u8],
-    pubkey: &PublicKey<E>,
+    pubkey: &DkgPublicKey<E>,
     rng: &mut impl rand::Rng,
 ) -> Result<Ciphertext<E>> {
     // r

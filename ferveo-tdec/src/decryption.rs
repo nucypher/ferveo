@@ -50,7 +50,7 @@ impl<E: Pairing> ValidatorShareChecksum<E> {
             return false;
         }
 
-        // TODO: use multipairing here (h_inv)
+        // TODO: use multipairing here (h_inv) - Issue #192
         // e(C_i, ek_i) == e(U, H)
         if E::pairing(self.checksum, *validator_public_key)
             != E::pairing(ciphertext.commitment, *h)
@@ -234,7 +234,7 @@ pub fn verify_decryption_shares_simple<E: Pairing>(
     {
         let is_valid = decryption_share.verify(
             y_i,
-            &pub_context.validator_public_key.into_affine(),
+            &pub_context.validator_public_key.encryption_key,
             &pub_context.h.into(),
             ciphertext,
         );

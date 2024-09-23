@@ -20,7 +20,7 @@ struct SetupShared {
     shares_num: usize,
     msg: Vec<u8>,
     aad: Vec<u8>,
-    pubkey: PublicKey<E>,
+    pubkey: DkgPublicKey<E>,
     privkey: PrivateKeyShare<E>,
     ciphertext: Ciphertext<E>,
     shared_secret: SharedSecret<E>,

@@ -1,5 +1,6 @@
 #![warn(rust_2018_idioms)]
 
+// TODO: Use explicit imports - #194
 pub mod ciphertext;
 pub mod combine;
 pub mod context;
@@ -59,7 +60,7 @@ pub mod test_common {
     use std::{ops::Mul, usize};
 
     pub use ark_bls12_381::Bls12_381 as EllipticCurve;
-    use ark_ec::{pairing::Pairing, AffineRepr};
+    use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
     pub use ark_ff::UniformRand;
     use ark_ff::{Field, Zero};
     use ark_poly::{
@@ -76,7 +77,7 @@ pub mod test_common {
         threshold: usize,
         rng: &mut impl rand::Rng,
     ) -> (
-        PublicKey<E>,
+        DkgPublicKey<E>,
         PrivateKeyShare<E>,
         Vec<PrivateDecryptionContextSimple<E>>,
     ) {
@@ -86,50 +87,74 @@ pub mod test_common {
         // The dealer chooses a uniformly random polynomial f of degree t-1
         let threshold_poly =
             DensePolynomial::<E::ScalarField>::rand(threshold - 1, rng);
+
         // Domain, or omega Ω
         let fft_domain =
             ark_poly::GeneralEvaluationDomain::<E::ScalarField>::new(
                 shares_num,
             )
             .unwrap();
+
+        // domain points: - ω_j in Ω
+        let domain_points = fft_domain.elements().collect::<Vec<_>>();
+
         // `evals` are evaluations of the polynomial f over the domain, omega: f(ω_j) for ω_j in Ω
         let evals = threshold_poly.evaluate_over_domain_by_ref(fft_domain);
 
-        let shares_x = fft_domain.elements().collect::<Vec<_>>();
+        // A_j, share commitments of participants:  [f(ω_j)] G
+        let share_commitments = fast_multiexp(&evals.evals, g.into_group());
 
-        // A - public key shares of participants
-        let pubkey_shares = fast_multiexp(&evals.evals, g.into_group());
-        let pubkey_share = g.mul(evals.evals[0]);
-        debug_assert!(pubkey_shares[0] == E::G1Affine::from(pubkey_share));
+        // FIXME: These 2 lines don't make sense
+        //let pubkey_share = g.mul(evals.evals[0]);
+        //debug_assert!(share_commitments[0] == E::G1Affine::from(pubkey_share));
 
-        // Y, but only when b = 1 - private key shares of participants
+        // Z_j, private key shares of participants (unblinded): [f(ω_j)] H
+        // NOTE: In production, these are never produced this way, as the DKG
+        // directly generates blinded shares Y_j. Only then, node j can use their
+        // validator key to unblind Y_j and obtain the private key share Z_j.
         let privkey_shares = fast_multiexp(&evals.evals, h.into_group());
 
-        // a_0
-        let x = threshold_poly.coeffs[0];
-        // F_0
-        let pubkey = g.mul(x);
-        let privkey = h.mul(x);
+        // The shared secret is the free coefficient from threshold poly
+        let a_0 = threshold_poly.coeffs[0];
 
+        // F_0, group's public key
+        let group_pubkey = g.mul(a_0);
+
+        // group's private key (NOTE: just for tests, this is NEVER constructed in production)
+        let group_privkey = h.mul(a_0);
+
+        // As in SSS, shared secret should be f(0), which is also the free coefficient
         let secret = threshold_poly.evaluate(&E::ScalarField::zero());
-        debug_assert!(secret == x);
+        debug_assert!(secret == a_0);
 
         let mut private_contexts = vec![];
         let mut public_contexts = vec![];
 
-        // (domain, A, Y)
-        for (index, (domain, public, private)) in
-            izip!(shares_x.iter(), pubkey_shares.iter(), privkey_shares.iter())
-                .enumerate()
+        // (domain_point, A, Z)
+        for (index, (domain_point, share_commit, private_share)) in izip!(
+            domain_points.iter(),
+            share_commitments.iter(),
+            privkey_shares.iter()
+        )
+        .enumerate()
         {
-            let private_key_share = PrivateKeyShare::<E>(*private);
-            let b = E::ScalarField::rand(rng);
-            let blinded_key_share = private_key_share.blind(b);
+            let private_key_share = PrivateKeyShare::<E>(*private_share);
+            let blinding_factor = E::ScalarField::rand(rng);
+
+            let validator_public_key = h.mul(blinding_factor).into_affine();
+            let blinded_key_share = BlindedKeyShare::<E> {
+                validator_public_key,
+                blinded_key_share: private_key_share
+                    .0
+                    .mul(blinding_factor)
+                    .into_affine(),
+            };
+
             private_contexts.push(PrivateDecryptionContextSimple::<E> {
                 index,
                 setup_params: SetupParams {
-                    b,
-                    b_inv: b.inverse().unwrap(),
+                    b: blinding_factor,
+                    b_inv: blinding_factor.inverse().unwrap(),
                     g,
                     h_inv: E::G2Prepared::from(-h.into_group()),
                     g_inv: E::G1Prepared::from(-g.into_group()),
@@ -139,20 +164,22 @@ pub mod test_common {
                 public_decryption_contexts: vec![],
             });
             public_contexts.push(PublicDecryptionContextSimple::<E> {
-                domain: *domain,
-                public_key: PublicKey::<E>(*public),
+                domain: *domain_point,
+                share_commitment: ShareCommitment::<E>(*share_commit), // FIXME
                 blinded_key_share,
                 h,
-                validator_public_key: h.mul(b),
+                validator_public_key: ferveo_common::PublicKey {
+                    encryption_key: blinded_key_share.validator_public_key,
+                },
             });
         }
-        for private in private_contexts.iter_mut() {
-            private.public_decryption_contexts = public_contexts.clone();
+        for private_ctxt in private_contexts.iter_mut() {
+            private_ctxt.public_decryption_contexts = public_contexts.clone();
         }
 
         (
-            PublicKey(pubkey.into()),
-            PrivateKeyShare(privkey.into()),
+            DkgPublicKey(group_pubkey.into()),
+            PrivateKeyShare(group_privkey.into()), // TODO: Not the correct type, but whatever
             private_contexts,
         )
     }
@@ -162,7 +189,7 @@ pub mod test_common {
         threshold: usize,
         rng: &mut impl rand::Rng,
     ) -> (
-        PublicKey<E>,
+        DkgPublicKey<E>,
         PrivateKeyShare<E>,
         Vec<PrivateDecryptionContextSimple<E>>,
     ) {
@@ -411,6 +438,7 @@ mod tests {
 
         // There is no share aggregation in current version of tpke (it's mocked).
         // ShareEncryptions are called BlindedKeyShares.
+        // TOOD: ^Fix this comment later
 
         let pub_contexts = &contexts[0].public_decryption_contexts;
         assert!(verify_decryption_shares_simple(
@@ -430,7 +458,7 @@ mod tests {
 
         assert!(!has_bad_checksum.verify(
             &pub_contexts[0].blinded_key_share.blinded_key_share,
-            &pub_contexts[0].validator_public_key.into_affine(),
+            &pub_contexts[0].validator_public_key.encryption_key,
             &pub_contexts[0].h.into_group(),
             &ciphertext,
         ));
@@ -441,7 +469,7 @@ mod tests {
 
         assert!(!has_bad_share.verify(
             &pub_contexts[0].blinded_key_share.blinded_key_share,
-            &pub_contexts[0].validator_public_key.into_affine(),
+            &pub_contexts[0].validator_public_key.encryption_key,
             &pub_contexts[0].h.into_group(),
             &ciphertext,
         ));
