@@ -426,7 +426,6 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
             sigma: self.sigma,
             phantom: Default::default(),
         };
-
         Ok(refreshed_aggregate_transcript)
     }
 }
@@ -445,17 +444,19 @@ pub struct AggregatedTranscript<E: Pairing> {
     pub public_key: ferveo_tdec::DkgPublicKey<E>,
 }
 
+// TODO: test?
 impl<E: Pairing> AggregatedTranscript<E> {
     pub fn from_transcripts(
         transcripts: &[PubliclyVerifiableSS<E>],
     ) -> Result<Self> {
         let aggregate = aggregate(transcripts)?;
-        let public_key = transcripts
-            .iter()
-            .map(|pvss| pvss.coeffs[0].into_group())
-            .sum::<E::G1>()
-            .into_affine();
-        let public_key = ferveo_tdec::DkgPublicKey::<E>(public_key);
+        Self::from_aggregate(aggregate)
+    }
+
+    pub fn from_aggregate(
+        aggregate: PubliclyVerifiableSS<E, Aggregated>,
+    ) -> Result<Self> {
+        let public_key = ferveo_tdec::DkgPublicKey::<E>(aggregate.coeffs[0]);
         Ok(AggregatedTranscript {
             aggregate,
             public_key,
