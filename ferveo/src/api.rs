@@ -23,7 +23,7 @@ use crate::bindings_wasm;
 pub use crate::EthereumAddress;
 use crate::{
     do_verify_aggregation, Error, PubliclyVerifiableParams,
-    PubliclyVerifiableSS, Result,
+    PubliclyVerifiableSS, Result, UpdateTranscript,
 };
 
 pub type ValidatorPublicKey = ferveo_common::PublicKey<E>;
@@ -172,6 +172,7 @@ impl DkgPublicKey {
     }
 }
 
+// TODO: Rename to ValidatorPrivateKey?
 pub type UnblindingKey = FieldPoint;
 
 #[serde_as]
@@ -338,6 +339,23 @@ impl AggregatedTranscript {
 
     pub fn public_key(&self) -> DkgPublicKey {
         DkgPublicKey(self.0.public_key)
+    }
+
+    pub fn refresh(
+        &self,
+        update_transcripts: &HashMap<u32, UpdateTranscript<E>>,
+        validator_keys_map: &HashMap<u32, ValidatorPublicKey>,
+    ) -> Result<Self> {
+        // TODO: Aggregates structs should be refactored, this is a bit of a mess
+        let updated_aggregate = self
+            .0
+            .aggregate
+            .refresh(update_transcripts, validator_keys_map)
+            .unwrap();
+        let eeww =
+            crate::AggregatedTranscript::<E>::from_aggregate(updated_aggregate)
+                .unwrap();
+        Ok(AggregatedTranscript(eeww))
     }
 }
 
