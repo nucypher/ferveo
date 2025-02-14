@@ -87,6 +87,7 @@ mod tests {
             point *= fft_domain.group_gen();
         }
 
+        // TODO: #197
         let mut lagrange_n_0 = domain.iter().product::<ScalarField>();
         if domain.len() % 2 == 1 {
             lagrange_n_0 = -lagrange_n_0;

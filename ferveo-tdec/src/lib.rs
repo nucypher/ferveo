@@ -104,10 +104,6 @@ pub mod test_common {
         // A_j, share commitments of participants:  [f(ω_j)] G
         let share_commitments = fast_multiexp(&evals.evals, g.into_group());
 
-        // FIXME: These 2 lines don't make sense
-        //let pubkey_share = g.mul(evals.evals[0]);
-        //debug_assert!(share_commitments[0] == E::G1Affine::from(pubkey_share));
-
         // Z_j, private key shares of participants (unblinded): [f(ω_j)] H
         // NOTE: In production, these are never produced this way, as the DKG
         // directly generates blinded shares Y_j. Only then, node j can use their

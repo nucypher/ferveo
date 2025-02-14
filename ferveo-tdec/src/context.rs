@@ -12,7 +12,7 @@ pub struct PublicDecryptionContextFast<E: Pairing> {
     pub public_key: ShareCommitment<E>, // FIXME
     pub blinded_key_share: BlindedKeyShare<E>,
     // This decrypter's contribution to N(0), namely (-1)^|domain| * \prod_i omega_i
-    pub lagrange_n_0: E::ScalarField,
+    pub lagrange_n_0: E::ScalarField, // TODO: Unused field - #197
     pub h_inv: E::G2Prepared,
 }
 

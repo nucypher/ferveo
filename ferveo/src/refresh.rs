@@ -196,7 +196,6 @@ impl<E: Pairing> ShareUpdate<E> {
     }
 }
 
-// TODO: Reconsider naming
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UpdateTranscript<E: Pairing> {
     /// Used in Feldman commitment to the update polynomial
@@ -220,7 +219,7 @@ impl<E: Pairing> UpdateTranscript<E> {
             threshold,
             rng,
         )
-        // TODO: Cast return elements into ShareRefreshUpdate
+        // TODO: Cast return elements into ShareRefreshUpdate - #193
     }
 
     pub fn create_recovery_updates(
@@ -236,10 +235,10 @@ impl<E: Pairing> UpdateTranscript<E> {
             threshold,
             rng,
         )
-        // TODO: Cast return elements into ShareRecoveryUpdate
+        // TODO: Cast return elements into ShareRecoveryUpdate - #193
     }
 
-    // TODO: Unit tests
+    // TODO: Unit tests, but only after #193
     pub fn verify_recovery(
         &self,
         validator_public_keys: &HashMap<u32, PublicKey<E>>,
@@ -294,6 +293,7 @@ impl<E: Pairing> UpdateTranscript<E> {
         Ok(true)
     }
 
+    // TODO: Unit tests
     pub fn verify_refresh(
         &self,
         validator_public_keys: &HashMap<u32, PublicKey<E>>,
@@ -389,6 +389,7 @@ mod tests_refresh {
         <ark_bls12_381::Bls12_381 as ark_ec::pairing::Pairing>::ScalarField;
     type G2 = <ark_bls12_381::Bls12_381 as ark_ec::pairing::Pairing>::G2;
 
+    // TODO: Part of recovery tests - #193
     // /// Using tdec test utilities here instead of PVSS to test the internals of the shared key recovery
     // fn create_updated_private_key_shares<R: RngCore>(
     //     rng: &mut R,

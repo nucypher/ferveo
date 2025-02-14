@@ -172,9 +172,7 @@ impl DkgPublicKey {
     }
 }
 
-// TODO: Rename to ValidatorPrivateKey?
-pub type UnblindingKey = FieldPoint;
-
+// TODO: Consider if FieldPoint should be removed - #197
 #[serde_as]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FieldPoint(#[serde_as(as = "serialization::SerdeAs")] pub Fr);
