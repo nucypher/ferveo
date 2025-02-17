@@ -30,6 +30,7 @@ pub type ValidatorPublicKey = ferveo_common::PublicKey<E>;
 pub type ValidatorKeypair = ferveo_common::Keypair<E>;
 pub type Validator = crate::Validator<E>;
 pub type Transcript = PubliclyVerifiableSS<E>;
+pub type RefreshTranscript = UpdateTranscript<E>; // TODO: Consider renaming to UpdateTranscript when dealing with #193
 pub type ValidatorMessage = (Validator, Transcript);
 pub type DomainPoint = crate::DomainPoint<E>;
 
@@ -224,6 +225,13 @@ impl Dkg {
             .map(AggregatedTranscript)
     }
 
+    pub fn generate_refresh_transcript<R: RngCore>(
+        &self,
+        rng: &mut R,
+    ) -> Result<RefreshTranscript> {
+        self.0.generate_refresh_transcript(rng)
+    }
+
     pub fn me(&self) -> &Validator {
         &self.0.me
     }
@@ -341,7 +349,7 @@ impl AggregatedTranscript {
 
     pub fn refresh(
         &self,
-        update_transcripts: &HashMap<u32, UpdateTranscript<E>>,
+        update_transcripts: &HashMap<u32, RefreshTranscript>,
         validator_keys_map: &HashMap<u32, ValidatorPublicKey>,
     ) -> Result<Self> {
         // TODO: Aggregates structs should be refactored, this is a bit of a mess
@@ -393,7 +401,6 @@ mod test_ferveo_api {
     use crate::{
         api::*,
         test_common::{gen_address, gen_keypairs, AAD, MSG, TAU},
-        UpdateTranscript,
     };
 
     type TestInputs =
@@ -1123,7 +1130,7 @@ mod test_ferveo_api {
 
         // When the share refresh protocol is necessary, each participant
         // prepares an UpdateTranscript, containing updates for each other.
-        let mut update_transcripts: HashMap<u32, UpdateTranscript<E>> =
+        let mut update_transcripts: HashMap<u32, RefreshTranscript> =
             HashMap::new();
         let mut validator_map: HashMap<u32, _> = HashMap::new();
 
@@ -1131,7 +1138,7 @@ mod test_ferveo_api {
             for validator in dkg.0.validators.values() {
                 update_transcripts.insert(
                     validator.share_index,
-                    dkg.0.generate_refresh_transcript(rng).unwrap(),
+                    dkg.generate_refresh_transcript(rng).unwrap(),
                 );
                 validator_map.insert(
                     validator.share_index,
