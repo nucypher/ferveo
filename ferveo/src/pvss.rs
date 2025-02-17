@@ -531,11 +531,13 @@ mod test_pvss {
 
     /// Test the happy flow such that the PVSS with the correct form is created
     /// and that appropriate validations pass
-    #[test_case(4, 4; "number of validators is equal to the number of shares")]
-    #[test_case(4, 6; "number of validators is greater than the number of shares")]
-    fn test_new_pvss(shares_num: u32, validators_num: u32) {
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn test_new_pvss(shares_num: u32, security_threshold: u32) {
         let rng = &mut ark_std::test_rng();
-        let security_threshold = shares_num - 1;
+        let validators_num = shares_num; // TODO: #197
 
         let (dkg, _, _) = setup_dealt_dkg_with_n_validators(
             security_threshold,
@@ -606,10 +608,12 @@ mod test_pvss {
 
     /// Check that happy flow of aggregating PVSS transcripts
     /// has the correct form and it's validations passes
-    #[test_case(4, 4; "number of validators is equal to the number of shares")]
-    #[test_case(4, 6; "number of validators is greater than the number of shares")]
-    fn test_aggregate_pvss(shares_num: u32, validators_num: u32) {
-        let security_threshold = shares_num - 1;
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn test_aggregate_pvss(shares_num: u32, security_threshold: u32) {
+        let validators_num = shares_num; // TODO: #197
         let (dkg, _, messages) = setup_dealt_dkg_with_n_validators(
             security_threshold,
             shares_num,

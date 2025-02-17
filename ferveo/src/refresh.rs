@@ -379,7 +379,7 @@ mod tests_refresh {
     use ark_std::{test_rng, UniformRand, Zero};
     use ferveo_tdec::{lagrange_basis_at, test_common::setup_simple};
     use itertools::{zip_eq, Itertools};
-    use test_case::{test_case, test_matrix};
+    use test_case::test_case;
 
     use crate::{
         test_common::*, DomainPoint, UpdatableBlindedKeyShare, UpdateTranscript,
@@ -642,11 +642,15 @@ mod tests_refresh {
     /// Ñ parties (where t <= Ñ <= N) jointly execute a "share refresh" algorithm.
     /// The output is M new shares (with M <= Ñ), with each of the M new shares substituting the
     /// original share (i.e., the original share is deleted).
-    #[test_matrix([4, 7, 11, 16])]
-    fn tdec_simple_variant_share_refreshing(shares_num: usize) {
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn tdec_simple_variant_share_refreshing(
+        shares_num: usize,
+        security_threshold: usize,
+    ) {
         let rng = &mut test_rng();
-        let security_threshold = shares_num * 2 / 3;
-
         let (_, shared_private_key, contexts) =
             setup_simple::<E>(shares_num, security_threshold, rng);
 

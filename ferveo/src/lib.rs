@@ -182,12 +182,13 @@ mod test_dkg_full {
         (server_aggregate, decryption_shares, shared_secret)
     }
 
-    #[test_case(4, 4; "number of shares (validators) is a power of 2")]
-    #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
-    #[test_case(4, 6; "number of validators greater than the number of shares")]
-    fn test_dkg_simple_tdec(shares_num: u32, validators_num: u32) {
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn test_dkg_simple_tdec(shares_num: u32, security_threshold: u32) {
         let rng = &mut test_rng();
-        let security_threshold = shares_num * 2 / 3;
+        let validators_num = shares_num; // TODO: #197
         let (dkg, validator_keypairs, messages) =
             setup_dealt_dkg_with_n_validators(
                 security_threshold,
@@ -230,12 +231,16 @@ mod test_dkg_full {
         assert_eq!(plaintext, MSG);
     }
 
-    #[test_case(4, 4; "number of shares (validators) is a power of 2")]
-    #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
-    #[test_case(4, 6; "number of validators greater than the number of shares")]
-    fn test_dkg_simple_tdec_precomputed(shares_num: u32, validators_num: u32) {
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn test_dkg_simple_tdec_precomputed(
+        shares_num: u32,
+        security_threshold: u32,
+    ) {
         let rng = &mut test_rng();
-        let security_threshold = shares_num * 2 / 3;
+        let validators_num = shares_num; // TODO: #197
         let (dkg, validator_keypairs, messages) =
             setup_dealt_dkg_with_n_transcript_dealt(
                 security_threshold,
@@ -318,21 +323,17 @@ mod test_dkg_full {
         assert_eq!(plaintext, MSG);
     }
 
-    #[test_case(4, 4; "number of shares (validators) is a power of 2")]
-    #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
-    #[test_case(4, 6; "number of validators greater than the number of shares")]
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
     fn test_dkg_simple_tdec_share_verification(
         shares_num: u32,
-        validators_num: u32,
+        security_threshold: u32,
     ) {
         let rng = &mut test_rng();
-        let security_threshold = shares_num / 2 + 1;
         let (dkg, validator_keypairs, messages) =
-            setup_dealt_dkg_with_n_validators(
-                security_threshold,
-                shares_num,
-                validators_num,
-            );
+            setup_dealt_dkg_with(security_threshold, shares_num);
         let transcripts = messages
             .iter()
             .take(shares_num as usize)
@@ -402,6 +403,7 @@ mod test_dkg_full {
     }
 
     // FIXME: This test is currently broken, and adjusted to allow compilation
+    // Also, see test cases in other tests that include threshold as a parameter
     #[ignore = "Re-introduce recovery tests - #193"]
     #[test_case(4, 4; "number of shares (validators) is a power of 2")]
     #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
@@ -411,7 +413,7 @@ mod test_dkg_full {
         validators_num: u32,
     ) {
         let rng = &mut test_rng();
-        let security_threshold = shares_num / 2 + 1;
+        let security_threshold = shares_num;
         let (dkg, validator_keypairs, messages) =
             setup_dealt_dkg_with_n_validators(
                 security_threshold,
@@ -604,22 +606,17 @@ mod test_dkg_full {
         );
     }
 
-    #[test_case(4, 4; "number of shares (validators) is a power of 2")]
-    #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
-    #[test_case(4, 6; "number of validators greater than the number of shares")]
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
     fn test_dkg_simple_tdec_share_refreshing(
         shares_num: u32,
-        validators_num: u32,
+        security_threshold: u32,
     ) {
         let rng = &mut test_rng();
-        let security_threshold = shares_num / 2 + 1;
-
         let (dkg, validator_keypairs, messages) =
-            setup_dealt_dkg_with_n_validators(
-                security_threshold,
-                shares_num,
-                validators_num,
-            );
+            setup_dealt_dkg_with(security_threshold, shares_num);
         let transcripts = messages
             .iter()
             .take(shares_num as usize)

@@ -399,6 +399,7 @@ mod test_ferveo_api {
     type TestInputs =
         (Vec<ValidatorMessage>, Vec<Validator>, Vec<ValidatorKeypair>);
 
+    // TODO: validators_num - #197
     fn make_test_inputs(
         rng: &mut StdRng,
         tau: u32,
@@ -452,11 +453,15 @@ mod test_ferveo_api {
         assert_eq!(dkg_pk, deserialized);
     }
 
-    #[test_case(4, 4; "number of shares (validators) is a power of 2")]
-    #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
-    #[test_case(4, 6; "number of validators greater than the number of shares")]
-    fn test_server_api_tdec_precomputed(shares_num: u32, validators_num: u32) {
-        let security_threshold = shares_num * 2 / 3;
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn test_server_api_tdec_precomputed(
+        shares_num: u32,
+        security_threshold: u32,
+    ) {
+        let validators_num = shares_num; // TODO: #197
         let rng = &mut StdRng::seed_from_u64(0);
         let (messages, validators, validator_keypairs) = make_test_inputs(
             rng,
@@ -557,12 +562,13 @@ mod test_ferveo_api {
         assert!(result.is_err());
     }
 
-    #[test_case(4, 4; "number of shares (validators) is a power of 2")]
-    #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
-    #[test_case(4, 6; "number of validators greater than the number of shares")]
-    fn test_server_api_tdec_simple(shares_num: u32, validators_num: u32) {
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn test_server_api_tdec_simple(shares_num: u32, security_threshold: u32) {
         let rng = &mut StdRng::seed_from_u64(0);
-        let security_threshold = shares_num / 2 + 1;
+        let validators_num: u32 = shares_num; // TODO: #197
         let (messages, validators, validator_keypairs) = make_test_inputs(
             rng,
             TAU,
@@ -642,13 +648,16 @@ mod test_ferveo_api {
     /// Note that the server and client code are using the same underlying
     /// implementation for aggregation and aggregate verification.
     /// Here, we focus on testing user-facing APIs for server and client users.
-
-    #[test_case(4, 4; "number of shares (validators) is a power of 2")]
-    #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
-    #[test_case(4, 6; "number of validators greater than the number of shares")]
-    fn server_side_local_verification(shares_num: u32, validators_num: u32) {
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn server_side_local_verification(
+        shares_num: u32,
+        security_threshold: u32,
+    ) {
         let rng = &mut StdRng::seed_from_u64(0);
-        let security_threshold = shares_num / 2 + 1;
+        let validators_num: u32 = shares_num; // TODO: #197
         let (messages, validators, _) = make_test_inputs(
             rng,
             TAU,
@@ -753,12 +762,16 @@ mod test_ferveo_api {
         ));
     }
 
-    #[test_case(4, 4; "number of shares (validators) is a power of 2")]
-    #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
-    #[test_case(4, 6; "number of validators greater than the number of shares")]
-    fn client_side_local_verification(shares_num: u32, validators_num: u32) {
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn client_side_local_verification(
+        shares_num: u32,
+        security_threshold: u32,
+    ) {
         let rng = &mut StdRng::seed_from_u64(0);
-        let security_threshold = shares_num / 2 + 1;
+        let validators_num: u32 = shares_num; // TODO: #197
         let (messages, _, _) = make_test_inputs(
             rng,
             TAU,
@@ -823,6 +836,7 @@ mod test_ferveo_api {
         ));
     }
 
+    // TODO: validators_num #197
     fn make_share_update_test_inputs(
         shares_num: u32,
         validators_num: u32,
@@ -894,6 +908,7 @@ mod test_ferveo_api {
     }
 
     // FIXME: This test is currently broken, and adjusted to allow compilation
+    // Also, see test cases in other tests that include threshold as a parameter
     #[ignore = "Re-introduce recovery tests - #193"]
     #[test_case(4, 4, true; "number of shares (validators) is a power of 2")]
     #[test_case(7, 7, true; "number of shares (validators) is not a power of 2")]
@@ -1082,15 +1097,16 @@ mod test_ferveo_api {
         );
     }
 
-    #[test_case(4, 4; "number of shares (validators) is a power of 2")]
-    #[test_case(7, 7; "number of shares (validators) is not a power of 2")]
-    #[test_case(4, 6; "number of validators greater than the number of shares")]
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
     fn test_dkg_api_simple_tdec_share_refresh(
         shares_num: u32,
-        validators_num: u32,
+        security_threshold: u32,
     ) {
         let rng = &mut StdRng::seed_from_u64(0);
-        let security_threshold = shares_num / 2 + 1;
+        let validators_num: u32 = shares_num; // TODO: #197
         let (
             messages,
             _validators,

@@ -98,7 +98,7 @@ fn setup_dkg(
 #[wasm_bindgen_test]
 fn tdec_simple() {
     let shares_num = 16;
-    let security_threshold = shares_num / 2;
+    let security_threshold = 1 + shares_num / 2; // TODO: #197
     for validators_num in [shares_num, shares_num + 2] {
         let (
             validator_keypairs,

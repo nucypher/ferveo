@@ -283,7 +283,7 @@ mod test_dealing {
     #[test]
     fn test_canonical_share_indices_are_enforced() {
         let shares_num = 4;
-        let security_threshold = shares_num - 1;
+        let security_threshold = shares_num;
         let keypairs = gen_keypairs(shares_num);
         let mut validators = gen_validators(&keypairs);
         let me = validators[0].clone();

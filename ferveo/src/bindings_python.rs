@@ -846,10 +846,15 @@ mod test_ferveo_python {
         (messages, validators, validator_keypairs)
     }
 
-    #[test_case(4, 4; "number of validators equal to the number of shares")]
-    #[test_case(4, 6; "number of validators greater than the number of shares")]
-    fn test_server_api_tdec_precomputed(shares_num: u32, validators_num: u32) {
-        let security_threshold = shares_num * 2 / 3;
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn test_server_api_tdec_precomputed(
+        shares_num: u32,
+        security_threshold: u32,
+    ) {
+        let validators_num = shares_num; // TODO: #197
         let (messages, validators, validator_keypairs) = make_test_inputs(
             TAU,
             security_threshold,
@@ -928,10 +933,12 @@ mod test_ferveo_python {
         assert_eq!(plaintext, MSG);
     }
 
-    #[test_case(4, 4; "number of validators equal to the number of shares")]
-    #[test_case(4, 6; "number of validators greater than the number of shares")]
-    fn test_server_api_tdec_simple(shares_num: u32, validators_num: u32) {
-        let security_threshold = shares_num - 1;
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn test_server_api_tdec_simple(shares_num: u32, security_threshold: u32) {
+        let validators_num = shares_num; // TOOD: #197
         let (messages, validators, validator_keypairs) = make_test_inputs(
             TAU,
             security_threshold,
