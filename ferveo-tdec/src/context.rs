@@ -7,25 +7,14 @@ use crate::{
 };
 
 #[derive(Clone, Debug)]
-pub struct PublicDecryptionContextFast<E: Pairing> {
-    pub domain: E::ScalarField,
-    pub public_key: ShareCommitment<E>, // FIXME
-    pub blinded_key_share: BlindedKeyShare<E>,
-    // This decrypter's contribution to N(0), namely (-1)^|domain| * \prod_i omega_i
-    pub lagrange_n_0: E::ScalarField, // TODO: Unused field - #197
-    pub h_inv: E::G2Prepared,
-}
-
-#[derive(Clone, Debug)]
 pub struct PublicDecryptionContextSimple<E: Pairing> {
     pub domain: E::ScalarField,
     pub share_commitment: ShareCommitment<E>,
     pub blinded_key_share: BlindedKeyShare<E>,
-    pub h: E::G2Affine,
     pub validator_public_key: ferveo_common::PublicKey<E>,
 }
 
-// TODO: Mark for removal
+// TODO: Mark for removal - #197
 #[derive(Clone, Debug)]
 pub struct SetupParams<E: Pairing> {
     pub b: E::ScalarField, // Validator private key

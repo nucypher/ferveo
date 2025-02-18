@@ -161,9 +161,8 @@ pub mod test_common {
             });
             public_contexts.push(PublicDecryptionContextSimple::<E> {
                 domain: *domain_point,
-                share_commitment: ShareCommitment::<E>(*share_commit), // FIXME
+                share_commitment: ShareCommitment::<E>(*share_commit),
                 blinded_key_share,
-                h,
                 validator_public_key: ferveo_common::PublicKey {
                     encryption_key: blinded_key_share.validator_public_key,
                 },
@@ -175,7 +174,7 @@ pub mod test_common {
 
         (
             DkgPublicKey(group_pubkey.into()),
-            PrivateKeyShare(group_privkey.into()), // TODO: Not the correct type, but whatever
+            PrivateKeyShare(group_privkey.into()), // TODO: Not the correct type since it's a DKG private key, which are never created in the protocol, but it's just for testing
             private_contexts,
         )
     }
@@ -206,7 +205,7 @@ pub mod test_common {
 mod tests {
     use std::ops::Mul;
 
-    use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
+    use ark_ec::{pairing::Pairing, CurveGroup};
     use ark_std::{test_rng, UniformRand};
     use ferveo_common::{FromBytes, ToBytes};
     use rand::seq::IteratorRandom;
@@ -455,7 +454,6 @@ mod tests {
         assert!(!has_bad_checksum.verify(
             &pub_contexts[0].blinded_key_share.blinded_key_share,
             &pub_contexts[0].validator_public_key.encryption_key,
-            &pub_contexts[0].h.into_group(),
             &ciphertext,
         ));
 
@@ -466,7 +464,6 @@ mod tests {
         assert!(!has_bad_share.verify(
             &pub_contexts[0].blinded_key_share.blinded_key_share,
             &pub_contexts[0].validator_public_key.encryption_key,
-            &pub_contexts[0].h.into_group(),
             &ciphertext,
         ));
     }

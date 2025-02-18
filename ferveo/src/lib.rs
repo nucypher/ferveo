@@ -372,7 +372,6 @@ mod test_dkg_full {
                 assert!(decryption_share.verify(
                     aggregated_share,
                     &validator_keypair.public_key().encryption_key,
-                    &dkg.pvss_params.h,
                     &ciphertext,
                 ));
             },
@@ -387,7 +386,6 @@ mod test_dkg_full {
         assert!(!with_bad_decryption_share.verify(
             &local_aggregate.aggregate.shares[0],
             &validator_keypairs[0].public_key().encryption_key,
-            &dkg.pvss_params.h,
             &ciphertext,
         ));
 
@@ -397,7 +395,6 @@ mod test_dkg_full {
         assert!(!with_bad_checksum.verify(
             &local_aggregate.aggregate.shares[0],
             &validator_keypairs[0].public_key().encryption_key,
-            &dkg.pvss_params.h,
             &ciphertext,
         ));
     }
