@@ -60,7 +60,7 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
             .collect();
 
         // TODO: Validate commitments from share update
-        // FIXME: Don't forget!!!!!
+        // FIXME: Don't forget!!!!! - #200
         let updated_key_share = share_updates
             .iter()
             .fold(self.0.blinded_key_share, |acc, delta| {
@@ -304,7 +304,7 @@ impl<E: Pairing> UpdateTranscript<E> {
 /// This is a helper function for `ShareUpdate::create_share_updates_for_recovery` and `ShareUpdate::create_share_updates_for_refresh`
 /// It generates a new random polynomial with a defined root and evaluates it at each of the participants' indices.
 /// The result is a map of share updates.
-// TODO: Use newtype type for (DomainPoint<E>, PublicKey<E>)
+// TODO: Use newtype type for (DomainPoint<E>, PublicKey<E>) - #162
 fn prepare_share_updates_with_root<E: Pairing>(
     domain_points_and_keys: &HashMap<u32, (DomainPoint<E>, PublicKey<E>)>,
     root: &DomainPoint<E>,
@@ -325,6 +325,7 @@ fn prepare_share_updates_with_root<E: Pairing>(
         .map(|(share_index, tuple)| {
             let (x_i, pubkey_i) = tuple;
             let eval = update_poly.evaluate(x_i);
+            // TODO: Reconsider coordinates representation #195
             let update =
                 E::G2::from(pubkey_i.encryption_key).mul(eval).into_affine();
             let commitment = g.mul(eval).into_affine();

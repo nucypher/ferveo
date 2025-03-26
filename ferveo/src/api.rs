@@ -146,7 +146,7 @@ pub struct DkgPublicKey(
     pub(crate) ferveo_tdec::DkgPublicKey<E>,
 );
 
-// TODO: Consider moving these implementation details to ferveo_tdec::DkgPublicKey
+// TODO: Consider moving these implementation details to ferveo_tdec::DkgPublicKey - #197
 impl DkgPublicKey {
     pub fn to_bytes(&self) -> Result<GenericArray<u8, U48>> {
         let as_bytes = to_bytes(&self.0 .0)?;
@@ -350,7 +350,7 @@ impl AggregatedTranscript {
         update_transcripts: &HashMap<u32, RefreshTranscript>,
         validator_keys_map: &HashMap<u32, ValidatorPublicKey>,
     ) -> Result<Self> {
-        // TODO: Aggregates structs should be refactored, this is a bit of a mess
+        // TODO: Aggregates structs should be refactored, this is a bit of a mess - #162
         let updated_aggregate = self
             .0
             .aggregate

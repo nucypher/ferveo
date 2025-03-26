@@ -253,12 +253,12 @@ mod tests {
         // Malformed the ciphertext
         let mut ciphertext = ciphertext.clone();
         ciphertext.ciphertext[0] += 1;
-        assert!(decrypt_with_shared_secret(&ciphertext, aad, shared_secret,)
+        assert!(decrypt_with_shared_secret(&ciphertext, aad, shared_secret)
             .is_err());
 
         // Malformed the AAD
         let aad = "bad aad".as_bytes();
-        assert!(decrypt_with_shared_secret(&ciphertext, aad, shared_secret,)
+        assert!(decrypt_with_shared_secret(&ciphertext, aad, shared_secret)
             .is_err());
     }
 
@@ -406,10 +406,6 @@ mod tests {
 
         // Let's assume that combination failed here. We'll try to verify decryption shares
         // against validator checksums.
-
-        // There is no share aggregation in current version of tpke (it's mocked).
-        // ShareEncryptions are called BlindedKeyShares.
-        // TOOD: ^Fix this comment later
 
         let pub_contexts = &contexts[0].public_decryption_contexts;
         assert!(verify_decryption_shares_simple(

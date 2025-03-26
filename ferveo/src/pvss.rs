@@ -24,10 +24,6 @@ use crate::{
     UpdatableBlindedKeyShare, UpdateTranscript, Validator,
 };
 
-/// These are the blinded evaluations of shares of a single random polynomial
-// TODO: Are these really blinded like in tdec or encrypted?
-pub type ShareEncryptions<E> = <E as Pairing>::G2Affine;
-
 /// Marker struct for unaggregated PVSS transcripts
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Unaggregated;
@@ -112,8 +108,6 @@ pub struct PubliclyVerifiableSS<E: Pairing, T = Unaggregated> {
 
     /// The blinded shares to be dealt to each validator, Y_i
     #[serde_as(as = "serialization::SerdeAs")]
-    // TODO: Using a custom type instead of referring to E:G2Affine breaks the serialization
-    // pub shares: Vec<ShareEncryptions<E>>,
     pub shares: Vec<E::G2Affine>,
 
     /// Proof of Knowledge
@@ -167,14 +161,14 @@ impl<E: Pairing, T> PubliclyVerifiableSS<E, T> {
             .values()
             .map(|validator| {
                 // ek_{i}^{eval_i}, i = validator index
-                // TODO: Replace with regular, single-element exponentiation
+                // TODO: Replace with regular, single-element exponentiation - #195
                 fast_multiexp(
                     // &evals.evals[i..i] = &evals.evals[i]
                     &[evals[validator.share_index as usize]], // one share per validator
                     validator.public_key.encryption_key.into_group(),
                 )[0]
             })
-            .collect::<Vec<ShareEncryptions<E>>>();
+            .collect::<Vec<_>>();
         if shares.len() != dkg.validators.len() {
             return Err(Error::InsufficientValidators(
                 shares.len() as u32,
@@ -182,9 +176,9 @@ impl<E: Pairing, T> PubliclyVerifiableSS<E, T> {
             ));
         }
 
-        // TODO: Cross check proof of knowledge check with the whitepaper; this check proves that there is a relationship between the secret and the pvss transcript
+        // TODO: Cross check proof of knowledge check with the whitepaper; this check proves that there is a relationship between the secret and the pvss transcript - #201
         // Sigma is a proof of knowledge of the secret, sigma = h^s
-        let sigma = E::G2Affine::generator().mul(*s).into(); // TODO: Use hash-to-curve here
+        let sigma = E::G2Affine::generator().mul(*s).into(); // TODO: Use hash-to-curve here? This can break compatibility - #195
         let vss = Self {
             coeffs,
             shares,
@@ -390,8 +384,8 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
             .unwrap();
 
         // First, verify that all update transcript are valid
-        // TODO: Consider what to do with failed verifications
-        // TODO: Find a better way to ensure they're always validated
+        // TODO: Consider what to do with failed verifications - #176
+        // TODO: Find a better way to ensure they're always validated - #176
         for update_transcript in update_transcripts.values() {
             update_transcript
                 .verify_refresh(validator_keys_map, &fft_domain)
@@ -401,7 +395,7 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         // Participants refresh their shares with the updates from each other:
         // TODO: Here we're just iterating over all current shares,
         //       implicitly assuming all of them will be refreshed.
-        //       Generalize to allow refreshing just a subset of the shares.
+        //       Generalize to allow refreshing just a subset of the shares. - #199
         let updated_blinded_shares: Vec<E::G2Affine> = self
             .shares
             .iter()
@@ -421,7 +415,7 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
             .collect();
 
         let refreshed_aggregate_transcript = Self {
-            coeffs: self.coeffs.clone(), // FIXME: coeffs need to be updated too
+            coeffs: self.coeffs.clone(), // FIXME: coeffs need to be updated too - #200
             shares: updated_blinded_shares,
             sigma: self.sigma,
             phantom: Default::default(),
@@ -444,7 +438,7 @@ pub struct AggregatedTranscript<E: Pairing> {
     pub public_key: ferveo_tdec::DkgPublicKey<E>,
 }
 
-// TODO: test?
+// TODO: Add tests - #202
 impl<E: Pairing> AggregatedTranscript<E> {
     pub fn from_transcripts(
         transcripts: &[PubliclyVerifiableSS<E>],
