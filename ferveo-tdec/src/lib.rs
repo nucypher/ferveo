@@ -244,34 +244,22 @@ mod tests {
         aad: &[u8],
         ciphertext: &Ciphertext<E>,
         shared_secret: &SharedSecret<E>,
-        g_inv: &E::G1Prepared,
     ) {
         // So far, the ciphertext is valid
         let plaintext =
-            decrypt_with_shared_secret(ciphertext, aad, shared_secret, g_inv)
-                .unwrap();
+            decrypt_with_shared_secret(ciphertext, aad, shared_secret).unwrap();
         assert_eq!(plaintext, msg);
 
         // Malformed the ciphertext
         let mut ciphertext = ciphertext.clone();
         ciphertext.ciphertext[0] += 1;
-        assert!(decrypt_with_shared_secret(
-            &ciphertext,
-            aad,
-            shared_secret,
-            g_inv,
-        )
-        .is_err());
+        assert!(decrypt_with_shared_secret(&ciphertext, aad, shared_secret,)
+            .is_err());
 
         // Malformed the AAD
         let aad = "bad aad".as_bytes();
-        assert!(decrypt_with_shared_secret(
-            &ciphertext,
-            aad,
-            shared_secret,
-            g_inv,
-        )
-        .is_err());
+        assert!(decrypt_with_shared_secret(&ciphertext, aad, shared_secret,)
+            .is_err());
     }
 
     #[test]
@@ -303,7 +291,6 @@ mod tests {
 
         let (pubkey, _, contexts) =
             setup_simple::<E>(shares_num, threshold, &mut rng);
-        let g_inv = &contexts[0].setup_params.g_inv;
 
         let ciphertext =
             encrypt::<E>(SecretBox::new(msg.clone()), aad, &pubkey, rng)
@@ -327,7 +314,6 @@ mod tests {
             aad,
             &ciphertext,
             &shared_secret,
-            g_inv,
         );
 
         // If we use less than threshold shares, we should fail
@@ -337,12 +323,8 @@ mod tests {
             &not_enough_contexts,
             &not_enough_dec_shares,
         );
-        let result = decrypt_with_shared_secret(
-            &ciphertext,
-            aad,
-            &bash_shared_secret,
-            g_inv,
-        );
+        let result =
+            decrypt_with_shared_secret(&ciphertext, aad, &bash_shared_secret);
         assert!(result.is_err());
     }
 
@@ -356,7 +338,6 @@ mod tests {
 
         let (pubkey, _, contexts) =
             setup_precomputed::<E>(shares_num, threshold, &mut rng);
-        let g_inv = &contexts[0].setup_params.g_inv;
         let ciphertext =
             encrypt::<E>(SecretBox::new(msg.clone()), aad, &pubkey, rng)
                 .unwrap();
@@ -388,19 +369,14 @@ mod tests {
             aad,
             &ciphertext,
             &shared_secret,
-            g_inv,
         );
 
         // If we use less than threshold shares, we should fail
         let not_enough_dec_shares = decryption_shares[..threshold - 1].to_vec();
         let bash_shared_secret =
             share_combine_precomputed(&not_enough_dec_shares);
-        let result = decrypt_with_shared_secret(
-            &ciphertext,
-            aad,
-            &bash_shared_secret,
-            g_inv,
-        );
+        let result =
+            decrypt_with_shared_secret(&ciphertext, aad, &bash_shared_secret);
         assert!(result.is_err());
     }
 

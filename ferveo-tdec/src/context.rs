@@ -44,7 +44,6 @@ impl<E: Pairing> PrivateDecryptionContextSimple<E> {
             &self.private_key_share,
             ciphertext_header,
             aad,
-            &self.setup_params.g_inv,
         )
     }
 
@@ -68,7 +67,6 @@ impl<E: Pairing> PrivateDecryptionContextSimple<E> {
             ciphertext_header,
             aad,
             &lagrange_coeffs[self.index],
-            &self.setup_params.g_inv,
         )
     }
 }

@@ -254,7 +254,6 @@ pub fn bench_share_encrypt_decrypt(c: &mut Criterion) {
                         &setup.shared.ciphertext,
                         &setup.shared.aad,
                         &setup.shared.shared_secret,
-                        &setup.contexts[0].setup_params.g_inv,
                     )
                     .unwrap(),
                 );
@@ -282,11 +281,8 @@ pub fn bench_ciphertext_validity_checks(c: &mut Criterion) {
             let mut rng = rng.clone();
             let setup = SetupSimple::new(shares_num, msg_size, &mut rng);
             move || {
-                black_box(setup.shared.ciphertext.check(
-                    &setup.shared.aad,
-                    &setup.contexts[0].setup_params.g_inv,
-                ))
-                .unwrap();
+                black_box(setup.shared.ciphertext.check(&setup.shared.aad))
+                    .unwrap();
             }
         };
         group.bench_function(

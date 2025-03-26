@@ -17,10 +17,7 @@ use serde_with::serde_as;
 use subproductdomain::fast_multiexp;
 use zeroize::ZeroizeOnDrop;
 
-use crate::{
-    batch_to_projective_g1, DomainPoint, Error, PubliclyVerifiableParams,
-    Result,
-};
+use crate::{batch_to_projective_g1, DomainPoint, Error, Result};
 
 type InnerBlindedKeyShare<E> = ferveo_tdec::BlindedKeyShare<E>;
 
@@ -91,7 +88,6 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
         aad: &[u8],
         validator_keypair: &Keypair<E>,
     ) -> Result<DecryptionShareSimple<E>> {
-        let g_inv = PubliclyVerifiableParams::<E>::default().g_inv();
         let private_key_share =
             self.unblind_private_key_share(validator_keypair);
         DecryptionShareSimple::create(
@@ -99,7 +95,6 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
             &private_key_share.unwrap(),
             ciphertext_header,
             aad,
-            &g_inv,
         )
         .map_err(|e| e.into())
     }
@@ -148,7 +143,6 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
 
         // Finally, pick the lagrange coefficient for the current share index
         let lagrange_coeff = &lagrange_coeffs[adjusted_share_index];
-        let g_inv = PubliclyVerifiableParams::<E>::default().g_inv();
         let private_key_share =
             self.unblind_private_key_share(validator_keypair);
         DecryptionSharePrecomputed::create(
@@ -158,7 +152,6 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
             ciphertext_header,
             aad,
             lagrange_coeff,
-            &g_inv,
         )
         .map_err(|e| e.into())
     }

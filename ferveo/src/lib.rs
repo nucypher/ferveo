@@ -225,7 +225,6 @@ mod test_dkg_full {
             &ciphertext,
             AAD,
             &shared_secret,
-            &dkg.pvss_params.g_inv(),
         )
         .unwrap();
         assert_eq!(plaintext, MSG);
@@ -317,7 +316,6 @@ mod test_dkg_full {
             &ciphertext,
             AAD,
             &shared_secret,
-            &dkg.pvss_params.g_inv(),
         )
         .unwrap();
         assert_eq!(plaintext, MSG);

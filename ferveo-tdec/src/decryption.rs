@@ -84,9 +84,8 @@ impl<E: Pairing> DecryptionShareSimple<E> {
         private_key_share: &PrivateKeyShare<E>,
         ciphertext_header: &CiphertextHeader<E>,
         aad: &[u8],
-        g_inv: &E::G1Prepared,
     ) -> Result<Self> {
-        ciphertext_header.check(aad, g_inv)?;
+        ciphertext_header.check(aad)?;
         Self::create_unchecked(
             validator_decryption_key,
             private_key_share,
@@ -159,9 +158,8 @@ impl<E: Pairing> DecryptionSharePrecomputed<E> {
         ciphertext_header: &CiphertextHeader<E>,
         aad: &[u8],
         lagrange_coeff: &E::ScalarField,
-        g_inv: &E::G1Prepared,
     ) -> Result<Self> {
-        ciphertext_header.check(aad, g_inv)?;
+        ciphertext_header.check(aad)?;
         Self::create_unchecked(
             validator_index,
             validator_decryption_key,

@@ -65,12 +65,10 @@ pub fn decrypt_with_shared_secret(
     aad: &[u8],
     shared_secret: &SharedSecret,
 ) -> Result<Vec<u8>> {
-    let g_inv = PubliclyVerifiableParams::<E>::default().g_inv();
     ferveo_tdec::api::decrypt_with_shared_secret(
         &ciphertext.0,
         aad,
         &shared_secret.0,
-        &g_inv,
     )
     .map_err(Error::from)
 }
