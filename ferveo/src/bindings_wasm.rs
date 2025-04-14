@@ -206,7 +206,7 @@ pub struct DecryptionSharePrecomputed(
 
 generate_common_methods!(DecryptionSharePrecomputed);
 
-type InnerPublicKey = api::PublicKey;
+type InnerPublicKey = api::ValidatorPublicKey;
 
 #[wasm_bindgen]
 #[derive(
@@ -322,14 +322,6 @@ pub struct DkgPublicKey(InnerDkgPublicKey);
 
 generate_equals!(DkgPublicKey);
 generate_boxed_bytes_serialization!(DkgPublicKey, InnerDkgPublicKey);
-
-#[wasm_bindgen]
-impl DkgPublicKey {
-    #[wasm_bindgen]
-    pub fn random() -> DkgPublicKey {
-        Self(api::DkgPublicKey::random())
-    }
-}
 
 #[wasm_bindgen]
 pub struct Dkg(api::Dkg);
@@ -582,7 +574,7 @@ impl AggregatedTranscript {
 
 #[wasm_bindgen]
 #[derive(Serialize, Deserialize)]
-pub struct Keypair(api::Keypair);
+pub struct Keypair(api::ValidatorKeypair);
 
 generate_common_methods!(Keypair);
 
@@ -590,7 +582,7 @@ generate_common_methods!(Keypair);
 impl Keypair {
     #[wasm_bindgen(getter, js_name = "secureRandomnessSize")]
     pub fn secure_randomness_size() -> usize {
-        api::Keypair::secure_randomness_size()
+        api::ValidatorKeypair::secure_randomness_size()
     }
 
     #[wasm_bindgen(getter, js_name = "publicKey")]
@@ -600,14 +592,14 @@ impl Keypair {
 
     #[wasm_bindgen]
     pub fn random() -> Self {
-        Self(api::Keypair::new(&mut thread_rng()))
+        Self(api::ValidatorKeypair::new(&mut thread_rng()))
     }
 
     #[wasm_bindgen(js_name = "fromSecureRandomness")]
     pub fn from_secure_randomness(bytes: &[u8]) -> JsResult<Keypair> {
         set_panic_hook();
-        let keypair =
-            api::Keypair::from_secure_randomness(bytes).map_err(map_js_err)?;
+        let keypair = api::ValidatorKeypair::from_secure_randomness(bytes)
+            .map_err(map_js_err)?;
         Ok(Self(keypair))
     }
 }

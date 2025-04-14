@@ -14,7 +14,7 @@ use sha2::{digest::Digest, Sha256};
 use zeroize::ZeroizeOnDrop;
 
 use crate::{
-    htp_bls12381_g2, Error, PrivateKeyShare, PublicKey, Result, SecretBox,
+    htp_bls12381_g2, DkgPublicKey, Error, PrivateKeyShare, Result, SecretBox,
     SharedSecret,
 };
 
@@ -35,8 +35,8 @@ pub struct Ciphertext<E: Pairing> {
 }
 
 impl<E: Pairing> Ciphertext<E> {
-    pub fn check(&self, aad: &[u8], g_inv: &E::G1Prepared) -> Result<bool> {
-        self.header()?.check(aad, g_inv)
+    pub fn check(&self, aad: &[u8]) -> Result<bool> {
+        self.header()?.check(aad)
     }
 
     pub fn ciphertext_hash(&self) -> [u8; 32] {
@@ -66,7 +66,7 @@ pub struct CiphertextHeader<E: Pairing> {
 }
 
 impl<E: Pairing> CiphertextHeader<E> {
-    pub fn check(&self, aad: &[u8], g_inv: &E::G1Prepared) -> Result<bool> {
+    pub fn check(&self, aad: &[u8]) -> Result<bool> {
         // Implements a variant of the check in section 4.4.2 of the Ferveo paper:
         // 'TPKE.CheckCiphertextValidity(U,W,aad)'
         // See: https://eprint.iacr.org/2022/898.pdf
@@ -79,10 +79,12 @@ impl<E: Pairing> CiphertextHeader<E> {
             aad,
         )?);
 
+        let g = E::G1Affine::generator();
+        let g_inv = E::G1Prepared::from(-g.into_group());
         let is_ciphertext_valid = E::multi_pairing(
             // e(U, H_G2(U, sym_ctxt_digest, aad)) == e(G, W) ==>
             // e(U, H_G2(U, sym_ctxt_digest, aad)) * e(G_inv, W) == 1
-            [self.commitment.into(), g_inv.to_owned()],
+            [self.commitment.into(), g_inv],
             [hash_g2, self.auth_tag.into()],
         )
         .0 == E::TargetField::one();
@@ -98,7 +100,7 @@ impl<E: Pairing> CiphertextHeader<E> {
 pub fn encrypt<E: Pairing>(
     message: SecretBox<Vec<u8>>,
     aad: &[u8],
-    pubkey: &PublicKey<E>,
+    pubkey: &DkgPublicKey<E>,
     rng: &mut impl rand::Rng,
 ) -> Result<Ciphertext<E>> {
     // r
@@ -122,7 +124,7 @@ pub fn encrypt<E: Pairing>(
         aad,
     };
     let ciphertext = shared_secret_to_chacha(&shared_secret)?
-        .encrypt(&nonce.0, payload)
+        .encrypt(&nonce.0, payload) // TODO: Consider encrypt_in_place (#196)
         .map_err(Error::SymmetricEncryptionError)?
         .to_vec();
     let ciphertext_hash = sha256(&ciphertext);
@@ -144,9 +146,8 @@ pub fn decrypt_symmetric<E: Pairing>(
     ciphertext: &Ciphertext<E>,
     aad: &[u8],
     private_key: &PrivateKeyShare<E>,
-    g_inv: &E::G1Prepared,
 ) -> Result<Vec<u8>> {
-    ciphertext.check(aad, g_inv)?;
+    ciphertext.check(aad)?;
     let shared_secret = E::pairing(
         E::G1Prepared::from(ciphertext.commitment),
         E::G2Prepared::from(private_key.0),
@@ -179,9 +180,8 @@ pub fn decrypt_with_shared_secret<E: Pairing>(
     ciphertext: &Ciphertext<E>,
     aad: &[u8],
     shared_secret: &SharedSecret<E>,
-    g_inv: &E::G1Prepared,
 ) -> Result<Vec<u8>> {
-    ciphertext.check(aad, g_inv)?;
+    ciphertext.check(aad)?;
     decrypt_with_shared_secret_unchecked(ciphertext, aad, shared_secret)
 }
 
@@ -260,22 +260,20 @@ mod tests {
         let msg = "my-msg".as_bytes().to_vec();
         let aad: &[u8] = "my-aad".as_bytes();
 
-        let (pubkey, privkey, contexts) =
+        let (pubkey, privkey, _) =
             setup_simple::<E>(threshold, shares_num, rng);
-        let g_inv = &contexts[0].setup_params.g_inv;
 
         let ciphertext =
             encrypt::<E>(SecretBox::new(msg.clone()), aad, &pubkey, rng)
                 .unwrap();
 
-        let plaintext =
-            decrypt_symmetric(&ciphertext, aad, &privkey, g_inv).unwrap();
+        let plaintext = decrypt_symmetric(&ciphertext, aad, &privkey).unwrap();
 
         assert_eq!(msg, plaintext);
 
         let bad: &[u8] = "bad-aad".as_bytes();
 
-        assert!(decrypt_symmetric(&ciphertext, bad, &privkey, g_inv).is_err());
+        assert!(decrypt_symmetric(&ciphertext, bad, &privkey).is_err());
     }
 
     #[test]
@@ -285,21 +283,19 @@ mod tests {
         let threshold = shares_num * 2 / 3;
         let msg = "my-msg".as_bytes().to_vec();
         let aad: &[u8] = "my-aad".as_bytes();
-        let (pubkey, _, contexts) =
-            setup_simple::<E>(threshold, shares_num, rng);
-        let g_inv = contexts[0].setup_params.g_inv.clone();
+        let (pubkey, _, _) = setup_simple::<E>(threshold, shares_num, rng);
         let mut ciphertext =
             encrypt::<E>(SecretBox::new(msg), aad, &pubkey, rng).unwrap();
 
         // So far, the ciphertext is valid
-        assert!(ciphertext.check(aad, &g_inv).is_ok());
+        assert!(ciphertext.check(aad).is_ok());
 
         // Malformed the ciphertext
         ciphertext.ciphertext[0] += 1;
-        assert!(ciphertext.check(aad, &g_inv).is_err());
+        assert!(ciphertext.check(aad).is_err());
 
         // Malformed the AAD
         let aad = "bad aad".as_bytes();
-        assert!(ciphertext.check(aad, &g_inv).is_err());
+        assert!(ciphertext.check(aad).is_err());
     }
 }

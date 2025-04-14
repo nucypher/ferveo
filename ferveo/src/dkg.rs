@@ -9,8 +9,9 @@ use rand::RngCore;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    assert_no_share_duplicates, AggregatedTranscript, Error, EthereumAddress,
-    PubliclyVerifiableParams, PubliclyVerifiableSS, Result, Validator,
+    assert_no_share_duplicates, refresh, AggregatedTranscript, Error,
+    EthereumAddress, PubliclyVerifiableParams, PubliclyVerifiableSS, Result,
+    UpdateTranscript, Validator,
 };
 
 pub type DomainPoint<E> = <E as Pairing>::ScalarField;
@@ -172,8 +173,23 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         self.domain
             .elements()
             .enumerate()
-            .map(|(i, point)| (i as u32, point))
+            .map(|(share_index, point)| (share_index as u32, point))
             .collect::<HashMap<_, _>>()
+    }
+
+    // TODO: Revisit naming later
+    /// Return a map of domain points for the DKG
+    pub fn domain_and_key_map(
+        &self,
+    ) -> HashMap<u32, (DomainPoint<E>, PublicKey<E>)> {
+        let map = self.domain_point_map();
+        self.validators
+            .values()
+            .map(|v| {
+                let domain_point = map.get(&v.share_index).unwrap();
+                (v.share_index, (*domain_point, v.public_key))
+            })
+            .collect::<_>()
     }
 
     /// Verify PVSS transcripts against the set of validators in the DKG
@@ -208,6 +224,19 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         }
 
         Ok(())
+    }
+
+    // Returns a new refresh transcript for current validators in DKG
+    // TODO: Allow to pass a parameter to restrict target validators
+    pub fn generate_refresh_transcript<R: RngCore>(
+        &self,
+        rng: &mut R,
+    ) -> Result<refresh::UpdateTranscript<E>> {
+        Ok(UpdateTranscript::create_refresh_updates(
+            &self.domain_and_key_map(),
+            self.dkg_params.security_threshold(),
+            rng,
+        ))
     }
 }
 
@@ -254,7 +283,7 @@ mod test_dealing {
     #[test]
     fn test_canonical_share_indices_are_enforced() {
         let shares_num = 4;
-        let security_threshold = shares_num - 1;
+        let security_threshold = shares_num;
         let keypairs = gen_keypairs(shares_num);
         let mut validators = gen_validators(&keypairs);
         let me = validators[0].clone();

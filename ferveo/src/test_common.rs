@@ -101,6 +101,7 @@ pub fn setup_dealt_dkg_with(
     )
 }
 
+// TODO: Review usage of this function - #197
 pub fn setup_dealt_dkg_with_n_validators(
     security_threshold: u32,
     shares_num: u32,

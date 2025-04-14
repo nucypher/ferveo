@@ -1,6 +1,6 @@
 use std::ops::Mul;
 
-use ark_ec::{pairing::Pairing, CurveGroup};
+use ark_ec::{pairing::Pairing, CurveGroup, Group};
 use ark_ff::Field;
 use ferveo_common::serialization;
 use itertools::izip;
@@ -41,7 +41,6 @@ impl<E: Pairing> ValidatorShareChecksum<E> {
         decryption_share: &E::TargetField,
         share_aggregate: &E::G2Affine,
         validator_public_key: &E::G2Affine,
-        h: &E::G2,
         ciphertext: &Ciphertext<E>,
     ) -> bool {
         // See https://github.com/nucypher/ferveo/issues/42#issuecomment-1398953777
@@ -50,10 +49,10 @@ impl<E: Pairing> ValidatorShareChecksum<E> {
             return false;
         }
 
-        // TODO: use multipairing here (h_inv)
+        // TODO: use multipairing here (h_inv) - Issue #192
         // e(C_i, ek_i) == e(U, H)
         if E::pairing(self.checksum, *validator_public_key)
-            != E::pairing(ciphertext.commitment, *h)
+            != E::pairing(ciphertext.commitment, E::G2::generator())
         {
             return false;
         }
@@ -85,9 +84,8 @@ impl<E: Pairing> DecryptionShareSimple<E> {
         private_key_share: &PrivateKeyShare<E>,
         ciphertext_header: &CiphertextHeader<E>,
         aad: &[u8],
-        g_inv: &E::G1Prepared,
     ) -> Result<Self> {
-        ciphertext_header.check(aad, g_inv)?;
+        ciphertext_header.check(aad)?;
         Self::create_unchecked(
             validator_decryption_key,
             private_key_share,
@@ -121,14 +119,12 @@ impl<E: Pairing> DecryptionShareSimple<E> {
         &self,
         share_aggregate: &E::G2Affine,
         validator_public_key: &E::G2Affine,
-        h: &E::G2,
         ciphertext: &Ciphertext<E>,
     ) -> bool {
         self.validator_checksum.verify(
             &self.decryption_share,
             share_aggregate,
             validator_public_key,
-            h,
             ciphertext,
         )
     }
@@ -162,9 +158,8 @@ impl<E: Pairing> DecryptionSharePrecomputed<E> {
         ciphertext_header: &CiphertextHeader<E>,
         aad: &[u8],
         lagrange_coeff: &E::ScalarField,
-        g_inv: &E::G1Prepared,
     ) -> Result<Self> {
-        ciphertext_header.check(aad, g_inv)?;
+        ciphertext_header.check(aad)?;
         Self::create_unchecked(
             validator_index,
             validator_decryption_key,
@@ -207,14 +202,12 @@ impl<E: Pairing> DecryptionSharePrecomputed<E> {
         &self,
         share_aggregate: &E::G2Affine,
         validator_public_key: &E::G2Affine,
-        h: &E::G2,
         ciphertext: &Ciphertext<E>,
     ) -> bool {
         self.validator_checksum.verify(
             &self.decryption_share,
             share_aggregate,
             validator_public_key,
-            h,
             ciphertext,
         )
     }
@@ -234,8 +227,7 @@ pub fn verify_decryption_shares_simple<E: Pairing>(
     {
         let is_valid = decryption_share.verify(
             y_i,
-            &pub_context.validator_public_key.into_affine(),
-            &pub_context.h.into(),
+            &pub_context.validator_public_key.encryption_key,
             ciphertext,
         );
         if !is_valid {

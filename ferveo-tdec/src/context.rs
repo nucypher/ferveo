@@ -2,29 +2,19 @@ use ark_ec::pairing::Pairing;
 
 use crate::{
     prepare_combine_simple, BlindedKeyShare, CiphertextHeader,
-    DecryptionSharePrecomputed, DecryptionShareSimple, PrivateKeyShare,
-    PublicKey, Result,
+    DecryptionSharePrecomputed, DecryptionShareSimple, PrivateKeyShare, Result,
+    ShareCommitment,
 };
-
-#[derive(Clone, Debug)]
-pub struct PublicDecryptionContextFast<E: Pairing> {
-    pub domain: E::ScalarField,
-    pub public_key: PublicKey<E>,
-    pub blinded_key_share: BlindedKeyShare<E>,
-    // This decrypter's contribution to N(0), namely (-1)^|domain| * \prod_i omega_i
-    pub lagrange_n_0: E::ScalarField,
-    pub h_inv: E::G2Prepared,
-}
 
 #[derive(Clone, Debug)]
 pub struct PublicDecryptionContextSimple<E: Pairing> {
     pub domain: E::ScalarField,
-    pub public_key: PublicKey<E>,
+    pub share_commitment: ShareCommitment<E>,
     pub blinded_key_share: BlindedKeyShare<E>,
-    pub h: E::G2Affine,
-    pub validator_public_key: E::G2,
+    pub validator_public_key: ferveo_common::PublicKey<E>,
 }
 
+// TODO: Mark for removal - #197
 #[derive(Clone, Debug)]
 pub struct SetupParams<E: Pairing> {
     pub b: E::ScalarField, // Validator private key
@@ -54,7 +44,6 @@ impl<E: Pairing> PrivateDecryptionContextSimple<E> {
             &self.private_key_share,
             ciphertext_header,
             aad,
-            &self.setup_params.g_inv,
         )
     }
 
@@ -78,7 +67,6 @@ impl<E: Pairing> PrivateDecryptionContextSimple<E> {
             ciphertext_header,
             aad,
             &lagrange_coeffs[self.index],
-            &self.setup_params.g_inv,
         )
     }
 }
