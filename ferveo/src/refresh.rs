@@ -374,6 +374,23 @@ impl<E: Pairing> HandoverTranscript<E> {
             Err(Error::InvalidShareUpdate) // TODO: review error
         }
     }
+
+    pub fn finalize(
+        &self,
+        departing_validator_keypair: &Keypair<E>,
+        incoming_public_key: PublicKey<E>,
+    ) -> BlindedKeyShare<E> {
+        let new_blinded_share_element = &self.double_blind_share.mul(
+            departing_validator_keypair
+                .decryption_key
+                .inverse()
+                .unwrap(),
+        );
+        BlindedKeyShare::<E> {
+            validator_public_key: incoming_public_key.encryption_key,
+            blinded_key_share: new_blinded_share_element.into_affine(),
+        }
+    }
 }
 
 /// Prepare share updates with a given root (0 for refresh, some x coord for recovery)
@@ -445,11 +462,10 @@ mod tests_refresh {
     use std::{collections::HashMap, ops::Mul};
 
     use ark_ec::CurveGroup;
-    use ark_ff::Field;
     use ark_poly::EvaluationDomain;
     use ark_std::{test_rng, UniformRand, Zero};
     use ferveo_common::Keypair;
-    use ferveo_tdec::{lagrange_basis_at, test_common::setup_simple, BlindedKeyShare};
+    use ferveo_tdec::{lagrange_basis_at, test_common::setup_simple};
     use itertools::{zip_eq, Itertools};
     use test_case::test_case;
 
@@ -877,10 +893,10 @@ mod tests_refresh {
         let departing_validator_keypair = Keypair::<E> {
             decryption_key: departing_validator_private_key,
         };
-        let new_blinded_share = BlindedKeyShare::<E> {
-            validator_public_key: incoming_validator_keypair.public_key().encryption_key,
-            blinded_key_share: handover_transcript.double_blind_share.mul(departing_validator_private_key.inverse().unwrap()).into_affine(),
-        };
+        let new_blinded_share = handover_transcript.finalize(
+            &departing_validator_keypair,
+            incoming_validator_keypair.public_key()
+        );
 
         let old_private_share = departing_blinded_share.unblind(&departing_validator_keypair);
         let new_private_share = new_blinded_share.unblind(&incoming_validator_keypair);
