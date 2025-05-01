@@ -1,7 +1,6 @@
 use std::{collections::HashMap, ops::Mul, usize};
-
 use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
-use ark_ff::Zero;
+use ark_ff::{Field, Zero};
 use ark_poly::{
     univariate::DensePolynomial, DenseUVPolynomial, EvaluationDomain,
     Polynomial,
@@ -10,7 +9,7 @@ use ark_std::{One, UniformRand};
 use ferveo_common::{serialization, Keypair, PublicKey};
 use ferveo_tdec::{
     prepare_combine_simple, BlindedKeyShare, CiphertextHeader,
-    DecryptionSharePrecomputed, DecryptionShareSimple,
+    DecryptionSharePrecomputed, DecryptionShareSimple, ShareCommitment,
 };
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
@@ -48,21 +47,22 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
         index: u32,
     ) -> Self {
         // Current participant receives update transcripts from other participants
-        let share_updates: Vec<_> = update_transcripts
+        let share_updates_for_index: Vec<_> = update_transcripts
             .values()
             .map(|update_transcript_from_producer| {
-                let update_for_participant = update_transcript_from_producer
-                    .updates
-                    .get(&index)
-                    .cloned()
-                    .unwrap();
+                let update_for_participant: ShareUpdate<E> =
+                    update_transcript_from_producer
+                        .updates
+                        .get(&index)
+                        .cloned()
+                        .unwrap();
                 update_for_participant
             })
             .collect();
 
         // TODO: Validate commitments from share update
         // FIXME: Don't forget!!!!! - #200
-        let updated_key_share = share_updates
+        let updated_key_share = share_updates_for_index
             .iter()
             .fold(self.0.blinded_key_share, |acc, delta| {
                 (acc + delta.update).into()
@@ -347,13 +347,13 @@ impl<E: Pairing> HandoverTranscript<E> {
     }
 
     // See similarity with transcript check #4 (do_verify_full in pvss)
-    pub fn validate(&self, share_commitment_a_i: E::G1) -> Result<bool> {
+    pub fn validate(&self, share_commitment_a_i: ShareCommitment<E>) -> Result<bool> {
         // e(comm_G1, double_blind_share) == e(A_i, comm_share)
         //   or equivalently:
         // e(-comm_G1, double_blind_share) · e(A_i, comm_share) == 1
         let commitment_to_g1_inv = -self.commitment_to_g1;
         let mut is_valid = E::multi_pairing(
-            [commitment_to_g1_inv, share_commitment_a_i],
+            [commitment_to_g1_inv, share_commitment_a_i.0.into()],
             [self.double_blind_share, self.commitment_to_share],
         )
         .0 == E::TargetField::one();
@@ -396,7 +396,7 @@ fn prepare_share_updates_with_root<E: Pairing>(
     let coeff_commitments = fast_multiexp(&update_poly.coeffs, g);
 
     // Now, we need to evaluate the polynomial at each of participants' indices
-    let share_updates = domain_points_and_keys
+    let share_updates: HashMap<u32, ShareUpdate<E>> = domain_points_and_keys
         .iter()
         .map(|(share_index, tuple)| {
             let (x_i, pubkey_i) = tuple;
@@ -408,7 +408,7 @@ fn prepare_share_updates_with_root<E: Pairing>(
             let share_update = ShareUpdate { update, commitment };
             (*share_index, share_update)
         })
-        .collect::<HashMap<_, _>>();
+        .collect::<HashMap<u32, ShareUpdate<E>>>();
 
     UpdateTranscript {
         coeffs: coeff_commitments,
@@ -445,10 +445,11 @@ mod tests_refresh {
     use std::{collections::HashMap, ops::Mul};
 
     use ark_ec::CurveGroup;
+    use ark_ff::Field;
     use ark_poly::EvaluationDomain;
     use ark_std::{test_rng, UniformRand, Zero};
     use ferveo_common::Keypair;
-    use ferveo_tdec::{lagrange_basis_at, test_common::setup_simple};
+    use ferveo_tdec::{lagrange_basis_at, test_common::setup_simple, BlindedKeyShare};
     use itertools::{zip_eq, Itertools};
     use test_case::test_case;
 
@@ -843,54 +844,76 @@ mod tests_refresh {
 
         // For simplicity, we're going to do the handover with the last participant
         let departing_participant = private_contexts.last().unwrap();
+        let handover_slot_index: u32  = departing_participant.index as u32;
         let departing_public_context = departing_participant
             .public_decryption_contexts
-            .get(departing_participant.index)
+            .get(handover_slot_index as usize)
             .unwrap();
 
         // First, create a handover transcript
-        let outgoing_blinded_share = departing_public_context.blinded_key_share;
-        let outgoing_public_key = ferveo_common::PublicKey {
+        let departing_blinded_share = departing_public_context.blinded_key_share;
+        let departing_public_key = ferveo_common::PublicKey {
             encryption_key: departing_public_context
                 .blinded_key_share
                 .validator_public_key,
         };
 
         let handover_transcript = HandoverTranscript::<E>::new(
-            &outgoing_blinded_share,
-            outgoing_public_key,
+            &departing_blinded_share,
+            departing_public_key,
             &incoming_validator_keypair,
             rng,
         );
 
         // Make sure handover transcript is valid. This is publicly verifiable.
         assert!(handover_transcript
-            .validate(departing_public_context.share_commitment.0.into())
+            .validate(departing_public_context.share_commitment)
             .unwrap());
 
-        let domain_points = &contexts
+        // This portion shows that handover can be finalized by the departing participant,
+        // and that the new blinded share contains the same private key share.
+        // TODO: This is a low-level check for now. This will be part of the handover protocol.
+        let departing_validator_private_key = departing_participant.setup_params.b;
+        let departing_validator_keypair = Keypair::<E> {
+            decryption_key: departing_validator_private_key,
+        };
+        let new_blinded_share = BlindedKeyShare::<E> {
+            validator_public_key: incoming_validator_keypair.public_key().encryption_key,
+            blinded_key_share: handover_transcript.double_blind_share.mul(departing_validator_private_key.inverse().unwrap()).into_affine(),
+        };
+
+        let old_private_share = departing_blinded_share.unblind(&departing_validator_keypair);
+        let new_private_share = new_blinded_share.unblind(&incoming_validator_keypair);
+        assert_eq!(new_private_share, old_private_share);
+
+        // We check that the private share from the other participants plus the
+        // new_private_share obtained after handover can be combined to
+        // reconstruct the shared private key.
+        let other_participants = private_contexts
             .iter()
-        let shares = private_contexts
-            .iter()
-            .map(|p| {
+            .filter(|p| p.index as u32 != handover_slot_index);
+        
+        let mut shares_map = other_participants
+            .map(|p| 
+        {
                 let participant_index = p.index as u32;
-                let blinded_key_share =
-                    p.public_decryption_contexts[p.index].blinded_key_share;
+                let blinded_key_share = p.public_decryption_contexts[p.index].blinded_key_share;
                 let validator_keypair = ferveo_common::Keypair {
                     decryption_key: p.setup_params.b,
                 };
+                
                 let private_share =
                     blinded_key_share.unblind(&validator_keypair);
 
                 (participant_index, private_share)
             })
-            // We only need `threshold` refreshed shares to recover the original share
-            .take(security_threshold)
             .collect::<HashMap<u32, ferveo_tdec::PrivateKeyShare<E>>>();
-
+        
+        shares_map.insert(handover_slot_index, new_private_share);
+            
         let x_r = ScalarField::zero();
         let new_shared_private_key =
-            combine_private_shares_at(&x_r, domain_points, &shares);
+            combine_private_shares_at(&x_r, domain_points, &shares_map);
         assert_eq!(shared_private_key, new_shared_private_key);
     }
 }
