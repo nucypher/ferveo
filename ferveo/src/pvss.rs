@@ -224,6 +224,17 @@ impl<E: Pairing, T> PubliclyVerifiableSS<E, T> {
     }
 }
 
+// Generate the share commitment vector A from the polynomial commitments F
+// See https://github.com/nucypher/ferveo/issues/44#issuecomment-1721550475
+pub fn get_share_commitments_from_poly_commitments<E: Pairing>(
+    poly_comms: &[E::G1Affine],
+    domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
+) -> Vec<E::G1> {
+    let mut commitment = batch_to_projective_g1::<E>(poly_comms);
+    domain.fft_in_place(&mut commitment);
+    commitment
+}
+
 // TODO: Return validator that failed the check
 pub fn do_verify_full<E: Pairing>(
     pvss_coefficients: &[E::G1Affine],
@@ -234,10 +245,10 @@ pub fn do_verify_full<E: Pairing>(
 ) -> Result<bool> {
     assert_no_share_duplicates(validators)?;
 
-    // Generate the share commitment vector A from the polynomial commitments F
-    // See https://github.com/nucypher/ferveo/issues/44#issuecomment-1721550475
-    let mut commitment = batch_to_projective_g1::<E>(pvss_coefficients);
-    domain.fft_in_place(&mut commitment);
+    let share_commitments = get_share_commitments_from_poly_commitments::<E>(
+        pvss_coefficients,
+        domain,
+    );
 
     // Each validator checks that their share is correct
     for validator in validators {
@@ -249,7 +260,7 @@ pub fn do_verify_full<E: Pairing>(
             .ok_or(Error::InvalidShareIndex(validator.share_index))?;
         // Validator checks aggregated shares against commitment
         let ek_i = validator.public_key.encryption_key.into_group();
-        let a_i = commitment
+        let a_i = share_commitments
             .get(validator.share_index as usize)
             .ok_or(Error::InvalidShareIndex(validator.share_index))?;
         // We verify that e(G, Y_i) = e(A_i, ek_i) for validator i
