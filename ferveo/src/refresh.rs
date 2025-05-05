@@ -350,14 +350,14 @@ impl<E: Pairing> HandoverTranscript<E> {
     // See similarity with transcript check #4 (do_verify_full in pvss)
     pub fn validate(
         &self,
-        share_commitment_a_i: ShareCommitment<E>,
+        share_commitment: ShareCommitment<E>,
     ) -> Result<bool> {
         // e(comm_G1, double_blind_share) == e(A_i, comm_share)
         //   or equivalently:
         // e(-comm_G1, double_blind_share) · e(A_i, comm_share) == 1
         let commitment_to_g1_inv = -self.commitment_to_g1;
         let mut is_valid = E::multi_pairing(
-            [commitment_to_g1_inv, share_commitment_a_i.0.into()],
+            [commitment_to_g1_inv, share_commitment.0.into()],
             [self.double_blind_share, self.commitment_to_share],
         )
         .0 == E::TargetField::one();
@@ -382,18 +382,22 @@ impl<E: Pairing> HandoverTranscript<E> {
     pub fn finalize(
         &self,
         departing_validator_keypair: &Keypair<E>,
-        incoming_public_key: PublicKey<E>,
-    ) -> BlindedKeyShare<E> {
+        share_commitment: ShareCommitment<E>,
+    ) -> Result<BlindedKeyShare<E>> {
+        let is_valid = &self.validate(share_commitment).unwrap();
+        if !is_valid {
+            return Err(Error::InvalidShareUpdate); // TODO: Make this more specific
+        }
         let new_blinded_share_element = &self.double_blind_share.mul(
             departing_validator_keypair
                 .decryption_key
                 .inverse()
                 .unwrap(),
         );
-        BlindedKeyShare::<E> {
-            validator_public_key: incoming_public_key.encryption_key,
+        Ok(BlindedKeyShare::<E> {
+            validator_public_key: self.incoming_pubkey.encryption_key,
             blinded_key_share: new_blinded_share_element.into_affine(),
-        }
+        })
     }
 }
 
@@ -899,10 +903,12 @@ mod tests_refresh {
         let departing_validator_keypair = Keypair::<E> {
             decryption_key: departing_validator_private_key,
         };
-        let new_blinded_share = handover_transcript.finalize(
-            &departing_validator_keypair,
-            incoming_validator_keypair.public_key(),
-        );
+        let new_blinded_share = handover_transcript
+            .finalize(
+                &departing_validator_keypair,
+                departing_public_context.share_commitment,
+            )
+            .unwrap();
 
         let old_private_share =
             departing_blinded_share.unblind(&departing_validator_keypair);
