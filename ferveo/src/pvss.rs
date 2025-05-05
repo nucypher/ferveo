@@ -9,7 +9,7 @@ use ark_poly::{
 use ferveo_common::{serialization, Keypair, PublicKey};
 use ferveo_tdec::{
     BlindedKeyShare, CiphertextHeader, DecryptionSharePrecomputed,
-    DecryptionShareSimple,
+    DecryptionShareSimple, ShareCommitment,
 };
 use itertools::Itertools;
 use rand::RngCore;
@@ -20,7 +20,7 @@ use zeroize::{self, Zeroize, ZeroizeOnDrop};
 
 use crate::{
     assert_no_share_duplicates, batch_to_projective_g1, batch_to_projective_g2,
-    DomainPoint, Error, PubliclyVerifiableDkg, Result,
+    DomainPoint, Error, HandoverTranscript, PubliclyVerifiableDkg, Result,
     UpdatableBlindedKeyShare, UpdateTranscript, Validator,
 };
 
@@ -432,6 +432,47 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
             phantom: Default::default(),
         };
         Ok(refreshed_aggregate_transcript)
+    }
+
+    pub fn handover(
+        &self,
+        handover_transcript: &HandoverTranscript<E>,
+        validator_keypair: &Keypair<E>,
+    ) -> Result<Self> {
+        let num_shares = self.shares.len();
+        let fft_domain =
+            ark_poly::GeneralEvaluationDomain::<E::ScalarField>::new(
+                num_shares,
+            )
+            .unwrap();
+        let share_commitments = get_share_commitments_from_poly_commitments::<E>(
+            &self.coeffs,
+            &fft_domain,
+        );
+        // TODO: Check share index corresponds to validator
+        let share_index = handover_transcript.share_index as usize;
+        let share_commitment = ShareCommitment::<E>(
+            share_commitments
+                .get(share_index)
+                .ok_or(Error::InvalidShareIndex(share_index as u32))
+                .unwrap()
+                .into_affine(),
+        );
+        let new_blind_share = handover_transcript
+            .finalize(validator_keypair, share_commitment)
+            .unwrap();
+
+        let mut original_shares = self.shares.clone();
+        let new_shares = original_shares.as_mut_slice();
+        new_shares[share_index] = new_blind_share.blinded_key_share;
+
+        let aggregrate_post_handover = Self {
+            coeffs: self.coeffs.clone(),
+            shares: new_shares.to_vec(),
+            sigma: self.sigma,
+            phantom: Default::default(),
+        };
+        Ok(aggregrate_post_handover)
     }
 }
 
