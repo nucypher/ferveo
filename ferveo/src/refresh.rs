@@ -309,6 +309,7 @@ impl<E: Pairing> UpdateTranscript<E> {
 // incoming node's private key.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HandoverTranscript<E: Pairing> {
+    pub share_index: u32,
     pub double_blind_share: E::G2,
     pub commitment_to_share: E::G2,
     pub commitment_to_g1: E::G1,
@@ -319,6 +320,7 @@ pub struct HandoverTranscript<E: Pairing> {
 
 impl<E: Pairing> HandoverTranscript<E> {
     pub fn new(
+        share_index: u32,
         outgoing_blinded_share: &BlindedKeyShare<E>,
         outgoing_pubkey: PublicKey<E>,
         incoming_validator_keypair: &Keypair<E>,
@@ -338,6 +340,7 @@ impl<E: Pairing> HandoverTranscript<E> {
             .mul(incoming_decryption_key.mul(random_scalar));
 
         Self {
+            share_index,
             double_blind_share,
             commitment_to_share,
             commitment_to_g1: E::G1::generator().mul(random_scalar),
@@ -884,6 +887,7 @@ mod tests_refresh {
         };
 
         let handover_transcript = HandoverTranscript::<E>::new(
+            handover_slot_index,
             &departing_blinded_share,
             departing_public_key,
             &incoming_validator_keypair,
