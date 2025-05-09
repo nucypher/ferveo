@@ -235,6 +235,31 @@ pub fn get_share_commitments_from_poly_commitments<E: Pairing>(
     commitment
 }
 
+pub fn verify_validator_share<E: Pairing>(
+    share_commitments: &[E::G1],
+    pvss_encrypted_shares: &[E::G2Affine],
+    share_index: usize,
+    validator_public_key: PublicKey<E>,
+) -> Result<bool> {
+    // TODO: Check #3 is missing
+    // See #3 in 4.2.3 section of https://eprint.iacr.org/2022/898.pdf
+    let y_i = pvss_encrypted_shares
+        .get(share_index)
+        .ok_or(Error::InvalidShareIndex(share_index as u32))?;
+    // Validator checks aggregated shares against commitment
+    let ek_i = validator_public_key.encryption_key.into_group();
+    let a_i = share_commitments
+        .get(share_index)
+        .ok_or(Error::InvalidShareIndex(share_index as u32))?;
+    // We verify that e(G, Y_i) = e(A_i, ek_i) for validator i
+    // See #4 in 4.2.3 section of https://eprint.iacr.org/2022/898.pdf
+    // e(G,Y) = e(A, ek)
+    // TODO: consider using multipairing - Issue #192
+    let is_valid =
+        E::pairing(E::G1::generator(), *y_i) == E::pairing(a_i, ek_i);
+    Ok(is_valid)
+}
+
 // TODO: Return validator that failed the check
 pub fn do_verify_full<E: Pairing>(
     pvss_coefficients: &[E::G1Affine],
@@ -252,28 +277,17 @@ pub fn do_verify_full<E: Pairing>(
 
     // Each validator checks that their share is correct
     for validator in validators {
-        // TODO: Check #3 is missing
-        // See #3 in 4.2.3 section of https://eprint.iacr.org/2022/898.pdf
-
-        let y_i = pvss_encrypted_shares
-            .get(validator.share_index as usize)
-            .ok_or(Error::InvalidShareIndex(validator.share_index))?;
-        // Validator checks aggregated shares against commitment
-        let ek_i = validator.public_key.encryption_key.into_group();
-        let a_i = share_commitments
-            .get(validator.share_index as usize)
-            .ok_or(Error::InvalidShareIndex(validator.share_index))?;
-        // We verify that e(G, Y_i) = e(A_i, ek_i) for validator i
-        // See #4 in 4.2.3 section of https://eprint.iacr.org/2022/898.pdf
-        // e(G,Y) = e(A, ek)
-        // TODO: consider using multipairing - Issue #192
-        let is_valid = E::pairing(pvss_params.g, *y_i) == E::pairing(a_i, ek_i);
+        let is_valid = verify_validator_share(
+            &share_commitments,
+            pvss_encrypted_shares,
+            validator.share_index as usize,
+            validator.public_key,
+        )?;
         if !is_valid {
             return Ok(false);
         }
         // TODO: Should we return Err()?
     }
-
     Ok(true)
 }
 
