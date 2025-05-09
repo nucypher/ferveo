@@ -214,13 +214,7 @@ impl<E: Pairing, T> PubliclyVerifiableSS<E, T> {
     /// function may also be used for that purpose.
     pub fn verify_full(&self, dkg: &PubliclyVerifiableDkg<E>) -> Result<bool> {
         let validators = dkg.validators.values().cloned().collect::<Vec<_>>();
-        do_verify_full(
-            &self.coeffs,
-            &self.shares,
-            &dkg.pvss_params,
-            &validators,
-            &dkg.domain,
-        )
+        do_verify_full(&self.coeffs, &self.shares, &validators, &dkg.domain)
     }
 }
 
@@ -264,7 +258,6 @@ pub fn verify_validator_share<E: Pairing>(
 pub fn do_verify_full<E: Pairing>(
     pvss_coefficients: &[E::G1Affine],
     pvss_encrypted_shares: &[E::G2Affine],
-    pvss_params: &PubliclyVerifiableParams<E>,
     validators: &[Validator<E>],
     domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
 ) -> Result<bool> {
@@ -294,7 +287,6 @@ pub fn do_verify_full<E: Pairing>(
 pub fn do_verify_aggregation<E: Pairing>(
     pvss_agg_coefficients: &[E::G1Affine],
     pvss_agg_encrypted_shares: &[E::G2Affine],
-    pvss_params: &PubliclyVerifiableParams<E>,
     validators: &[Validator<E>],
     domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
     pvss: &[PubliclyVerifiableSS<E>],
@@ -302,7 +294,6 @@ pub fn do_verify_aggregation<E: Pairing>(
     let is_valid = do_verify_full(
         pvss_agg_coefficients,
         pvss_agg_encrypted_shares,
-        pvss_params,
         validators,
         domain,
     )?;
@@ -336,7 +327,6 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         do_verify_aggregation(
             &self.coeffs,
             &self.shares,
-            &dkg.pvss_params,
             &validators,
             &dkg.domain,
             pvss,
