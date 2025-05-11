@@ -453,8 +453,22 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
             &self.coeffs,
             &fft_domain,
         );
-        // TODO: Check share index corresponds to validator
+
+        // TODO: Check transcript and handover consistency in the DKG level:
+        // - share index corresponds to validator
+        // - validator PKs are correct
+        // - share index is in range
         let share_index = handover_transcript.share_index as usize;
+        if share_index >= num_shares {
+            return Err(Error::InvalidShareIndex(
+                handover_transcript.share_index,
+            ));
+        }
+        if handover_transcript.outgoing_pubkey != validator_keypair.public_key()
+        {
+            return Err(Error::ValidatorPublicKeyMismatch);
+        }
+
         let share_commitment = ShareCommitment::<E>(
             share_commitments
                 .get(share_index)
@@ -469,6 +483,14 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         let mut original_shares = self.shares.clone();
         let new_shares = original_shares.as_mut_slice();
         new_shares[share_index] = new_blind_share.blinded_key_share;
+
+        // Check that the new encrypted share is valid for the new validator
+        verify_validator_share(
+            &share_commitments,
+            new_shares,
+            share_index,
+            handover_transcript.incoming_pubkey,
+        )?;
 
         let aggregrate_post_handover = Self {
             coeffs: self.coeffs.clone(),
