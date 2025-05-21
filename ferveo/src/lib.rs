@@ -116,13 +116,13 @@ mod test_dkg_full {
     use std::collections::HashMap;
 
     use ark_bls12_381::{Bls12_381 as E, Fr, G1Affine};
-    use ark_ec::AffineRepr;
+    use ark_ec::{AffineRepr, CurveGroup};
     use ark_ff::{UniformRand, Zero};
     use ark_std::test_rng;
     use ferveo_common::Keypair;
     use ferveo_tdec::{
-        self, DecryptionSharePrecomputed, DecryptionShareSimple, SecretBox,
-        SharedSecret,
+        self, BlindedKeyShare, DecryptionSharePrecomputed,
+        DecryptionShareSimple, SecretBox, ShareCommitment, SharedSecret,
     };
     use itertools::{izip, Itertools};
     use rand::{seq::SliceRandom, Rng};
@@ -703,6 +703,204 @@ mod test_dkg_full {
         // API here to performa a refresh for testing purpose, we will not shuffle
         // the shares this time
         // decryption_shares.shuffle(rng);
+
+        let lagrange = ferveo_tdec::prepare_combine_simple::<E>(
+            &dkg.domain_points()[..security_threshold as usize],
+        );
+        let new_shared_secret = ferveo_tdec::share_combine_simple::<E>(
+            &decryption_shares[..security_threshold as usize],
+            &lagrange,
+        );
+        assert_eq!(old_shared_secret, new_shared_secret);
+    }
+
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn test_dkg_simple_tdec_handover(shares_num: u32, security_threshold: u32) {
+        let rng = &mut test_rng();
+        let (dkg, validator_keypairs, messages) =
+            setup_dealt_dkg_with(security_threshold, shares_num);
+
+        // // TODO: Auxiliary debugging for validator keypairs. See issue below -- #203
+        // for (i, v) in validator_keypairs.iter().enumerate() {
+        //     println!("Validator {:?}: {:?}", i, v.public_key());
+        // }
+        // //
+
+        let transcripts = messages
+            .iter()
+            .take(shares_num as usize)
+            .map(|m| m.1.clone())
+            .collect::<Vec<_>>();
+
+        // Initially, each participant creates a transcript, which is
+        // combined into a joint AggregateTranscript.
+        let local_aggregate =
+            AggregatedTranscript::from_transcripts(&transcripts).unwrap();
+        assert!(local_aggregate
+            .aggregate
+            .verify_aggregation(&dkg, &transcripts)
+            .unwrap());
+
+        // Ciphertext created from the aggregate public key
+        let ciphertext = ferveo_tdec::encrypt::<E>(
+            SecretBox::new(MSG.to_vec()),
+            AAD,
+            &local_aggregate.public_key,
+            rng,
+        )
+        .unwrap();
+
+        // The set of transcripts (or equivalently, the AggregateTranscript),
+        // represents a (blinded) shared secret.
+        let (_, _, old_shared_secret) = create_shared_secret_simple_tdec(
+            &dkg,
+            AAD,
+            &ciphertext.header().unwrap(),
+            validator_keypairs.as_slice(),
+            &transcripts,
+        );
+
+        // Let's choose a random validator to handover
+        let handover_slot_index = rng.gen_range(0..shares_num);
+        // TODO: #203 Investigate why if we move this line after the next one (i.e. after generating a random keypair),
+        // the keypair produced is repeated from the initial validator keypairs. This only fails for the N=4 case (wtf?)
+
+        // New participant that will receive the handover
+        let incoming_validator_keypair = Keypair::<E>::new(rng);
+        // println!("Validator {:?}*: {:?}", handover_slot_index, incoming_validator_keypair.public_key());
+
+        // For simplicity, we're going to do the handover with the last participant
+        // let departing_participant = private_contexts.last().unwrap();
+
+        // TODO: Rewrite this test so that the offboarding of validator
+        // is done by recreating a DKG instance with a new set of
+        // validators from the Coordinator, rather than modifying the
+        // existing DKG instance.
+
+        // Remove one participant from the contexts and all nested structure
+        let removed_validator_addr = dkg
+            .validators
+            .iter()
+            .find(|(_, v)| v.share_index == handover_slot_index)
+            .unwrap()
+            .1
+            .address
+            .clone();
+        let mut remaining_validators = dkg.validators.clone();
+        remaining_validators.remove(&removed_validator_addr);
+
+        // Get departing validator's public key and blinded share
+        let departing_validator =
+            dkg.validators.get(&removed_validator_addr).unwrap();
+        let departing_public_key = departing_validator.public_key;
+        let departing_blinded_share = BlindedKeyShare {
+            blinded_key_share: *local_aggregate
+                .aggregate
+                .shares
+                .get(handover_slot_index as usize)
+                .unwrap(),
+            validator_public_key: departing_public_key.encryption_key,
+        };
+        assert_eq!(departing_validator.share_index, handover_slot_index);
+        assert_ne!(
+            departing_public_key,
+            incoming_validator_keypair.public_key()
+        );
+
+        // Incoming node creates a handover transcript
+        let handover_transcript = HandoverTranscript::<E>::new(
+            handover_slot_index,
+            &departing_blinded_share,
+            departing_public_key,
+            &incoming_validator_keypair,
+            rng,
+        );
+
+        // Make sure handover transcript is valid. This is publicly verifiable.
+        // We're doing this for testing purposes, but in practice, this is done
+        // by the departing participant when using the high-level API.
+        let share_commitments = get_share_commitments_from_poly_commitments::<E>(
+            &local_aggregate.aggregate.coeffs,
+            &dkg.domain,
+        );
+        let share_commitment = ShareCommitment::<E>(
+            share_commitments
+                .get(handover_slot_index as usize)
+                .ok_or(Error::InvalidShareIndex(handover_slot_index))
+                .unwrap()
+                .into_affine(),
+        );
+        assert!(handover_transcript.validate(share_commitment).unwrap());
+
+        // This portion shows that handover can be finalized by the departing participant,
+        // and that the new blinded share contains the same private key share.
+        let departing_keypair = validator_keypairs
+            .get(handover_slot_index as usize)
+            .unwrap();
+        assert_eq!(
+            departing_validator.public_key,
+            departing_keypair.public_key()
+        );
+
+        let aggregate_after_handover = local_aggregate
+            .aggregate
+            .handover(
+                &handover_transcript,
+                departing_keypair, //TODO: incoming_validator_keypair --> ValidatorPublicKeyMismatch
+            )
+            .unwrap();
+
+        // New aggregate is different than original...
+        assert_ne!(local_aggregate.aggregate, aggregate_after_handover);
+
+        // ...but let's look a bit deeper:
+        // - Polynomial coefficients are the same, which makes sense since the private shares are not changing
+        assert_eq!(
+            local_aggregate.aggregate.coeffs,
+            aggregate_after_handover.coeffs
+        );
+        // - The shares vector is different ...
+        assert_ne!(
+            local_aggregate.aggregate.shares,
+            aggregate_after_handover.shares
+        );
+        // ... but actually they only differ at the handover index
+        for i in 0..shares_num {
+            let share_before = local_aggregate.aggregate.shares.get(i as usize);
+            let share_after = aggregate_after_handover.shares.get(i as usize);
+            if i == handover_slot_index {
+                assert_ne!(share_before, share_after);
+            } else {
+                assert_eq!(share_before, share_after);
+            }
+        }
+
+        // Get decryption shares, now with the aggregate transcript after handover:
+        let decryption_shares: Vec<DecryptionShareSimple<E>> =
+            validator_keypairs
+                .iter()
+                .enumerate()
+                .map(|(index, validator_keypair)| {
+                    let keypair = if index == handover_slot_index as usize {
+                        &incoming_validator_keypair
+                    } else {
+                        validator_keypair
+                    };
+                    aggregate_after_handover
+                        .create_decryption_share_simple(
+                            &ciphertext.header().unwrap(),
+                            AAD,
+                            keypair,
+                            index as u32,
+                        )
+                        .unwrap()
+                })
+                // We take only the first `security_threshold` decryption shares
+                .take(dkg.dkg_params.security_threshold() as usize)
+                .collect();
 
         let lagrange = ferveo_tdec::prepare_combine_simple::<E>(
             &dkg.domain_points()[..security_threshold as usize],
