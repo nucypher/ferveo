@@ -877,7 +877,6 @@ mod tests_refresh {
             .get(handover_slot_index as usize)
             .unwrap();
 
-        // First, create a handover transcript
         let departing_blinded_share =
             departing_public_context.blinded_key_share;
         let departing_public_key = ferveo_common::PublicKey {
@@ -886,6 +885,7 @@ mod tests_refresh {
                 .validator_public_key,
         };
 
+        // Incoming node creates a handover transcript
         let handover_transcript = HandoverTranscript::<E>::new(
             handover_slot_index,
             &departing_blinded_share,

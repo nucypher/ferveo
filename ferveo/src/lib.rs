@@ -835,8 +835,9 @@ mod test_dkg_full {
         );
         assert!(handover_transcript.validate(share_commitment).unwrap());
 
-        // This portion shows that handover can be finalized by the departing participant,
-        // and that the new blinded share contains the same private key share.
+        // The departing validator uses the handover transcript produced by the
+        // incoming validator to create a new aggregate transcript.
+        // This part is showing the high-level API for handover finalization.
         let departing_keypair = validator_keypairs
             .get(handover_slot_index as usize)
             .unwrap();
@@ -847,11 +848,18 @@ mod test_dkg_full {
 
         let aggregate_after_handover = local_aggregate
             .aggregate
-            .handover(
-                &handover_transcript,
-                departing_keypair, //TODO: incoming_validator_keypair --> ValidatorPublicKeyMismatch
-            )
+            .handover(&handover_transcript, departing_keypair)
             .unwrap();
+
+        // If we use a different keypair, we should get an error
+        let error = local_aggregate
+            .aggregate
+            .handover(&handover_transcript, &incoming_validator_keypair)
+            .unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            Error::ValidatorPublicKeyMismatch.to_string()
+        );
 
         // New aggregate is different than original...
         assert_ne!(local_aggregate.aggregate, aggregate_after_handover);
