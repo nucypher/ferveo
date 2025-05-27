@@ -99,6 +99,7 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
             validators.len(),
         )
         .expect("unable to construct domain");
+        // FIXME: This step is implicitly ordering the validators by their address - See #204
         let validators: ValidatorsMap<E> = validators
             .iter()
             .map(|validator| (validator.address.clone(), validator.clone()))
@@ -273,6 +274,8 @@ mod test_dkg_init {
 /// Test the dealing phase of the DKG
 #[cfg(test)]
 mod test_dealing {
+    use rand::seq::SliceRandom;
+
     use crate::{
         test_common::*, DkgParams, Error, PubliclyVerifiableDkg, Validator,
     };
@@ -302,6 +305,37 @@ mod test_dealing {
             result.unwrap_err().to_string(),
             Error::DuplicatedShareIndex(duplicated_index as u32).to_string()
         );
+    }
+
+    #[test]
+    fn test_validator_ordering() {
+        let shares_num = 4;
+        let security_threshold = shares_num;
+        let keypairs = gen_keypairs(shares_num);
+        // Create validators, ordered by address
+        let mut validators = gen_validators(&keypairs);
+        let me = validators[0].clone();
+
+        // FIXME: Currently the DKG reorders validators by their address, breaking the initial ordering.
+        // This has been unnoticed since both in tests and production, validators are initially ordered.
+        // However, this is not guaranteed and can fail in the future, e.g. with handover or recovery.
+        // To test this, we shuffle the validators to break the initial ordering and test fails. See issue #204
+        validators.shuffle(&mut ark_std::test_rng());
+
+        let dkg = PubliclyVerifiableDkg::new(
+            &validators,
+            &DkgParams::new(0, security_threshold, shares_num).unwrap(),
+            &me,
+        )
+        .unwrap();
+
+        // DKG should keep the order of validators as passed from the constructor
+        for (index, validator) in validators.iter().enumerate() {
+            let validator_in_dkg =
+                dkg.validators.get(&validator.address).unwrap();
+            assert_eq!(validator_in_dkg.share_index, index as u32);
+            assert_eq!(validator_in_dkg.public_key, validator.public_key);
+        }
     }
 
     /// Test that dealing correct PVSS transcripts passes validation
