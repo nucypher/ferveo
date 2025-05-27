@@ -4,7 +4,6 @@ use ark_ec::pairing::Pairing;
 use ark_poly::EvaluationDomain;
 use ark_std::UniformRand;
 use ferveo_common::PublicKey;
-use measure_time::print_time;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 
@@ -137,7 +136,6 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         &self,
         rng: &mut R,
     ) -> Result<PubliclyVerifiableSS<E>> {
-        print_time!("PVSS Sharing");
         PubliclyVerifiableSS::<E>::new(&DomainPoint::<E>::rand(rng), self, rng)
     }
 
