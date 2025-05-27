@@ -137,7 +137,6 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         &self,
         rng: &mut R,
     ) -> Result<PubliclyVerifiableSS<E>> {
-        print_time!("PVSS Sharing");
         PubliclyVerifiableSS::<E>::new(&DomainPoint::<E>::rand(rng), self, rng)
     }
 
