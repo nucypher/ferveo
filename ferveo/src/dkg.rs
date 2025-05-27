@@ -64,7 +64,8 @@ impl DkgParams {
     }
 }
 
-pub type ValidatorsMap<E> = BTreeMap<EthereumAddress, Validator<E>>;
+pub type ValidatorsByIndex<E> = BTreeMap<u32, Validator<E>>;
+pub type ValidatorsByAddress<E> = BTreeMap<EthereumAddress, Validator<E>>;
 pub type PVSSMap<E> = BTreeMap<EthereumAddress, PubliclyVerifiableSS<E>>;
 
 /// The DKG context that holds all the local state for participating in the DKG
@@ -75,7 +76,7 @@ pub type PVSSMap<E> = BTreeMap<EthereumAddress, PubliclyVerifiableSS<E>>;
 pub struct PubliclyVerifiableDkg<E: Pairing> {
     pub dkg_params: DkgParams,
     pub pvss_params: PubliclyVerifiableParams<E>,
-    pub validators: ValidatorsMap<E>,
+    pub validators: ValidatorsByIndex<E>,
     pub domain: ark_poly::GeneralEvaluationDomain<E::ScalarField>,
     pub me: Validator<E>,
 }
@@ -98,13 +99,14 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
             validators.len(),
         )
         .expect("unable to construct domain");
-        let validators: ValidatorsMap<E> = validators
+
+        let validators: ValidatorsByIndex<E> = validators
             .iter()
-            .map(|validator| (validator.address.clone(), validator.clone()))
+            .map(|validator| (validator.share_index, validator.clone()))
             .collect();
 
         // Make sure that `me` is a known validator
-        if let Some(my_validator) = validators.get(&me.address) {
+        if let Some(my_validator) = validators.get(&me.share_index) {
             if my_validator.public_key != me.public_key {
                 return Err(Error::ValidatorPublicKeyMismatch);
             }
@@ -154,8 +156,8 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
 
     /// Return a domain point for the share_index
     pub fn get_domain_point(&self, share_index: u32) -> Result<DomainPoint<E>> {
-        self.domain_point_map()
-            .get(&share_index)
+        self.domain_points()
+            .get(share_index as usize)
             .ok_or_else(|| Error::InvalidShareIndex(share_index))
             .copied()
     }
@@ -168,11 +170,11 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
 
     /// Return a map of domain points for the DKG
     pub fn domain_point_map(&self) -> HashMap<u32, DomainPoint<E>> {
-        self.domain
-            .elements()
+        self.domain_points()
+            .iter()
             .enumerate()
-            .map(|(share_index, point)| (share_index as u32, point))
-            .collect::<HashMap<_, _>>()
+            .map(|(share_index, point)| (share_index as u32, *point))
+            .collect::<HashMap<u32, DomainPoint<E>>>()
     }
 
     // TODO: Revisit naming later
@@ -198,8 +200,9 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         let mut validator_set = HashSet::<EthereumAddress>::new();
         let mut transcript_set = HashSet::<PubliclyVerifiableSS<E>>::new();
         for (sender, transcript) in messages.iter() {
+            let index = sender.share_index;
             let sender = &sender.address;
-            if !self.validators.contains_key(sender) {
+            if !self.validators.contains_key(&index) {
                 return Err(Error::UnknownDealer(sender.clone()));
             } else if validator_set.contains(sender) {
                 return Err(Error::DuplicateDealer(sender.clone()));
@@ -272,6 +275,7 @@ mod test_dkg_init {
 /// Test the dealing phase of the DKG
 #[cfg(test)]
 mod test_dealing {
+
     use crate::{
         test_common::*, DkgParams, Error, PubliclyVerifiableDkg, Validator,
     };
@@ -301,6 +305,45 @@ mod test_dealing {
             result.unwrap_err().to_string(),
             Error::DuplicatedShareIndex(duplicated_index as u32).to_string()
         );
+    }
+
+    #[test]
+    fn test_validator_ordering() {
+        let shares_num = 4;
+        let security_threshold = shares_num;
+        let keypairs = gen_keypairs(shares_num);
+        // Create validators, ordered by address
+        let mut validators = gen_validators(&keypairs);
+
+        // Swap the share indices of two validators
+        let me = Validator {
+            address: validators[0].address.clone(),
+            public_key: validators[0].public_key,
+            share_index: 1,
+        };
+        let someone_else = Validator {
+            address: validators[1].address.clone(),
+            public_key: validators[1].public_key,
+            share_index: 0,
+        };
+        validators[0] = me.clone();
+        validators[1] = someone_else;
+
+        let dkg = PubliclyVerifiableDkg::new(
+            &validators,
+            &DkgParams::new(0, security_threshold, shares_num).unwrap(),
+            &me,
+        )
+        .unwrap();
+
+        // DKG should keep the original validators indices, as passed from the constructor. See issue #204
+        for validator in validators.iter() {
+            let validator_in_dkg =
+                dkg.validators.get(&validator.share_index).unwrap();
+            assert_eq!(validator_in_dkg.share_index, validator.share_index);
+            assert_eq!(validator_in_dkg.public_key, validator.public_key);
+            assert_eq!(validator_in_dkg.address, validator.address);
+        }
     }
 
     /// Test that dealing correct PVSS transcripts passes validation

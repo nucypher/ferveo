@@ -450,16 +450,8 @@ mod test_dkg_full {
 
         // Remove one participant from the contexts and all nested structure
         let removed_validator_index = rng.gen_range(0..validators_num);
-        let removed_validator_addr = dkg
-            .validators
-            .iter()
-            .find(|(_, v)| v.share_index == removed_validator_index)
-            .unwrap()
-            .1
-            .address
-            .clone();
         let mut remaining_validators = dkg.validators.clone();
-        remaining_validators.remove(&removed_validator_addr);
+        remaining_validators.remove(&removed_validator_index);
 
         // Remember to remove one domain point too
         let mut domain_points = dkg.domain_point_map();
@@ -781,20 +773,12 @@ mod test_dkg_full {
         // existing DKG instance.
 
         // Remove one participant from the contexts and all nested structure
-        let removed_validator_addr = dkg
-            .validators
-            .iter()
-            .find(|(_, v)| v.share_index == handover_slot_index)
-            .unwrap()
-            .1
-            .address
-            .clone();
         let mut remaining_validators = dkg.validators.clone();
-        remaining_validators.remove(&removed_validator_addr);
+        remaining_validators.remove(&handover_slot_index);
 
         // Get departing validator's public key and blinded share
         let departing_validator =
-            dkg.validators.get(&removed_validator_addr).unwrap();
+            dkg.validators.get(&handover_slot_index).unwrap();
         let departing_public_key = departing_validator.public_key;
         let departing_blinded_share = BlindedKeyShare {
             blinded_key_share: *local_aggregate
