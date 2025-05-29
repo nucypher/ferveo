@@ -314,13 +314,25 @@ mod test_dealing {
         let keypairs = gen_keypairs(shares_num);
         // Create validators, ordered by address
         let mut validators = gen_validators(&keypairs);
-        let me = validators[0].clone();
 
         // FIXME: Currently the DKG reorders validators by their address, breaking the initial ordering.
         // This has been unnoticed since both in tests and production, validators are initially ordered.
         // However, this is not guaranteed and can fail in the future, e.g. with handover or recovery.
         // To test this, we shuffle the validators to break the initial ordering and test fails. See issue #204
-        validators.shuffle(&mut ark_std::test_rng());
+
+        // Swap the share indices of two validators
+        let me = Validator {
+            address: validators[0].address.clone(),
+            public_key: validators[0].public_key,
+            share_index: 1
+        };
+        let someone_else = Validator {
+            address: validators[1].address.clone(),
+            public_key: validators[1].public_key,
+            share_index: 0
+        };
+        validators[0] = me.clone();
+        validators[1] = someone_else;
 
         let dkg = PubliclyVerifiableDkg::new(
             &validators,
@@ -333,7 +345,7 @@ mod test_dealing {
         for (index, validator) in validators.iter().enumerate() {
             let validator_in_dkg =
                 dkg.validators.get(&validator.address).unwrap();
-            assert_eq!(validator_in_dkg.share_index, index as u32);
+            assert_eq!(validator_in_dkg.share_index, validator.share_index);
             assert_eq!(validator_in_dkg.public_key, validator.public_key);
         }
     }
