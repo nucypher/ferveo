@@ -9,8 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     assert_no_share_duplicates, refresh, AggregatedTranscript, Error,
-    EthereumAddress, PubliclyVerifiableParams, PubliclyVerifiableSS, Result,
-    UpdateTranscript, Validator,
+    EthereumAddress, PubliclyVerifiableSS, Result, UpdateTranscript, Validator,
 };
 
 pub type DomainPoint<E> = <E as Pairing>::ScalarField;
@@ -75,7 +74,6 @@ pub type PVSSMap<E> = BTreeMap<EthereumAddress, PubliclyVerifiableSS<E>>;
 #[derive(Clone, Debug)]
 pub struct PubliclyVerifiableDkg<E: Pairing> {
     pub dkg_params: DkgParams,
-    pub pvss_params: PubliclyVerifiableParams<E>,
     pub validators: ValidatorsByIndex<E>,
     pub domain: ark_poly::GeneralEvaluationDomain<E::ScalarField>,
     pub me: Validator<E>,
@@ -116,7 +114,6 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
 
         Ok(Self {
             dkg_params: *dkg_params,
-            pvss_params: PubliclyVerifiableParams::<E>::default(),
             domain,
             me: me.clone(),
             validators,

@@ -41,28 +41,6 @@ impl Aggregate for Aggregated {}
 /// Type alias for aggregated PVSS transcripts
 pub type AggregatedPvss<E> = PubliclyVerifiableSS<E, Aggregated>;
 
-/// The choice of group generators
-#[derive(Clone, Debug)]
-pub struct PubliclyVerifiableParams<E: Pairing> {
-    pub g: E::G1,
-    pub h: E::G2,
-}
-
-impl<E: Pairing> PubliclyVerifiableParams<E> {
-    pub fn g_inv(&self) -> E::G1Prepared {
-        E::G1Prepared::from(-self.g)
-    }
-}
-
-impl<E: Pairing> Default for PubliclyVerifiableParams<E> {
-    fn default() -> Self {
-        Self {
-            g: E::G1::generator(),
-            h: E::G2::generator(),
-        }
-    }
-}
-
 /// Secret polynomial used in the PVSS protocol
 /// We wrap this in a struct so that we can zeroize it after use
 pub struct SecretPolynomial<E: Pairing>(pub DensePolynomial<DomainPoint<E>>);
@@ -153,7 +131,7 @@ impl<E: Pairing, T> PubliclyVerifiableSS<E, T> {
         debug_assert_eq!(evals.len(), dkg.validators.len());
 
         // commitment to coeffs, F_i
-        let coeffs = fast_multiexp(&phi.0.coeffs, dkg.pvss_params.g);
+        let coeffs = fast_multiexp(&phi.0.coeffs, E::G1::generator());
 
         // blinded key shares, Y_i
         let shares = dkg
@@ -192,14 +170,13 @@ impl<E: Pairing, T> PubliclyVerifiableSS<E, T> {
     /// i.e. we optimistically do not check the commitment. This is deferred
     /// until the aggregation step
     pub fn verify_optimistic(&self) -> bool {
-        let pvss_params = PubliclyVerifiableParams::<E>::default();
         // We're only checking the proof of knowledge here, sigma ?= h^s
         // "Does the first coefficient of the secret polynomial match the proof of knowledge?"
         E::pairing(
             self.coeffs[0].into_group(), // F_0 = g^s
-            pvss_params.h,
+            E::G2::generator(),
         ) == E::pairing(
-            pvss_params.g,
+            E::G1::generator(),
             self.sigma, // h^s
         )
         // TODO: multipairing? - Issue #192
