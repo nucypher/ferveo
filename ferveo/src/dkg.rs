@@ -102,9 +102,7 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
 
         let validators: ValidatorsByIndex<E> = validators
             .iter()
-            .map(|validator| {
-                (validator.share_index, validator.clone())
-            })
+            .map(|validator| (validator.share_index, validator.clone()))
             .collect();
 
         // Make sure that `me` is a known validator
@@ -277,7 +275,6 @@ mod test_dkg_init {
 /// Test the dealing phase of the DKG
 #[cfg(test)]
 mod test_dealing {
-    use rand::seq::SliceRandom;
 
     use crate::{
         test_common::*, DkgParams, Error, PubliclyVerifiableDkg, Validator,
@@ -322,12 +319,12 @@ mod test_dealing {
         let me = Validator {
             address: validators[0].address.clone(),
             public_key: validators[0].public_key,
-            share_index: 1
+            share_index: 1,
         };
         let someone_else = Validator {
             address: validators[1].address.clone(),
             public_key: validators[1].public_key,
-            share_index: 0
+            share_index: 0,
         };
         validators[0] = me.clone();
         validators[1] = someone_else;
