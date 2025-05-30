@@ -1,4 +1,5 @@
 #![warn(rust_2018_idioms)]
+use ark_ec::pairing::Pairing;
 
 // TODO: Use explicit imports - #194
 pub mod ciphertext;
@@ -52,6 +53,7 @@ pub enum Error {
     ArkSerializeError(#[from] ark_serialize::SerializationError),
 }
 
+pub type DomainPoint<E> = <E as Pairing>::ScalarField;
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Factory functions for testing

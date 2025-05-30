@@ -10,7 +10,8 @@ use ark_std::{One, UniformRand};
 use ferveo_common::{serialization, Keypair, PublicKey};
 use ferveo_tdec::{
     prepare_combine_simple, BlindedKeyShare, CiphertextHeader,
-    DecryptionSharePrecomputed, DecryptionShareSimple, ShareCommitment,
+    DecryptionSharePrecomputed, DecryptionShareSimple, DomainPoint,
+    ShareCommitment,
 };
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
@@ -18,7 +19,7 @@ use serde_with::serde_as;
 use subproductdomain::fast_multiexp;
 use zeroize::ZeroizeOnDrop;
 
-use crate::{batch_to_projective_g1, DomainPoint, Error, Result};
+use crate::{batch_to_projective_g1, Error, Result};
 
 type InnerBlindedKeyShare<E> = ferveo_tdec::BlindedKeyShare<E>;
 
@@ -74,33 +75,24 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
         })
     }
 
-    pub fn unblind_private_key_share(
-        &self,
-        validator_keypair: &Keypair<E>,
-    ) -> Result<ferveo_tdec::PrivateKeyShare<E>> {
-        // Decrypt private key share https://nikkolasg.github.io/ferveo/pvss.html#validator-decryption-of-private-key-shares
-        let blinded_key_share = &self.0;
-        let private_key_share = blinded_key_share.unblind(validator_keypair);
-        Ok(private_key_share)
-    }
-
     pub fn create_decryption_share_simple(
         &self,
         ciphertext_header: &CiphertextHeader<E>,
         aad: &[u8],
         validator_keypair: &Keypair<E>,
     ) -> Result<DecryptionShareSimple<E>> {
-        let private_key_share =
-            self.unblind_private_key_share(validator_keypair);
-        DecryptionShareSimple::create(
-            &validator_keypair.decryption_key,
-            &private_key_share.unwrap(),
-            ciphertext_header,
-            aad,
-        )
-        .map_err(|e| e.into())
+        let decryption_share = self
+            .0
+            .create_decryption_share_simple(
+                ciphertext_header,
+                aad,
+                validator_keypair,
+            )
+            .unwrap();
+        Ok(decryption_share)
     }
 
+    // TODO: Move to BlindedKeyShare
     /// In precomputed variant, we offload some of the decryption related computation to the server-side:
     /// We use the `prepare_combine_simple` function to precompute the lagrange coefficients
     pub fn create_decryption_share_precomputed(
@@ -145,8 +137,7 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
 
         // Finally, pick the lagrange coefficient for the current share index
         let lagrange_coeff = &lagrange_coeffs[adjusted_share_index];
-        let private_key_share =
-            self.unblind_private_key_share(validator_keypair);
+        let private_key_share = self.0.unblind(validator_keypair);
         DecryptionSharePrecomputed::create(
             share_index as usize,
             &validator_keypair.decryption_key,
@@ -476,13 +467,15 @@ mod tests_refresh {
     use ark_poly::EvaluationDomain;
     use ark_std::{test_rng, UniformRand, Zero};
     use ferveo_common::Keypair;
-    use ferveo_tdec::{lagrange_basis_at, test_common::setup_simple};
+    use ferveo_tdec::{
+        lagrange_basis_at, test_common::setup_simple, DomainPoint,
+    };
     use itertools::{zip_eq, Itertools};
     use test_case::test_case;
 
     use crate::{
-        test_common::*, DomainPoint, HandoverTranscript,
-        UpdatableBlindedKeyShare, UpdateTranscript,
+        test_common::*, HandoverTranscript, UpdatableBlindedKeyShare,
+        UpdateTranscript,
     };
 
     type ScalarField =
@@ -824,7 +817,8 @@ mod tests_refresh {
                     decryption_key: p.setup_params.b,
                 };
                 let updated_private_share = updated_blinded_key_share
-                    .unblind_private_key_share(&validator_keypair)
+                    .0
+                    .unblind(&validator_keypair)
                     .unwrap();
 
                 (participant_index, updated_private_share)
@@ -914,10 +908,12 @@ mod tests_refresh {
             )
             .unwrap();
 
-        let old_private_share =
-            departing_blinded_share.unblind(&departing_validator_keypair);
-        let new_private_share =
-            new_blinded_share.unblind(&incoming_validator_keypair);
+        let old_private_share = departing_blinded_share
+            .unblind(&departing_validator_keypair)
+            .unwrap();
+        let new_private_share = new_blinded_share
+            .unblind(&incoming_validator_keypair)
+            .unwrap();
         assert_eq!(new_private_share, old_private_share);
 
         // We check that the private share from the other participants plus the
@@ -937,7 +933,7 @@ mod tests_refresh {
                 };
 
                 let private_share =
-                    blinded_key_share.unblind(&validator_keypair);
+                    blinded_key_share.unblind(&validator_keypair).unwrap();
 
                 (participant_index, private_share)
             })

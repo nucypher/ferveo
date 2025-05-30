@@ -9,7 +9,7 @@ use ark_poly::{
 use ferveo_common::{serialization, Keypair, PublicKey};
 use ferveo_tdec::{
     BlindedKeyShare, CiphertextHeader, DecryptionSharePrecomputed,
-    DecryptionShareSimple, ShareCommitment,
+    DecryptionShareSimple, DomainPoint, ShareCommitment,
 };
 use itertools::Itertools;
 use rand::RngCore;
@@ -20,7 +20,7 @@ use zeroize::{self, Zeroize, ZeroizeOnDrop};
 
 use crate::{
     assert_no_share_duplicates, batch_to_projective_g1, batch_to_projective_g2,
-    DomainPoint, Error, HandoverTranscript, PubliclyVerifiableDkg, Result,
+    Error, HandoverTranscript, PubliclyVerifiableDkg, Result,
     UpdatableBlindedKeyShare, UpdateTranscript, Validator,
 };
 
@@ -310,22 +310,30 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         )
     }
 
-    fn get_blinded_key_share(
+    pub fn get_share_for_index_and_pubkey(
         &self,
-        validator_keypair: &Keypair<E>,
         share_index: u32,
-    ) -> Result<UpdatableBlindedKeyShare<E>> {
+        public_key: &PublicKey<E>,
+    ) -> Result<BlindedKeyShare<E>> {
         let blinded_key_share = self
             .shares
             .get(share_index as usize)
             .ok_or(Error::InvalidShareIndex(share_index));
-        let validator_public_key = validator_keypair.public_key();
         let blinded_key_share = BlindedKeyShare {
-            validator_public_key: validator_public_key.encryption_key,
+            validator_public_key: public_key.encryption_key,
             blinded_key_share: *blinded_key_share.unwrap(),
         };
-        let blinded_key_share = UpdatableBlindedKeyShare(blinded_key_share);
         Ok(blinded_key_share)
+    }
+
+    pub fn get_share_for_validator(
+        &self,
+        validator: &Validator<E>,
+    ) -> Result<BlindedKeyShare<E>> {
+        self.get_share_for_index_and_pubkey(
+            validator.share_index,
+            &validator.public_key,
+        )
     }
 
     /// Make a decryption share (simple variant) for a given ciphertext
@@ -336,12 +344,18 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         validator_keypair: &Keypair<E>,
         share_index: u32,
     ) -> Result<DecryptionShareSimple<E>> {
-        self.get_blinded_key_share(validator_keypair, share_index)?
+        let decryption_share = self
+            .get_share_for_index_and_pubkey(
+                share_index,
+                &validator_keypair.public_key(),
+            )
+            .unwrap()
             .create_decryption_share_simple(
                 ciphertext_header,
                 aad,
                 validator_keypair,
-            )
+            );
+        Ok(decryption_share.unwrap())
     }
 
     /// Make a decryption share (precomputed variant) for a given ciphertext
@@ -353,7 +367,13 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         share_index: u32,
         domain_points: &HashMap<u32, DomainPoint<E>>,
     ) -> Result<DecryptionSharePrecomputed<E>> {
-        self.get_blinded_key_share(validator_keypair, share_index)?
+        let share = self
+            .get_share_for_index_and_pubkey(
+                share_index,
+                &validator_keypair.public_key(),
+            )
+            .unwrap();
+        Ok(share
             .create_decryption_share_precomputed(
                 ciphertext_header,
                 aad,
@@ -361,6 +381,7 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
                 share_index,
                 domain_points,
             )
+            .unwrap())
     }
 
     pub fn refresh(
