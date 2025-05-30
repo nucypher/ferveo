@@ -285,7 +285,7 @@ mod test_dkg_full {
                     .ok()
                     .map(|domain_point| (v.share_index, domain_point))
             })
-            .collect::<HashMap<u32, DomainPoint<E>>>();
+            .collect::<HashMap<u32, ferveo_tdec::DomainPoint<E>>>();
 
         let mut decryption_shares: Vec<DecryptionSharePrecomputed<E>> =
             selected_keypairs

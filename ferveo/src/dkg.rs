@@ -2,8 +2,9 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use ark_ec::pairing::Pairing;
 use ark_poly::EvaluationDomain;
-use ark_std::UniformRand;
+use ark_std::{iterable::Iterable, UniformRand};
 use ferveo_common::PublicKey;
+use ferveo_tdec::DomainPoint;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +13,7 @@ use crate::{
     EthereumAddress, PubliclyVerifiableSS, Result, UpdateTranscript, Validator,
 };
 
-pub type DomainPoint<E> = <E as Pairing>::ScalarField;
+pub type DomainIndexMap<E> = HashMap<u32, DomainPoint<E>>;
 pub type ValidatorMessage<E> = (Validator<E>, PubliclyVerifiableSS<E>);
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]

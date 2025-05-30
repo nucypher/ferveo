@@ -3,10 +3,13 @@ use std::{collections::HashMap, fmt, io};
 use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ferveo_common::serialization;
-pub use ferveo_tdec::api::{
-    prepare_combine_simple, share_combine_precomputed, share_combine_simple,
-    DecryptionSharePrecomputed, Fr, G1Affine, G1Prepared, G2Affine, SecretBox,
-    E,
+pub use ferveo_tdec::{
+    api::{
+        prepare_combine_simple, share_combine_precomputed,
+        share_combine_simple, DecryptionSharePrecomputed, Fr, G1Affine,
+        G1Prepared, G2Affine, SecretBox, E,
+    },
+    DomainPoint,
 };
 use generic_array::{
     typenum::{Unsigned, U48},
@@ -32,7 +35,6 @@ pub type Validator = crate::Validator<E>;
 pub type Transcript = PubliclyVerifiableSS<E>;
 pub type RefreshTranscript = UpdateTranscript<E>; // TODO: Consider renaming to UpdateTranscript when dealing with #193
 pub type ValidatorMessage = (Validator, Transcript);
-pub type DomainPoint = crate::DomainPoint<E>;
 
 // Normally, we would use a custom trait for this, but we can't because
 // the `arkworks` will not let us create a blanket implementation for G1Affine
@@ -234,7 +236,7 @@ impl Dkg {
         &self.0.me
     }
 
-    pub fn domain_points(&self) -> Vec<DomainPoint> {
+    pub fn domain_points(&self) -> Vec<DomainPoint<E>> {
         self.0.domain_points()
     }
 }
@@ -309,7 +311,7 @@ impl AggregatedTranscript {
                     .ok()
                     .map(|domain_point| (v.share_index, domain_point))
             })
-            .collect::<HashMap<u32, crate::DomainPoint<E>>>();
+            .collect::<HashMap<u32, ferveo_tdec::DomainPoint<E>>>();
         self.0.aggregate.create_decryption_share_precomputed(
             &ciphertext_header.0,
             aad,
@@ -366,7 +368,7 @@ impl AggregatedTranscript {
 pub struct DecryptionShareSimple {
     share: ferveo_tdec::api::DecryptionShareSimple,
     #[serde_as(as = "serialization::SerdeAs")]
-    domain_point: DomainPoint,
+    domain_point: DomainPoint<E>,
 }
 
 pub fn combine_shares_simple(shares: &[DecryptionShareSimple]) -> SharedSecret {
@@ -920,7 +922,7 @@ mod test_ferveo_api {
     fn test_dkg_simple_tdec_share_recovery(
         shares_num: u32,
         validators_num: u32,
-        recover_at_random_point: bool,
+        _recover_at_random_point: bool,
     ) {
         let rng = &mut StdRng::seed_from_u64(0);
         let security_threshold = shares_num / 2 + 1;
@@ -952,7 +954,7 @@ mod test_ferveo_api {
 
         // We need to save this domain point to be user in the recovery testing scenario
         let mut domain_points = dkgs[0].0.domain_point_map();
-        let removed_domain_point = domain_points
+        let _removed_domain_point = domain_points
             .remove(&validators.last().unwrap().share_index)
             .unwrap();
 
@@ -965,13 +967,13 @@ mod test_ferveo_api {
 
         // Now, we're going to recover a new share at a random point or at a specific point
         // and check that the shared secret is still the same.
-        let _x_r = if recover_at_random_point {
-            // Onboarding a validator with a completely new private key share
-            DomainPoint::rand(rng)
-        } else {
-            // Onboarding a validator with a private key share recovered from the removed validator
-            removed_domain_point
-        };
+        // let _x_r = if recover_at_random_point {
+        //     // Onboarding a validator with a completely new private key share
+        //     DomainPoint<E>::rand(rng)
+        // } else {
+        //     // Onboarding a validator with a private key share recovered from the removed validator
+        //     removed_domain_point
+        // };
 
         // Each participant prepares an update for each other participant
         // let share_updates = dkgs
