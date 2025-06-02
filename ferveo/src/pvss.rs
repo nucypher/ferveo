@@ -436,7 +436,7 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         Ok(refreshed_aggregate_transcript)
     }
 
-    pub fn handover(
+    pub fn finalize_handover(
         &self,
         handover_transcript: &HandoverTranscript<E>,
         validator_keypair: &Keypair<E>,
