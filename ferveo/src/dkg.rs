@@ -226,7 +226,7 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
     }
 
     // Returns a new refresh transcript for current validators in DKG
-    // TODO: Allow to pass a parameter to restrict target validators
+    // TODO: Allow to pass a parameter to restrict target validators - #199
     pub fn generate_refresh_transcript<R: RngCore>(
         &self,
         rng: &mut R,
