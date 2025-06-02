@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use ark_ec::pairing::Pairing;
 use ark_poly::EvaluationDomain;
-use ark_std::{iterable::Iterable, UniformRand};
+use ark_std::UniformRand;
 use ferveo_common::PublicKey;
 use ferveo_tdec::DomainPoint;
 use rand::RngCore;
@@ -234,6 +234,32 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         Ok(UpdateTranscript::create_refresh_updates(
             &self.domain_and_key_map(),
             self.dkg_params.security_threshold(),
+            rng,
+        ))
+    }
+
+    // Returns a handover transcript between an incoming and a departing validator
+    pub fn generate_handover_transcript<R: RngCore>(
+        &self,
+        aggregate: &AggregatedTranscript<E>,
+        handover_slot_index: u32,
+        incoming_validator_keypair: &ferveo_common::Keypair<E>,
+        rng: &mut R,
+    ) -> Result<refresh::HandoverTranscript<E>> {
+        let departing_validator = self
+            .validators
+            .get(&handover_slot_index)
+            .ok_or_else(|| Error::InvalidShareIndex(handover_slot_index))?;
+
+        let departing_blinded_share = aggregate
+            .aggregate
+            .get_share_for_validator(departing_validator)?;
+
+        Ok(refresh::HandoverTranscript::<E>::new(
+            handover_slot_index,
+            &departing_blinded_share,
+            departing_validator.public_key,
+            incoming_validator_keypair,
             rng,
         ))
     }
