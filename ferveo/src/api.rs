@@ -25,10 +25,7 @@ use crate::bindings_python;
 use crate::bindings_wasm;
 pub use crate::EthereumAddress;
 use crate::{
-    do_verify_aggregation,
-    Error,
-    PubliclyVerifiableSS,
-    Result,
+    do_verify_aggregation, Error, PubliclyVerifiableSS, Result,
     UpdateTranscript,
 };
 
@@ -263,6 +260,8 @@ impl Dkg {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AggregatedTranscript(crate::AggregatedTranscript<E>);
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HandoverTranscript(crate::HandoverTranscript<E>);
 
 impl AggregatedTranscript {
