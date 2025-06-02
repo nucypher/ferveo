@@ -780,10 +780,6 @@ mod test_dkg_full {
         let departing_validator =
             dkg.validators.get(&handover_slot_index).unwrap();
         let departing_public_key = departing_validator.public_key;
-        let departing_blinded_share = local_aggregate
-            .aggregate
-            .get_share_for_validator(departing_validator)
-            .unwrap();
         assert_eq!(departing_validator.share_index, handover_slot_index);
         assert_ne!(
             departing_public_key,
@@ -791,13 +787,14 @@ mod test_dkg_full {
         );
 
         // Incoming node creates a handover transcript
-        let handover_transcript = HandoverTranscript::<E>::new(
-            handover_slot_index,
-            &departing_blinded_share,
-            departing_public_key,
-            &incoming_validator_keypair,
-            rng,
-        );
+        let handover_transcript = dkg
+            .generate_handover_transcript(
+                &local_aggregate,
+                handover_slot_index,
+                &incoming_validator_keypair,
+                rng,
+            )
+            .unwrap();
 
         // Make sure handover transcript is valid. This is publicly verifiable.
         // We're doing this for testing purposes, but in practice, this is done
