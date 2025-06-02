@@ -381,6 +381,23 @@ impl AggregatedTranscript {
                 .unwrap();
         Ok(AggregatedTranscript(eeww))
     }
+
+    pub fn finalize_handover(
+        &self,
+        handover_transcript: &HandoverTranscript,
+        validator_keypair: &ValidatorKeypair,
+    ) -> Result<Self> {
+        let new_aggregate = self
+            .0
+            .aggregate
+            .finalize_handover(&handover_transcript.0, validator_keypair)
+            .unwrap();
+        // TODO: Aggregates structs should be refactored, this is a bit of a mess - #162
+        let eeww =
+            crate::AggregatedTranscript::<E>::from_aggregate(new_aggregate)
+                .unwrap();
+        Ok(AggregatedTranscript(eeww))
+    }
 }
 
 #[serde_as]
