@@ -38,9 +38,6 @@ pub trait Aggregate {}
 /// Apply trait gate to Aggregated marker struct
 impl Aggregate for Aggregated {}
 
-/// Type alias for aggregated PVSS transcripts
-pub type AggregatedPvss<E> = PubliclyVerifiableSS<E, Aggregated>;
-
 /// Secret polynomial used in the PVSS protocol
 /// We wrap this in a struct so that we can zeroize it after use
 pub struct SecretPolynomial<E: Pairing>(pub DensePolynomial<DomainPoint<E>>);
