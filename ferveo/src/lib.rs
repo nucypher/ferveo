@@ -121,8 +121,8 @@ mod test_dkg_full {
     use ark_std::test_rng;
     use ferveo_common::Keypair;
     use ferveo_tdec::{
-        self, BlindedKeyShare, DecryptionSharePrecomputed,
-        DecryptionShareSimple, SecretBox, ShareCommitment, SharedSecret,
+        self, DecryptionSharePrecomputed, DecryptionShareSimple, SecretBox,
+        ShareCommitment, SharedSecret,
     };
     use itertools::{izip, Itertools};
     use rand::{seq::SliceRandom, Rng};
@@ -780,14 +780,10 @@ mod test_dkg_full {
         let departing_validator =
             dkg.validators.get(&handover_slot_index).unwrap();
         let departing_public_key = departing_validator.public_key;
-        let departing_blinded_share = BlindedKeyShare {
-            blinded_key_share: *local_aggregate
-                .aggregate
-                .shares
-                .get(handover_slot_index as usize)
-                .unwrap(),
-            validator_public_key: departing_public_key.encryption_key,
-        };
+        let departing_blinded_share = local_aggregate
+            .aggregate
+            .get_share_for_validator(departing_validator)
+            .unwrap();
         assert_eq!(departing_validator.share_index, handover_slot_index);
         assert_ne!(
             departing_public_key,

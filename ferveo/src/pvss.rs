@@ -409,20 +409,20 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         // TODO: Here we're just iterating over all current shares,
         //       implicitly assuming all of them will be refreshed.
         //       Generalize to allow refreshing just a subset of the shares. - #199
-        let updated_blinded_shares: Vec<E::G2Affine> = self
-            .shares
+        let mut indices: Vec<u32> =
+            validator_keys_map.keys().copied().collect::<Vec<u32>>();
+        indices.sort();
+        let updated_blinded_shares: Vec<E::G2Affine> = indices
             .iter()
-            .enumerate()
-            .map(|(index, share)| {
-                let blinded_key_share = ferveo_tdec::BlindedKeyShare {
-                    blinded_key_share: *share,
-                    validator_public_key: validator_keys_map
-                        .get(&(index as u32))
-                        .unwrap()
-                        .encryption_key,
-                };
+            .map(|&index| {
+                let pubkey = validator_keys_map
+                    .get(&index)
+                    .ok_or(Error::InvalidShareIndex(index))
+                    .unwrap();
+                let blinded_key_share =
+                    self.get_share_for_index_and_pubkey(index, pubkey).unwrap();
                 let updated_share = UpdatableBlindedKeyShare(blinded_key_share)
-                    .apply_share_updates(update_transcripts, index as u32);
+                    .apply_share_updates(update_transcripts, index);
                 updated_share.0.blinded_key_share
             })
             .collect();
