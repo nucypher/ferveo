@@ -828,13 +828,16 @@ mod test_dkg_full {
 
         let aggregate_after_handover = local_aggregate
             .aggregate
-            .handover(&handover_transcript, departing_keypair)
+            .finalize_handover(&handover_transcript, departing_keypair)
             .unwrap();
 
         // If we use a different keypair, we should get an error
         let error = local_aggregate
             .aggregate
-            .handover(&handover_transcript, &incoming_validator_keypair)
+            .finalize_handover(
+                &handover_transcript,
+                &incoming_validator_keypair,
+            )
             .unwrap_err();
         assert_eq!(
             error.to_string(),
