@@ -25,7 +25,10 @@ use crate::bindings_python;
 use crate::bindings_wasm;
 pub use crate::EthereumAddress;
 use crate::{
-    do_verify_aggregation, Error, PubliclyVerifiableSS, Result,
+    do_verify_aggregation,
+    Error,
+    PubliclyVerifiableSS,
+    Result,
     UpdateTranscript,
 };
 
@@ -232,6 +235,23 @@ impl Dkg {
         self.0.generate_refresh_transcript(rng)
     }
 
+    pub fn generate_handover_transcript<R: RngCore>(
+        &self,
+        aggregate: &AggregatedTranscript,
+        handover_slot_index: u32,
+        incoming_validator_keypair: &ferveo_common::Keypair<E>,
+        rng: &mut R,
+    ) -> Result<HandoverTranscript> {
+        self.0
+            .generate_handover_transcript(
+                &aggregate.0,
+                handover_slot_index,
+                incoming_validator_keypair,
+                rng,
+            )
+            .map(HandoverTranscript)
+    }
+
     pub fn me(&self) -> &Validator {
         &self.0.me
     }
@@ -243,6 +263,7 @@ impl Dkg {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AggregatedTranscript(crate::AggregatedTranscript<E>);
+pub struct HandoverTranscript(crate::HandoverTranscript<E>);
 
 impl AggregatedTranscript {
     pub fn new(messages: &[ValidatorMessage]) -> Result<Self> {
