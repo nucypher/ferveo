@@ -14,7 +14,7 @@ use ferveo_tdec::{
     ShareCommitment,
 };
 use rand_core::RngCore;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::serde_as;
 use subproductdomain::fast_multiexp;
 use zeroize::ZeroizeOnDrop;
@@ -298,14 +298,32 @@ impl<E: Pairing> UpdateTranscript<E> {
 // After the handover, the incoming node replaces the outgoing node in an
 // existing cohort, securely obtaining a new blinded key share, but under the
 // incoming node's private key.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HandoverTranscript<E: Pairing> {
     pub share_index: u32,
+    #[serde_as(as = "serialization::SerdeAs")]
     pub double_blind_share: E::G2,
+
+    #[serde_as(as = "serialization::SerdeAs")]
     pub commitment_to_share: E::G2,
+
+    #[serde_as(as = "serialization::SerdeAs")]
     pub commitment_to_g1: E::G1,
+
+    #[serde_as(as = "serialization::SerdeAs")]
     pub commitment_to_g2: E::G2,
+
+    #[serde(bound(
+        serialize = "ferveo_common::PublicKey<E>: Serialize",
+        deserialize = "ferveo_common::PublicKey<E>: DeserializeOwned"
+    ))]
     pub incoming_pubkey: PublicKey<E>,
+
+    #[serde(bound(
+        serialize = "ferveo_common::PublicKey<E>: Serialize",
+        deserialize = "ferveo_common::PublicKey<E>: DeserializeOwned"
+    ))]
     pub outgoing_pubkey: PublicKey<E>,
 }
 
