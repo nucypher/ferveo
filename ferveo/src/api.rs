@@ -22,8 +22,8 @@ use crate::bindings_python;
 use crate::bindings_wasm;
 pub use crate::EthereumAddress;
 use crate::{
-    do_verify_aggregation, Error, PubliclyVerifiableParams,
-    PubliclyVerifiableSS, Result, UpdateTranscript,
+    do_verify_aggregation, Error, PubliclyVerifiableSS, Result,
+    UpdateTranscript,
 };
 
 pub type ValidatorPublicKey = ferveo_common::PublicKey<E>;
@@ -273,7 +273,6 @@ impl AggregatedTranscript {
             return Err(Error::InvalidTranscriptAggregate);
         }
 
-        let pvss_params = PubliclyVerifiableParams::<E>::default();
         let validators: Vec<_> = messages
             .iter()
             .map(|(validator, _)| validator)
@@ -288,7 +287,6 @@ impl AggregatedTranscript {
         do_verify_aggregation(
             &self.0.aggregate.coeffs,
             &self.0.aggregate.shares,
-            &pvss_params,
             &validators,
             &domain,
             &pvss_list,

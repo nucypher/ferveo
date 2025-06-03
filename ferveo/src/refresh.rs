@@ -1,15 +1,16 @@
 use std::{collections::HashMap, ops::Mul, usize};
 
 use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
-use ark_ff::Zero;
+use ark_ff::{Field, Zero};
 use ark_poly::{
     univariate::DensePolynomial, DenseUVPolynomial, EvaluationDomain,
     Polynomial,
 };
+use ark_std::{One, UniformRand};
 use ferveo_common::{serialization, Keypair, PublicKey};
 use ferveo_tdec::{
     prepare_combine_simple, BlindedKeyShare, CiphertextHeader,
-    DecryptionSharePrecomputed, DecryptionShareSimple,
+    DecryptionSharePrecomputed, DecryptionShareSimple, ShareCommitment,
 };
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
@@ -47,21 +48,22 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
         index: u32,
     ) -> Self {
         // Current participant receives update transcripts from other participants
-        let share_updates: Vec<_> = update_transcripts
+        let share_updates_for_index: Vec<_> = update_transcripts
             .values()
             .map(|update_transcript_from_producer| {
-                let update_for_participant = update_transcript_from_producer
-                    .updates
-                    .get(&index)
-                    .cloned()
-                    .unwrap();
+                let update_for_participant: ShareUpdate<E> =
+                    update_transcript_from_producer
+                        .updates
+                        .get(&index)
+                        .cloned()
+                        .unwrap();
                 update_for_participant
             })
             .collect();
 
         // TODO: Validate commitments from share update
         // FIXME: Don't forget!!!!! - #200
-        let updated_key_share = share_updates
+        let updated_key_share = share_updates_for_index
             .iter()
             .fold(self.0.blinded_key_share, |acc, delta| {
                 (acc + delta.update).into()
@@ -300,6 +302,108 @@ impl<E: Pairing> UpdateTranscript<E> {
     }
 }
 
+// HandoverTranscript, a.k.a. "The Baton", represents the message an incoming
+// node produces to initiate a handover with an outgoing node.
+// After the handover, the incoming node replaces the outgoing node in an
+// existing cohort, securely obtaining a new blinded key share, but under the
+// incoming node's private key.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HandoverTranscript<E: Pairing> {
+    pub share_index: u32,
+    pub double_blind_share: E::G2,
+    pub commitment_to_share: E::G2,
+    pub commitment_to_g1: E::G1,
+    pub commitment_to_g2: E::G2,
+    pub incoming_pubkey: PublicKey<E>,
+    pub outgoing_pubkey: PublicKey<E>,
+}
+
+impl<E: Pairing> HandoverTranscript<E> {
+    pub fn new(
+        share_index: u32,
+        outgoing_blinded_share: &BlindedKeyShare<E>,
+        outgoing_pubkey: PublicKey<E>,
+        incoming_validator_keypair: &Keypair<E>,
+        rng: &mut impl RngCore,
+    ) -> Self {
+        // t
+        let random_scalar = E::ScalarField::rand(rng);
+        // d_j
+        let incoming_decryption_key = incoming_validator_keypair.decryption_key;
+        // d_j * Y_i
+        let double_blind_share = outgoing_blinded_share
+            .blinded_key_share
+            .mul(incoming_decryption_key);
+        // t * d_j * ek_i
+        let commitment_to_share = outgoing_pubkey
+            .encryption_key
+            .mul(incoming_decryption_key.mul(random_scalar));
+
+        Self {
+            share_index,
+            double_blind_share,
+            commitment_to_share,
+            commitment_to_g1: E::G1::generator().mul(random_scalar),
+            commitment_to_g2: E::G2::generator().mul(random_scalar),
+            incoming_pubkey: incoming_validator_keypair.public_key(),
+            outgoing_pubkey,
+        }
+    }
+
+    // See similarity with transcript check #4 (do_verify_full in pvss)
+    pub fn validate(
+        &self,
+        share_commitment: ShareCommitment<E>,
+    ) -> Result<bool> {
+        // e(comm_G1, double_blind_share) == e(A_i, comm_share)
+        //   or equivalently:
+        // e(-comm_G1, double_blind_share) · e(A_i, comm_share) == 1
+        let commitment_to_g1_inv = -self.commitment_to_g1;
+        let mut is_valid = E::multi_pairing(
+            [commitment_to_g1_inv, share_commitment.0.into()],
+            [self.double_blind_share, self.commitment_to_share],
+        )
+        .0 == E::TargetField::one();
+
+        // e(comm_G1, gen_G2) == e(gen_G1, comm_G2)
+        //   or equivalently:
+        // e(-comm_G1, gen_G2) · e(gen_G1, comm_G2) == 1
+        is_valid = is_valid
+            && E::multi_pairing(
+                [commitment_to_g1_inv, E::G1::generator()],
+                [E::G2::generator(), self.commitment_to_g2],
+            )
+            .0 == E::TargetField::one();
+
+        if is_valid {
+            Ok(true)
+        } else {
+            Err(Error::InvalidShareUpdate) // TODO: review error
+        }
+    }
+
+    pub fn finalize(
+        &self,
+        departing_validator_keypair: &Keypair<E>,
+        share_commitment: ShareCommitment<E>,
+    ) -> Result<BlindedKeyShare<E>> {
+        let is_valid = &self.validate(share_commitment).unwrap();
+        if !is_valid {
+            return Err(Error::InvalidShareUpdate); // TODO: Make this more specific
+        }
+        let new_blinded_share_element = &self.double_blind_share.mul(
+            departing_validator_keypair
+                .decryption_key
+                .inverse()
+                .unwrap(),
+        );
+        Ok(BlindedKeyShare::<E> {
+            validator_public_key: self.incoming_pubkey.encryption_key,
+            blinded_key_share: new_blinded_share_element.into_affine(),
+        })
+    }
+}
+
 /// Prepare share updates with a given root (0 for refresh, some x coord for recovery)
 /// This is a helper function for `ShareUpdate::create_share_updates_for_recovery` and `ShareUpdate::create_share_updates_for_refresh`
 /// It generates a new random polynomial with a defined root and evaluates it at each of the participants' indices.
@@ -320,7 +424,7 @@ fn prepare_share_updates_with_root<E: Pairing>(
     let coeff_commitments = fast_multiexp(&update_poly.coeffs, g);
 
     // Now, we need to evaluate the polynomial at each of participants' indices
-    let share_updates = domain_points_and_keys
+    let share_updates: HashMap<u32, ShareUpdate<E>> = domain_points_and_keys
         .iter()
         .map(|(share_index, tuple)| {
             let (x_i, pubkey_i) = tuple;
@@ -332,7 +436,7 @@ fn prepare_share_updates_with_root<E: Pairing>(
             let share_update = ShareUpdate { update, commitment };
             (*share_index, share_update)
         })
-        .collect::<HashMap<_, _>>();
+        .collect::<HashMap<u32, ShareUpdate<E>>>();
 
     UpdateTranscript {
         coeffs: coeff_commitments,
@@ -371,12 +475,14 @@ mod tests_refresh {
     use ark_ec::CurveGroup;
     use ark_poly::EvaluationDomain;
     use ark_std::{test_rng, UniformRand, Zero};
+    use ferveo_common::Keypair;
     use ferveo_tdec::{lagrange_basis_at, test_common::setup_simple};
     use itertools::{zip_eq, Itertools};
     use test_case::test_case;
 
     use crate::{
-        test_common::*, DomainPoint, UpdatableBlindedKeyShare, UpdateTranscript,
+        test_common::*, DomainPoint, HandoverTranscript,
+        UpdatableBlindedKeyShare, UpdateTranscript,
     };
 
     type ScalarField =
@@ -737,6 +843,111 @@ mod tests_refresh {
         let x_r = ScalarField::zero();
         let new_shared_private_key =
             combine_private_shares_at(&x_r, &domain_points, &refreshed_shares);
+        assert_eq!(shared_private_key, new_shared_private_key);
+    }
+
+    /// 2 parties follow a handover protocol. The output is a new blind share
+    /// that replaces the original share, using the same domain point
+    /// but different validator key.
+    #[test_case(4; "N is not a power of 2, t=N")]
+    fn tdec_simple_variant_share_handover(shares_num: usize) {
+        // Test setup
+        let rng = &mut test_rng();
+        let security_threshold = shares_num;
+        let (_, shared_private_key, private_contexts) =
+            setup_simple::<E>(shares_num, security_threshold, rng);
+        let domain_points = &private_contexts
+            .iter()
+            .map(|ctxt| {
+                (
+                    ctxt.index as u32,
+                    ctxt.public_decryption_contexts[ctxt.index].domain,
+                )
+            })
+            .collect::<HashMap<u32, DomainPoint<E>>>();
+
+        // New participant that will receive the handover
+        let incoming_validator_keypair = Keypair::<E>::new(rng);
+
+        // For simplicity, we're going to do the handover with the last participant
+        let departing_participant = private_contexts.last().unwrap();
+        let handover_slot_index: u32 = departing_participant.index as u32;
+        let departing_public_context = departing_participant
+            .public_decryption_contexts
+            .get(handover_slot_index as usize)
+            .unwrap();
+
+        let departing_blinded_share =
+            departing_public_context.blinded_key_share;
+        let departing_public_key = ferveo_common::PublicKey {
+            encryption_key: departing_public_context
+                .blinded_key_share
+                .validator_public_key,
+        };
+
+        // Incoming node creates a handover transcript
+        let handover_transcript = HandoverTranscript::<E>::new(
+            handover_slot_index,
+            &departing_blinded_share,
+            departing_public_key,
+            &incoming_validator_keypair,
+            rng,
+        );
+
+        // Make sure handover transcript is valid. This is publicly verifiable.
+        assert!(handover_transcript
+            .validate(departing_public_context.share_commitment)
+            .unwrap());
+
+        // This portion shows that handover can be finalized by the departing participant,
+        // and that the new blinded share contains the same private key share.
+        // TODO: This is a low-level check for now. This will be part of the handover protocol.
+        let departing_validator_private_key =
+            departing_participant.setup_params.b;
+        let departing_validator_keypair = Keypair::<E> {
+            decryption_key: departing_validator_private_key,
+        };
+        let new_blinded_share = handover_transcript
+            .finalize(
+                &departing_validator_keypair,
+                departing_public_context.share_commitment,
+            )
+            .unwrap();
+
+        let old_private_share =
+            departing_blinded_share.unblind(&departing_validator_keypair);
+        let new_private_share =
+            new_blinded_share.unblind(&incoming_validator_keypair);
+        assert_eq!(new_private_share, old_private_share);
+
+        // We check that the private share from the other participants plus the
+        // new_private_share obtained after handover can be combined to
+        // reconstruct the shared private key.
+        let other_participants = private_contexts
+            .iter()
+            .filter(|p| p.index as u32 != handover_slot_index);
+
+        let mut shares_map = other_participants
+            .map(|p| {
+                let participant_index = p.index as u32;
+                let blinded_key_share =
+                    p.public_decryption_contexts[p.index].blinded_key_share;
+                let validator_keypair = ferveo_common::Keypair {
+                    decryption_key: p.setup_params.b,
+                };
+
+                let private_share =
+                    blinded_key_share.unblind(&validator_keypair);
+
+                (participant_index, private_share)
+            })
+            .collect::<HashMap<u32, ferveo_tdec::PrivateKeyShare<E>>>();
+
+        shares_map.insert(handover_slot_index, new_private_share);
+
+        let x_r = ScalarField::zero();
+        let new_shared_private_key =
+            combine_private_shares_at(&x_r, domain_points, &shares_map);
         assert_eq!(shared_private_key, new_shared_private_key);
     }
 }

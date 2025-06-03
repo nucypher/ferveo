@@ -9,7 +9,7 @@ use ark_poly::{
 use ferveo_common::{serialization, Keypair, PublicKey};
 use ferveo_tdec::{
     BlindedKeyShare, CiphertextHeader, DecryptionSharePrecomputed,
-    DecryptionShareSimple,
+    DecryptionShareSimple, ShareCommitment,
 };
 use itertools::Itertools;
 use rand::RngCore;
@@ -20,7 +20,7 @@ use zeroize::{self, Zeroize, ZeroizeOnDrop};
 
 use crate::{
     assert_no_share_duplicates, batch_to_projective_g1, batch_to_projective_g2,
-    DomainPoint, Error, PubliclyVerifiableDkg, Result,
+    DomainPoint, Error, HandoverTranscript, PubliclyVerifiableDkg, Result,
     UpdatableBlindedKeyShare, UpdateTranscript, Validator,
 };
 
@@ -214,62 +214,79 @@ impl<E: Pairing, T> PubliclyVerifiableSS<E, T> {
     /// function may also be used for that purpose.
     pub fn verify_full(&self, dkg: &PubliclyVerifiableDkg<E>) -> Result<bool> {
         let validators = dkg.validators.values().cloned().collect::<Vec<_>>();
-        do_verify_full(
-            &self.coeffs,
-            &self.shares,
-            &dkg.pvss_params,
-            &validators,
-            &dkg.domain,
-        )
+        do_verify_full(&self.coeffs, &self.shares, &validators, &dkg.domain)
     }
+}
+
+// Generate the share commitment vector A from the polynomial commitments F
+// See https://github.com/nucypher/ferveo/issues/44#issuecomment-1721550475
+pub fn get_share_commitments_from_poly_commitments<E: Pairing>(
+    poly_comms: &[E::G1Affine],
+    domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
+) -> Vec<E::G1> {
+    let mut commitment = batch_to_projective_g1::<E>(poly_comms);
+    domain.fft_in_place(&mut commitment);
+    commitment
+}
+
+pub fn verify_validator_share<E: Pairing>(
+    share_commitments: &[E::G1],
+    pvss_encrypted_shares: &[E::G2Affine],
+    share_index: usize,
+    validator_public_key: PublicKey<E>,
+) -> Result<bool> {
+    // TODO: Check #3 is missing
+    // See #3 in 4.2.3 section of https://eprint.iacr.org/2022/898.pdf
+    let y_i = pvss_encrypted_shares
+        .get(share_index)
+        .ok_or(Error::InvalidShareIndex(share_index as u32))?;
+    // Validator checks aggregated shares against commitment
+    let ek_i = validator_public_key.encryption_key.into_group();
+    let a_i = share_commitments
+        .get(share_index)
+        .ok_or(Error::InvalidShareIndex(share_index as u32))?;
+    // We verify that e(G, Y_i) = e(A_i, ek_i) for validator i
+    // See #4 in 4.2.3 section of https://eprint.iacr.org/2022/898.pdf
+    // e(G,Y) = e(A, ek)
+    // TODO: consider using multipairing - Issue #192
+    let is_valid =
+        E::pairing(E::G1::generator(), *y_i) == E::pairing(a_i, ek_i);
+    Ok(is_valid)
 }
 
 // TODO: Return validator that failed the check
 pub fn do_verify_full<E: Pairing>(
     pvss_coefficients: &[E::G1Affine],
     pvss_encrypted_shares: &[E::G2Affine],
-    pvss_params: &PubliclyVerifiableParams<E>,
     validators: &[Validator<E>],
     domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
 ) -> Result<bool> {
     assert_no_share_duplicates(validators)?;
 
-    // Generate the share commitment vector A from the polynomial commitments F
-    // See https://github.com/nucypher/ferveo/issues/44#issuecomment-1721550475
-    let mut commitment = batch_to_projective_g1::<E>(pvss_coefficients);
-    domain.fft_in_place(&mut commitment);
+    let share_commitments = get_share_commitments_from_poly_commitments::<E>(
+        pvss_coefficients,
+        domain,
+    );
 
     // Each validator checks that their share is correct
     for validator in validators {
-        // TODO: Check #3 is missing
-        // See #3 in 4.2.3 section of https://eprint.iacr.org/2022/898.pdf
-
-        let y_i = pvss_encrypted_shares
-            .get(validator.share_index as usize)
-            .ok_or(Error::InvalidShareIndex(validator.share_index))?;
-        // Validator checks aggregated shares against commitment
-        let ek_i = validator.public_key.encryption_key.into_group();
-        let a_i = commitment
-            .get(validator.share_index as usize)
-            .ok_or(Error::InvalidShareIndex(validator.share_index))?;
-        // We verify that e(G, Y_i) = e(A_i, ek_i) for validator i
-        // See #4 in 4.2.3 section of https://eprint.iacr.org/2022/898.pdf
-        // e(G,Y) = e(A, ek)
-        // TODO: consider using multipairing - Issue #192
-        let is_valid = E::pairing(pvss_params.g, *y_i) == E::pairing(a_i, ek_i);
+        let is_valid = verify_validator_share(
+            &share_commitments,
+            pvss_encrypted_shares,
+            validator.share_index as usize,
+            validator.public_key,
+        )?;
         if !is_valid {
             return Ok(false);
         }
         // TODO: Should we return Err()?
     }
-
     Ok(true)
 }
 
 pub fn do_verify_aggregation<E: Pairing>(
     pvss_agg_coefficients: &[E::G1Affine],
     pvss_agg_encrypted_shares: &[E::G2Affine],
-    pvss_params: &PubliclyVerifiableParams<E>,
     validators: &[Validator<E>],
     domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
     pvss: &[PubliclyVerifiableSS<E>],
@@ -277,7 +294,6 @@ pub fn do_verify_aggregation<E: Pairing>(
     let is_valid = do_verify_full(
         pvss_agg_coefficients,
         pvss_agg_encrypted_shares,
-        pvss_params,
         validators,
         domain,
     )?;
@@ -311,7 +327,6 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         do_verify_aggregation(
             &self.coeffs,
             &self.shares,
-            &dkg.pvss_params,
             &validators,
             &dkg.domain,
             pvss,
@@ -421,6 +436,69 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
             phantom: Default::default(),
         };
         Ok(refreshed_aggregate_transcript)
+    }
+
+    pub fn handover(
+        &self,
+        handover_transcript: &HandoverTranscript<E>,
+        validator_keypair: &Keypair<E>,
+    ) -> Result<Self> {
+        let num_shares = self.shares.len();
+        let fft_domain =
+            ark_poly::GeneralEvaluationDomain::<E::ScalarField>::new(
+                num_shares,
+            )
+            .unwrap();
+        let share_commitments = get_share_commitments_from_poly_commitments::<E>(
+            &self.coeffs,
+            &fft_domain,
+        );
+
+        // TODO: Check transcript and handover consistency in the DKG level:
+        // - share index corresponds to validator
+        // - validator PKs are correct
+        // - share index is in range
+        let share_index = handover_transcript.share_index as usize;
+        if share_index >= num_shares {
+            return Err(Error::InvalidShareIndex(
+                handover_transcript.share_index,
+            ));
+        }
+        if handover_transcript.outgoing_pubkey != validator_keypair.public_key()
+        {
+            return Err(Error::ValidatorPublicKeyMismatch);
+        }
+
+        let share_commitment = ShareCommitment::<E>(
+            share_commitments
+                .get(share_index)
+                .ok_or(Error::InvalidShareIndex(share_index as u32))
+                .unwrap()
+                .into_affine(),
+        );
+        let new_blind_share = handover_transcript
+            .finalize(validator_keypair, share_commitment)
+            .unwrap();
+
+        let mut original_shares = self.shares.clone();
+        let new_shares = original_shares.as_mut_slice();
+        new_shares[share_index] = new_blind_share.blinded_key_share;
+
+        // Check that the new encrypted share is valid for the new validator
+        verify_validator_share(
+            &share_commitments,
+            new_shares,
+            share_index,
+            handover_transcript.incoming_pubkey,
+        )?;
+
+        let aggregrate_post_handover = Self {
+            coeffs: self.coeffs.clone(),
+            shares: new_shares.to_vec(),
+            sigma: self.sigma,
+            phantom: Default::default(),
+        };
+        Ok(aggregrate_post_handover)
     }
 }
 
