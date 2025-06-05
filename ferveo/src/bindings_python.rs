@@ -528,6 +528,25 @@ impl Dkg {
             .map_err(FerveoPythonError::FerveoError)?;
         Ok(AggregatedTranscript(aggregated_transcript))
     }
+
+    pub fn generate_handover_transcript(
+        &mut self,
+        aggregate: &AggregatedTranscript,
+        handover_slot_index: u32,
+        incoming_validator_keypair: &Keypair,
+    ) -> PyResult<HandoverTranscript> {
+        let rng = &mut thread_rng();
+        let handover_transcript = self
+            .0
+            .generate_handover_transcript(
+                &aggregate.0,
+                handover_slot_index,
+                &incoming_validator_keypair.0,
+                rng,
+            )
+            .map_err(FerveoPythonError::FerveoError)?;
+        Ok(HandoverTranscript(handover_transcript))
+    }
 }
 
 #[pyclass(module = "ferveo")]
@@ -593,6 +612,12 @@ generate_bytes_serialization!(DecryptionSharePrecomputed);
 pub struct AggregatedTranscript(api::AggregatedTranscript);
 
 generate_bytes_serialization!(AggregatedTranscript);
+
+#[pyclass(module = "ferveo")]
+#[derive(derive_more::From, derive_more::AsRef)]
+pub struct HandoverTranscript(api::HandoverTranscript);
+
+generate_bytes_serialization!(HandoverTranscript);
 
 #[pymethods]
 impl AggregatedTranscript {
@@ -661,6 +686,18 @@ impl AggregatedTranscript {
         Ok(DecryptionShareSimple(decryption_share))
     }
 
+    pub fn finalize_handover(
+        &self,
+        handover_transcript: &HandoverTranscript,
+        validator_keypair: &Keypair,
+    ) -> PyResult<Self> {
+        let new_aggregate = self
+            .0
+            .finalize_handover(&handover_transcript.0, &validator_keypair.0)
+            .map_err(FerveoPythonError::FerveoError)?;
+        Ok(Self(new_aggregate))
+    }
+
     #[getter]
     pub fn public_key(&self) -> DkgPublicKey {
         DkgPublicKey(self.0.public_key())
@@ -712,6 +749,7 @@ pub fn make_ferveo_py_module(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<SharedSecret>()?;
     m.add_class::<ValidatorMessage>()?;
     m.add_class::<FerveoVariant>()?;
+    m.add_class::<HandoverTranscript>()?;
 
     // Exceptions
     m.add(
