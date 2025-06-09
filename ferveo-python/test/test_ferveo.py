@@ -17,7 +17,7 @@ from ferveo import (
 
 
 def gen_eth_addr(i: int) -> str:
-    return f"0x{i:040x}"
+    return f"0x{i:040x}"  # TODO: Randomize - #207
 
 def combine_shares_for_variant(v: FerveoVariant, decryption_shares):
     if v == FerveoVariant.Simple:

@@ -10,7 +10,7 @@ from ferveo import (
 
 
 def gen_eth_addr(i: int) -> str:
-    return f"0x{i:040x}"
+    return f"0x{i:040x}"  # TODO: Randomize - #207
 
 
 tau = 1
