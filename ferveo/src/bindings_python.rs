@@ -832,12 +832,18 @@ pub fn make_ferveo_py_module(py: Python<'_>, m: &PyModule) -> PyResult<()> {
 // TODO: Consider adding remaining ferveo/api.rs tests here
 #[cfg(test)]
 mod test_ferveo_python {
-    use itertools::izip;
+    use std::collections::HashMap;
+
+    use rand::seq::IteratorRandom;
     use test_case::test_case;
 
     use crate::{bindings_python::*, test_common::*};
 
-    type TestInputs = (Vec<ValidatorMessage>, Vec<Validator>, Vec<Keypair>);
+    type TestInputs = (
+        HashMap<u32, ValidatorMessage>,
+        HashMap<u32, Validator>,
+        HashMap<u32, Keypair>,
+    );
 
     fn make_test_inputs(
         tau: u32,
@@ -845,42 +851,42 @@ mod test_ferveo_python {
         shares_num: u32,
         validators_num: u32,
     ) -> TestInputs {
-        let validator_keypairs = (0..validators_num)
-            .map(|_| Keypair::random())
-            .collect::<Vec<_>>();
-        let validators: Vec<_> = validator_keypairs
+        let validator_keypairs: HashMap<u32, Keypair> = (0..validators_num)
+            .map(|i| (i, Keypair::random()))
+            .collect::<HashMap<u32, Keypair>>();
+        let validators: HashMap<u32, Validator> = validator_keypairs
             .iter()
-            .enumerate()
-            .map(|(i, keypair)| {
-                Validator::new(
-                    format!("0x{i:040}"),
+            .map(|(&i, keypair)| {
+                let validator = Validator::new(
+                    format!("0x{i:040}"), // TODO: Randomize - #207
                     &keypair.public_key(),
-                    i as u32,
+                    i,
                 )
-                .unwrap()
+                .unwrap();
+                (i, validator)
             })
-            .collect();
+            .collect::<HashMap<u32, Validator>>();
 
         // Each validator holds their own DKG instance and generates a transcript every
         // validator, including themselves
-        let messages: Vec<_> = validators
+        let messages: HashMap<u32, ValidatorMessage> = validators
             .iter()
-            .cloned()
-            .map(|sender| {
+            .map(|(&i, sender)| {
                 let mut dkg = Dkg::new(
                     tau,
                     shares_num,
                     security_threshold,
-                    validators.clone(),
-                    &sender,
+                    validators.values().cloned().collect(),
+                    sender,
                 )
                 .unwrap();
-                ValidatorMessage::new(
-                    &sender,
+                let message = ValidatorMessage::new(
+                    sender,
                     &dkg.generate_transcript().unwrap(),
-                )
+                );
+                (i, message)
             })
-            .collect();
+            .collect::<HashMap<u32, ValidatorMessage>>();
         (messages, validators, validator_keypairs)
     }
 
@@ -888,7 +894,7 @@ mod test_ferveo_python {
     #[test_case(4, 4; "N is a power of 2, t=N")]
     #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
     #[test_case(30, 30; "N is not a power of 2, t=N")]
-    fn test_server_api_tdec_precomputed(
+    fn test_server_python_api_tdec_precomputed(
         shares_num: u32,
         security_threshold: u32,
     ) {
@@ -900,25 +906,25 @@ mod test_ferveo_python {
             validators_num,
         );
 
+        let messages_vec: Vec<ValidatorMessage> =
+            messages.values().cloned().collect();
+
         // Now that every validator holds a dkg instance and a transcript for every other validator,
         // every validator can aggregate the transcripts
-
-        let me = validators[0].clone();
+        let me = validators.get(&0).unwrap().clone();
         let mut dkg = Dkg::new(
             TAU,
             shares_num,
             security_threshold,
-            validators.clone(),
+            validators.values().cloned().collect(),
             &me,
         )
         .unwrap();
 
-        // Let's say that we've only received `security_threshold` transcripts
-        let messages = messages[..security_threshold as usize].to_vec();
         let local_aggregate =
-            dkg.aggregate_transcripts(messages.clone()).unwrap();
+            dkg.aggregate_transcripts(messages_vec.clone()).unwrap();
         assert!(local_aggregate
-            .verify(validators_num, messages.clone())
+            .verify(validators_num, messages_vec.clone())
             .unwrap());
 
         // At this point, any given validator should be able to provide a DKG public key
@@ -927,39 +933,52 @@ mod test_ferveo_python {
         // In the meantime, the client creates a ciphertext and decryption request
         let ciphertext = encrypt(MSG.to_vec(), AAD, &dkg_public_key).unwrap();
 
-        // TODO: Adjust the subset of validators to be used in the decryption for precomputed
-        // variant
+        let indices = messages.keys().cloned().collect::<Vec<_>>();
+
+        let random_indices = indices
+            .iter()
+            .choose_multiple(&mut thread_rng(), security_threshold as usize);
+
+        let selected_validators = validators
+            .iter()
+            .filter(|(&index, _)| random_indices.contains(&&index))
+            .map(|(_, validator)| validator.clone())
+            .collect::<Vec<_>>();
 
         // Having aggregated the transcripts, the validators can now create decryption shares
-        let decryption_shares: Vec<_> =
-            izip!(validators.clone(), &validator_keypairs)
-                .map(|(validator, validator_keypair)| {
-                    // Each validator holds their own instance of DKG and creates their own aggregate
-                    let mut validator_dkg = Dkg::new(
-                        TAU,
-                        shares_num,
-                        security_threshold,
-                        validators.clone(),
-                        &validator,
-                    )
+        let decryption_shares: Vec<_> = random_indices
+            .iter()
+            .map(|&index| {
+                let validator = validators.get(index).unwrap();
+                let validator_keypair = validator_keypairs.get(index).unwrap();
+                // Each validator holds their own instance of DKG and creates their own aggregate
+                let mut validator_dkg = Dkg::new(
+                    TAU,
+                    shares_num,
+                    security_threshold,
+                    validators.values().cloned().collect(),
+                    validator,
+                )
+                .unwrap();
+                let server_aggregate = validator_dkg
+                    .aggregate_transcripts(messages_vec.clone())
                     .unwrap();
-                    let server_aggregate = validator_dkg
-                        .aggregate_transcripts(messages.clone())
-                        .unwrap();
-                    assert!(server_aggregate
-                        .verify(validators_num, messages.clone())
-                        .is_ok());
-                    server_aggregate
-                        .create_decryption_share_precomputed(
-                            &validator_dkg,
-                            &ciphertext.header().unwrap(),
-                            AAD,
-                            validator_keypair,
-                            validators.clone(),
-                        )
-                        .unwrap()
-                })
-                .collect();
+                assert!(server_aggregate
+                    .verify(validators_num, messages_vec.clone())
+                    .is_ok());
+
+                // TODO: Investigate error in precomputed variant when full set of validators is passed #206
+                server_aggregate
+                    .create_decryption_share_precomputed(
+                        &validator_dkg,
+                        &ciphertext.header().unwrap(),
+                        AAD,
+                        validator_keypair,
+                        selected_validators.clone(),
+                    )
+                    .unwrap()
+            })
+            .collect();
 
         // Now, the decryption share can be used to decrypt the ciphertext
         // This part is part of the client API
@@ -986,22 +1005,23 @@ mod test_ferveo_python {
 
         // Now that every validator holds a dkg instance and a transcript for every other validator,
         // every validator can aggregate the transcripts
-        let me = validators[0].clone();
+        let me = validators.get(&0).unwrap().clone();
         let mut dkg = Dkg::new(
             TAU,
             shares_num,
             security_threshold,
-            validators.clone(),
+            validators.values().cloned().collect(),
             &me,
         )
         .unwrap();
 
-        // Let's say that we've only receives `security_threshold` transcripts
-        let messages = messages[..security_threshold as usize].to_vec();
+        let messages_vec: Vec<ValidatorMessage> =
+            messages.values().cloned().collect();
+
         let pvss_aggregated =
-            dkg.aggregate_transcripts(messages.clone()).unwrap();
+            dkg.aggregate_transcripts(messages_vec.clone()).unwrap();
         assert!(pvss_aggregated
-            .verify(validators_num, messages.clone())
+            .verify(validators_num, messages_vec.clone())
             .unwrap());
 
         // At this point, any given validator should be able to provide a DKG public key
@@ -1010,36 +1030,44 @@ mod test_ferveo_python {
         // In the meantime, the client creates a ciphertext and decryption request
         let ciphertext = encrypt(MSG.to_vec(), AAD, &dkg_public_key).unwrap();
 
-        // Having aggregated the transcripts, the validators can now create decryption shares
-        let decryption_shares: Vec<_> =
-            izip!(validators.clone(), &validator_keypairs)
-                .map(|(validator, validator_keypair)| {
-                    // Each validator holds their own instance of DKG and creates their own aggregate
-                    let mut validator_dkg = Dkg::new(
-                        TAU,
-                        shares_num,
-                        security_threshold,
-                        validators.clone(),
-                        &validator,
-                    )
-                    .unwrap();
-                    let aggregate = validator_dkg
-                        .aggregate_transcripts(messages.clone())
-                        .unwrap();
+        let indices = messages.keys().cloned().collect::<Vec<_>>();
 
-                    assert!(aggregate
-                        .verify(validators_num, messages.clone())
-                        .unwrap());
-                    aggregate
-                        .create_decryption_share_simple(
-                            &validator_dkg,
-                            &ciphertext.header().unwrap(),
-                            AAD,
-                            validator_keypair,
-                        )
-                        .unwrap()
-                })
-                .collect();
+        let random_indices = indices
+            .iter()
+            .choose_multiple(&mut thread_rng(), security_threshold as usize);
+
+        // Having aggregated the transcripts, the validators can now create decryption shares
+        let decryption_shares: Vec<_> = random_indices
+            .iter()
+            .map(|&index| {
+                let validator = validators.get(index).unwrap();
+                let validator_keypair = validator_keypairs.get(index).unwrap();
+                // Each validator holds their own instance of DKG and creates their own aggregate
+                let mut validator_dkg = Dkg::new(
+                    TAU,
+                    shares_num,
+                    security_threshold,
+                    validators.values().cloned().collect(),
+                    validator,
+                )
+                .unwrap();
+                let aggregate = validator_dkg
+                    .aggregate_transcripts(messages.values().cloned().collect())
+                    .unwrap();
+
+                assert!(aggregate
+                    .verify(validators_num, messages_vec.clone())
+                    .unwrap());
+                aggregate
+                    .create_decryption_share_simple(
+                        &validator_dkg,
+                        &ciphertext.header().unwrap(),
+                        AAD,
+                        validator_keypair,
+                    )
+                    .unwrap()
+            })
+            .collect();
 
         // Now, the decryption share can be used to decrypt the ciphertext
         // This part is part of the client API
