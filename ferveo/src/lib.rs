@@ -764,17 +764,10 @@ mod test_dkg_full {
         let incoming_validator_keypair = Keypair::<E>::new(rng);
         // println!("Validator {:?}*: {:?}", handover_slot_index, incoming_validator_keypair.public_key());
 
-        // For simplicity, we're going to do the handover with the last participant
-        // let departing_participant = private_contexts.last().unwrap();
-
         // TODO: Rewrite this test so that the offboarding of validator
         // is done by recreating a DKG instance with a new set of
         // validators from the Coordinator, rather than modifying the
         // existing DKG instance.
-
-        // Remove one participant from the contexts and all nested structure
-        let mut remaining_validators = dkg.validators.clone();
-        remaining_validators.remove(&handover_slot_index);
 
         // Get departing validator's public key and blinded share
         let departing_validator =
