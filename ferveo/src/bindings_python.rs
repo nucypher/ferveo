@@ -1077,4 +1077,128 @@ mod test_ferveo_python {
                 .unwrap();
         assert_eq!(plaintext, MSG);
     }
+
+    #[test_case(4, 3; "N is a power of 2, t is 1 + 50%")]
+    #[test_case(4, 4; "N is a power of 2, t=N")]
+    #[test_case(30, 16; "N is not a power of 2, t is 1 + 50%")]
+    #[test_case(30, 30; "N is not a power of 2, t=N")]
+    fn test_server_python_api_handover(
+        shares_num: u32,
+        security_threshold: u32,
+    ) {
+        let validators_num = shares_num; // TOOD: #197
+        let (messages, validators, validator_keypairs) = make_test_inputs(
+            TAU,
+            security_threshold,
+            shares_num,
+            validators_num,
+        );
+        let messages_vec: Vec<ValidatorMessage> =
+            messages.values().cloned().collect();
+
+        // Now that every validator holds a dkg instance and a transcript for every other validator,
+        // every validator can aggregate the transcripts
+        let me = validators.get(&0).unwrap().clone();
+        let mut dkg = Dkg::new(
+            TAU,
+            shares_num,
+            security_threshold,
+            validators.values().cloned().collect(),
+            &me,
+        )
+        .unwrap();
+
+        let pvss_aggregated =
+            dkg.aggregate_transcripts(messages_vec.clone()).unwrap();
+        assert!(pvss_aggregated
+            .verify(validators_num, messages_vec)
+            .unwrap());
+
+        // At this point, any given validator should be able to provide a DKG public key
+        let dkg_public_key = pvss_aggregated.public_key();
+
+        // Let's choose a random validator to handover
+        let indices = messages.keys().cloned().collect::<Vec<_>>();
+
+        let random_indices = indices
+            .iter()
+            .choose_multiple(&mut thread_rng(), security_threshold as usize);
+        let handover_slot_index = **random_indices.first().unwrap();
+
+        // New participant that will receive the handover
+        let incoming_validator_keypair = Keypair::random();
+        let incoming_validator = Validator::new(
+            format!("0x{:040}", 123456789), // TODO: Randomize - #207
+            &incoming_validator_keypair.public_key(),
+            handover_slot_index,
+        )
+        .unwrap();
+
+        // Incoming node creates a handover transcript
+        let handover_transcript = dkg
+            .generate_handover_transcript(
+                &pvss_aggregated,
+                handover_slot_index,
+                &incoming_validator_keypair,
+            )
+            .unwrap();
+
+        // The departing validator uses the handover transcript produced by the
+        // incoming validator to create a new aggregate transcript.
+        // This part is showing the high-level API for handover finalization.
+        let departing_keypair =
+            validator_keypairs.get(&handover_slot_index).unwrap();
+
+        let aggregate_after_handover = pvss_aggregated
+            .finalize_handover(&handover_transcript, departing_keypair)
+            .unwrap();
+
+        let mut new_validators = validators;
+        new_validators.insert(handover_slot_index, incoming_validator);
+
+        // In the meantime, the client creates a ciphertext and decryption request
+        let ciphertext = encrypt(MSG.to_vec(), AAD, &dkg_public_key).unwrap();
+
+        // Having aggregated the transcripts, the validators can now create decryption shares
+        let decryption_shares: Vec<_> = random_indices
+            .iter()
+            .map(|&index| {
+                let validator: Validator =
+                    new_validators.get(index).unwrap().clone();
+                let validator_keypair: &Keypair =
+                    if *index != handover_slot_index {
+                        validator_keypairs.get(index).unwrap()
+                    } else {
+                        &incoming_validator_keypair
+                    };
+
+                // Each validator holds their own instance of DKG
+                let validator_dkg = Dkg::new(
+                    TAU,
+                    shares_num,
+                    security_threshold,
+                    new_validators.values().cloned().collect(),
+                    &validator,
+                )
+                .unwrap();
+
+                aggregate_after_handover
+                    .create_decryption_share_simple(
+                        &validator_dkg,
+                        &ciphertext.header().unwrap(),
+                        AAD,
+                        validator_keypair,
+                    )
+                    .unwrap()
+            })
+            .collect();
+
+        // Now, the decryption share can be used to decrypt the ciphertextsdfg
+        // This part is part of the client APIsdfg
+        let shared_secret = combine_decryption_shares_simple(decryption_shares);
+        let plaintext =
+            decrypt_with_shared_secret(&ciphertext, AAD, &shared_secret)
+                .unwrap();
+        assert_eq!(plaintext, MSG);
+    }
 }
