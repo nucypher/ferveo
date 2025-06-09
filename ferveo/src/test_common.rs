@@ -30,7 +30,7 @@ pub fn gen_keypairs(n: u32) -> Vec<Keypair<E>> {
 }
 
 pub fn gen_address(i: usize) -> EthereumAddress {
-    EthereumAddress::from_str(&format!("0x{i:040}")).unwrap()
+    EthereumAddress::from_str(&format!("0x{i:040}")).unwrap() // TODO: Randomize - #207
 }
 
 pub fn gen_validators(keypairs: &[Keypair<E>]) -> Vec<Validator<E>> {
