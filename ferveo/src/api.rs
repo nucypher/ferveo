@@ -1211,7 +1211,7 @@ mod test_ferveo_api {
             })
             .collect();
 
-        // TODO: test that refreshed aggregates are all the same
+        // TODO: test that refreshed aggregates are all the same --- TODO spongebob
 
         // Participants create decryption shares
         let mut decryption_shares: Vec<DecryptionShareSimple> =
@@ -1249,4 +1249,6 @@ mod test_ferveo_api {
             "Shared secret reconstruction failed"
         );
     }
+
+    // TODO: Test handover API
 }
