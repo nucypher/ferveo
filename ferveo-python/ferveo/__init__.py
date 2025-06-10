@@ -13,6 +13,7 @@ from ._ferveo import (
     DecryptionShareSimple,
     DecryptionSharePrecomputed,
     AggregatedTranscript,
+    HandoverTranscript,
     DkgPublicKey,
     SharedSecret,
     ValidatorMessage,
