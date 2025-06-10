@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.4.0-alpha (2025-06-10)
 
+<csr-id-983110c4dbb41eb7f0fba2c06f561b68718d0f29/>
+<csr-id-802e7121d5eb5a31617bf88c4e14fe79d45e68e3/>
+<csr-id-58002f50155df31a11b9d58d94750a2ed1076102/>
+<csr-id-47138489bc9567674b57d61b0d105ff6c1c7cb6c/>
+<csr-id-0ef7de4c9b4442e2c6125d457de9420146be50b7/>
+<csr-id-8b26396cc26ceeddca52dc37ac9461f0bb93ecfe/>
+<csr-id-4a8375d1873560241ae8eea96230a42635ed1764/>
+<csr-id-6e3369d11cfd4ec751775e1eee82f8192b51943e/>
+<csr-id-315d2b4cc2825e13820d9c64639490c44b538385/>
+
 ### Chore
 
  - <csr-id-983110c4dbb41eb7f0fba2c06f561b68718d0f29/> move shared dependencies to workspace crate
@@ -39,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 37 commits contributed to the release over the course of 580 calendar days.
+ - 38 commits contributed to the release over the course of 580 calendar days.
  - 10 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -50,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release ferveo-common-nucypher-temp4 v0.4.0-alpha, subproductdomain-nucypher-temp4 v0.4.0-alpha, ferveo-tdec-temp4 v0.4.0-alpha, ferveo-nucypher-temp4 v0.4.0-alpha ([`b962402`](https://github.com/nucypher/ferveo/commit/b96240209bea70d43016a66301af9bf5fe5a8970))
     - Cargo stuff ([`888535c`](https://github.com/nucypher/ferveo/commit/888535c2b932f855e6080ad388f5a800644cc607))
     - Refactor domain points ([`7320560`](https://github.com/nucypher/ferveo/commit/7320560a0524248ae1683f3623ee4b9e0f2c74e1))
     - Merge pull request #186 from cygnusv/spongebob ([`bc64858`](https://github.com/nucypher/ferveo/commit/bc6485811b40b1025115159a2504f49fac4789a8))

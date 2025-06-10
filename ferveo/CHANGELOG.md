@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.4.0-alpha (2025-06-10)
 
+<csr-id-983110c4dbb41eb7f0fba2c06f561b68718d0f29/>
+<csr-id-dc2f1675b32f9550bf9333091e8f06ad130397e9/>
+<csr-id-f98a417091644cf7b99b7c4702fadb0629a9d0cf/>
+<csr-id-72b8484010979d5564dff9f89556f0e1564911e1/>
+<csr-id-d547a81743fc21679cc2e2d199c7e2f97424fe5d/>
+<csr-id-280c37e8eda75a982b0c281f8da655f149c035df/>
+<csr-id-e79b4e5b05f83d16e23388edb04f2fed4674a355/>
+<csr-id-87c5f34fd44dfefe85f345c324535868a70df30a/>
+<csr-id-0e6c03ee643af057ddae5c275d33879019776c5b/>
+<csr-id-749a846bb9a5c129bbc0cf7ff25a84ca6dbdb8a5/>
+<csr-id-58002f50155df31a11b9d58d94750a2ed1076102/>
+<csr-id-de4cde2db6ac5f87f7675e8956bb4c71f067bb4f/>
+<csr-id-99632e8af6477a1e8d46d198fb7144a5c015a49f/>
+<csr-id-0eb5bd48b598709dd0fc54adb424f5f41ce52e92/>
+<csr-id-0117a87d8fd753b60d55570c6587a81d5cfd6051/>
+<csr-id-93807a2c92a271e7c0f8ebc31c76604d805fbd7c/>
+<csr-id-47138489bc9567674b57d61b0d105ff6c1c7cb6c/>
+<csr-id-81bc1cbb7c51db655db859684f29f86150bba072/>
+<csr-id-e6a7f6e55a34d892e664160f1f8cffe6e88c79da/>
+<csr-id-caef6ef73dd43a9952d783fcf18abb893b36635f/>
+<csr-id-159475028209948eb40388458a24b0a086afc311/>
+<csr-id-d3fb002e52774cd14bff0d1187a2634fad6eea51/>
+<csr-id-d786fae33b01cd0863f29b70810dfcc847f2542b/>
+<csr-id-09f26b39ddc71d9a4b1f226e2dafbdb4c51a7caa/>
+<csr-id-ec58fe1828d0560525c80cd1dc4013915b0ac54e/>
+<csr-id-b67aef9622d3b7a936ba3f930fb13609ae55a409/>
+<csr-id-ba12d6b861447d4f2017cee37fe075651d114534/>
+<csr-id-0ef7de4c9b4442e2c6125d457de9420146be50b7/>
+<csr-id-cfa8c990aa166623d4c596f2a4eb5638ab8a8848/>
+<csr-id-8b26396cc26ceeddca52dc37ac9461f0bb93ecfe/>
+<csr-id-514221ebb052f6757c49c0c7ed2ff097fb878b34/>
+<csr-id-3d987585e28c5543107af5cb3705af28fae88461/>
+<csr-id-4bb41585cd6f93e58bbd047c27fd3e68ab9e723e/>
+<csr-id-4af8017fa6921c14080dab7790f519cd9394a7d5/>
+<csr-id-935be2dc056a8d295fff8c2e937fc23f8fa80f7e/>
+<csr-id-52f441cae1ac8ed6c88743082bd2434f3cad9012/>
+<csr-id-66d25aecb5a3e29784f6d2ef1a7977ce4a2d406a/>
+<csr-id-06ae244941d8eb93aff63a4ff1e5088c3deccd1b/>
+<csr-id-4a8375d1873560241ae8eea96230a42635ed1764/>
+<csr-id-9aca6aeeef0f88b5d9968829944caf6aec068398/>
+<csr-id-6fd65bd506a0502da39ea4fa292e5fc1669abc27/>
+<csr-id-6e3369d11cfd4ec751775e1eee82f8192b51943e/>
+<csr-id-c9f1adc19198464d99d5759391e6b967ab505a70/>
+<csr-id-315d2b4cc2825e13820d9c64639490c44b538385/>
+
 ### Chore
 
  - <csr-id-983110c4dbb41eb7f0fba2c06f561b68718d0f29/> move shared dependencies to workspace crate
@@ -98,7 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 439 commits contributed to the release over the course of 1356 calendar days.
+ - 440 commits contributed to the release over the course of 1356 calendar days.
  - 60 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#68](https://github.com/nucypher/ferveo/issues/68), [#70](https://github.com/nucypher/ferveo/issues/70), [#71](https://github.com/nucypher/ferveo/issues/71), [#72](https://github.com/nucypher/ferveo/issues/72)
 
@@ -117,6 +162,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#72](https://github.com/nucypher/ferveo/issues/72)**
     - Refactor subproductdomain ([`2d8026b`](https://github.com/nucypher/ferveo/commit/2d8026b2299fd9b67c77fb3b4e565ff9f4e6505b))
  * **Uncategorized**
+    - Release ferveo-common-nucypher-temp4 v0.4.0-alpha, subproductdomain-nucypher-temp4 v0.4.0-alpha, ferveo-tdec-temp4 v0.4.0-alpha, ferveo-nucypher-temp4 v0.4.0-alpha ([`b962402`](https://github.com/nucypher/ferveo/commit/b96240209bea70d43016a66301af9bf5fe5a8970))
     - Cargo stuff ([`888535c`](https://github.com/nucypher/ferveo/commit/888535c2b932f855e6080ad388f5a800644cc607))
     - TODO ([`29fdc1a`](https://github.com/nucypher/ferveo/commit/29fdc1a69d5d073f54035d06a7c3279a353c6fa8))
     - Python binding tests for handover ([`0c2e2e3`](https://github.com/nucypher/ferveo/commit/0c2e2e38e1e20506dc3cfe27c1e9722bd17effee))

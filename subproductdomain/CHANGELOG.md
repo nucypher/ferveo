@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.4.0-alpha (2025-06-10)
 
+<csr-id-983110c4dbb41eb7f0fba2c06f561b68718d0f29/>
+<csr-id-ca43921af214903e2d1345bb05b5f9c6e1987919/>
+
 ### Chore
 
  - <csr-id-983110c4dbb41eb7f0fba2c06f561b68718d0f29/> move shared dependencies to workspace crate
@@ -16,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 35 commits contributed to the release over the course of 1274 calendar days.
+ - 36 commits contributed to the release over the course of 1274 calendar days.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#72](https://github.com/nucypher/ferveo/issues/72)
 
@@ -29,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#72](https://github.com/nucypher/ferveo/issues/72)**
     - Refactor subproductdomain ([`2d8026b`](https://github.com/nucypher/ferveo/commit/2d8026b2299fd9b67c77fb3b4e565ff9f4e6505b))
  * **Uncategorized**
+    - Release ferveo-common-nucypher-temp4 v0.4.0-alpha, subproductdomain-nucypher-temp4 v0.4.0-alpha, ferveo-tdec-temp4 v0.4.0-alpha, ferveo-nucypher-temp4 v0.4.0-alpha ([`b962402`](https://github.com/nucypher/ferveo/commit/b96240209bea70d43016a66301af9bf5fe5a8970))
     - Cargo stuff ([`888535c`](https://github.com/nucypher/ferveo/commit/888535c2b932f855e6080ad388f5a800644cc607))
     - Merge pull request #189 from piotr-roslaniec/workspace-deps ([`be98542`](https://github.com/nucypher/ferveo/commit/be9854252fdff297d99a63eb443a473ecfd41f5a))
     - Move shared dependencies to workspace crate ([`983110c`](https://github.com/nucypher/ferveo/commit/983110c4dbb41eb7f0fba2c06f561b68718d0f29))
