@@ -58,6 +58,12 @@ impl<E: Pairing> UpdatableBlindedKeyShare<E> {
                         .get(&index)
                         .cloned()
                         .unwrap();
+                // Validate share update against the target validator public key
+                update_for_participant
+                    .verify(&PublicKey {
+                        encryption_key: self.0.validator_public_key,
+                    })
+                    .unwrap();
                 update_for_participant
             })
             .collect();
@@ -857,6 +863,8 @@ mod tests_refresh {
             combine_private_shares_at(&x_r, &domain_points, &refreshed_shares);
         assert_eq!(shared_private_key, new_shared_private_key);
     }
+
+    // TODO: Simple handover transcript unit test
 
     /// 2 parties follow a handover protocol. The output is a new blind share
     /// that replaces the original share, using the same domain point
