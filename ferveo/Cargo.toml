@@ -51,6 +51,7 @@ test-case = { workspace = true }
 console_error_panic_hook = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 wasm-bindgen = { workspace = true, features = ["serde-serialize"] }
+cargo-smart-release = { workspace = true }
 
 [features]
 bindings-python = ["pyo3"]
