@@ -3,7 +3,7 @@ name = "subproductdomain-pre-release"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
-authors = ["Heliax AG <hello@heliax.dev>", "Piotr Roslaniec <p.roslaniec@gmail.com>"]
+authors = ["David Nuñez <david@nucypher.com>", "Heliax AG <hello@heliax.dev>", "Piotr Roslaniec <p.roslaniec@gmail.com>"]
 description = "Implements subproduct domain algorithm"
 
 [dependencies]

@@ -8,7 +8,7 @@ readme = "README.md"
 description = "An implementation of a DKG protocol for threshold decryption."
 keywords = ["DKG"]
 categories = ["cryptography"]
-authors = ["Heliax AG <hello@heliax.dev>", "Piotr Roslaniec <p.roslaniec@gmail.com>"]
+authors = ["David Nuñez <david@nucypher.com>", "Piotr Roslaniec <p.roslaniec@gmail.com>", "Heliax AG <hello@heliax.dev>"]
 
 [lib]
 bench = false

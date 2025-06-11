@@ -2,7 +2,7 @@
 name = "ferveo-tdec"
 version = "0.2.0"
 edition = "2021"
-authors = ["Heliax AG <hello@heliax.dev>", "Piotr Roslaniec <p.roslaniec@gmail.com>"]
+authors = ["David Nuñez <david@nucypher.com>", "Piotr Roslaniec <p.roslaniec@gmail.com>", "Heliax AG <hello@heliax.dev>"]
 license = "GPL-3.0"
 description = "Threshold signature and encryption using group secret key"
 repository = "https://github.com/nucypher/ferveo/"

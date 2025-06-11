@@ -1,6 +1,6 @@
 [package]
 name = "ferveo-python"
-authors = ["Piotr Roslaniec <p.roslaniec@gmail.com>"]
+authors = ["David Nuñez <david@nucypher.com>", "Piotr Roslaniec <p.roslaniec@gmail.com>"]
 version = "0.1.0"
 edition = "2021"
 repository = "https://github.com/nucypher/ferveo"

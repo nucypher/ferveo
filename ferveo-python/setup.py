@@ -12,8 +12,8 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     version="0.1.13",
-    author="Piotr Roslaniec",
-    author_email="p.roslaniec@gmail.com",
+    author="David Nuñez",
+    author_email="david@nucypher.com",
     url="https://github.com/nucypher/ferveo/tree/master/ferveo-python",
     rust_extensions=[
         RustExtension("ferveo._ferveo", binding=Binding.PyO3, debug=False)

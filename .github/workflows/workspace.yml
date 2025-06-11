@@ -297,4 +297,4 @@ jobs:
           auto-push: true  # Use the branch at `gh-pages-branch` to store historical info of benchmark data.
           github-token: ${{ secrets.GITHUB_TOKEN }}
           comment-on-alert: true
-          alert-comment-cc-users: '@piotr-roslaniec'
+          alert-comment-cc-users: '@cygnusv'
