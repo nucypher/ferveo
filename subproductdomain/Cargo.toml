@@ -1,6 +1,6 @@
 [package]
-name = "subproductdomain-pre-release"
-version = "0.1.0"
+name = "subproductdomain-nucypher-temp5"
+version = "0.4.0-alpha"
 edition = "2021"
 license = "GPL-3.0"
 authors = ["David Nuñez <david@nucypher.com>", "Heliax AG <hello@heliax.dev>", "Piotr Roslaniec <p.roslaniec@gmail.com>"]
