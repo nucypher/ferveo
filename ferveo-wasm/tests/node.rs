@@ -1,4 +1,5 @@
 //! Test suite for the Node.js.
+#![allow(dead_code)]
 
 extern crate wasm_bindgen_test;
 
