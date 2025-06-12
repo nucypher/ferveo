@@ -115,13 +115,13 @@ jobs:
       - run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - run: wasm-pack build --target nodejs
         working-directory: ferveo-wasm
-      - uses: borales/actions-yarn@v3.0.0
+      - uses: borales/actions-yarn@v5.0.0
         with:
           cmd: --cwd ferveo-wasm/examples/node install
-      - uses: borales/actions-yarn@v3.0.0
+      - uses: borales/actions-yarn@v5.0.0
         with:
           cmd: --cwd ferveo-wasm/examples/node build
-      - uses: borales/actions-yarn@v3.0.0
+      - uses: borales/actions-yarn@v5.0.0
         with:
           cmd: --cwd ferveo-wasm/examples/node test
 
