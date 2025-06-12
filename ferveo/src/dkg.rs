@@ -156,7 +156,7 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
     pub fn get_domain_point(&self, share_index: u32) -> Result<DomainPoint<E>> {
         self.domain_points()
             .get(share_index as usize)
-            .ok_or_else(|| Error::InvalidShareIndex(share_index))
+            .ok_or(Error::InvalidShareIndex(share_index))
             .copied()
     }
 
@@ -249,7 +249,7 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         let departing_validator = self
             .validators
             .get(&handover_slot_index)
-            .ok_or_else(|| Error::InvalidShareIndex(handover_slot_index))?;
+            .ok_or(Error::InvalidShareIndex(handover_slot_index))?;
 
         let departing_blinded_share = aggregate
             .aggregate

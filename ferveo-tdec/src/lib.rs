@@ -59,7 +59,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Factory functions for testing
 #[cfg(any(test, feature = "test-common"))]
 pub mod test_common {
-    use std::{ops::Mul, usize};
+    use std::ops::Mul;
 
     pub use ark_bls12_381::Bls12_381 as EllipticCurve;
     use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};

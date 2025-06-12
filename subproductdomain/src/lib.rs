@@ -45,7 +45,6 @@ pub fn moduli_from_scalar<F: FftField>(s: &F) -> DensePolynomial<F> {
 /// Where indicated, algorithms are from Modern Computer Algebra, 3rd edition, by Gathen and Gerhard
 /// Abbreviated as GG
 /// Let M(n) denote the time to multiply.
-
 /// GG Algorithm 9.3
 /// Computes the inverse of f mod x^l
 /// Takes O(M(l)) field arithmetic operations

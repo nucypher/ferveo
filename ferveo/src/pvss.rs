@@ -538,9 +538,7 @@ fn aggregate<E: Pairing>(
     transcripts: &[PubliclyVerifiableSS<E>],
 ) -> Result<PubliclyVerifiableSS<E, Aggregated>> {
     let mut pvss_iter = transcripts.iter();
-    let first_pvss = pvss_iter
-        .next()
-        .ok_or_else(|| Error::NoTranscriptsToAggregate)?;
+    let first_pvss = pvss_iter.next().ok_or(Error::NoTranscriptsToAggregate)?;
     let mut coeffs = batch_to_projective_g1::<E>(&first_pvss.coeffs);
     let mut sigma = first_pvss.sigma;
 

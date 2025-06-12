@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Mul, usize};
+use std::{collections::HashMap, ops::Mul};
 
 use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup, Group};
 use ark_ff::{Field, Zero};
