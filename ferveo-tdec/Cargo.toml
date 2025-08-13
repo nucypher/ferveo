@@ -1,5 +1,5 @@
 [package]
-name = "ferveo-tdec-temp5"
+name = "ferveo-nucypher-tdec-temp6"
 version = "0.4.0-alpha"
 edition = "2021"
 authors = ["David Nuñez <david@nucypher.com>", "Piotr Roslaniec <p.roslaniec@gmail.com>", "Heliax AG <hello@heliax.dev>"]
@@ -24,7 +24,7 @@ ark-serialize = { workspace = true }
 ark-std = { workspace = true }
 bincode = { workspace = true }
 chacha20poly1305 = { workspace = true }
-ferveo-common = { package = "ferveo-common-nucypher-temp5", path = "../ferveo-common", version = "^0.4.0-alpha" }
+ferveo-common = { package = "ferveo-nucypher-common-temp6", path = "../ferveo-common", version = "^0.4.0-alpha" }
 itertools = { workspace = true }
 miracl_core = { workspace = true }
 rand = { workspace = true }
@@ -33,7 +33,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_bytes = { workspace = true }
 serde_with = { workspace = true }
 sha2 = { workspace = true }
-subproductdomain = { package = "subproductdomain-nucypher-temp5", path = "../subproductdomain", version = "^0.4.0-alpha" }
+subproductdomain = { package = "subproductdomain-nucypher-temp6", path = "../subproductdomain", version = "^0.4.0-alpha" }
 thiserror = { workspace = true }
 zeroize = { workspace = true }
 

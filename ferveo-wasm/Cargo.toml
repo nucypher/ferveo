@@ -14,7 +14,7 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-ferveo = { package = "ferveo-nucypher-temp5", path = "../ferveo", features = ["bindings-wasm"] }
+ferveo = { package = "ferveo-nucypher-temp6", path = "../ferveo", features = ["bindings-wasm"] }
 
 [dev-dependencies]
 wasm-bindgen-test = { workspace = true }

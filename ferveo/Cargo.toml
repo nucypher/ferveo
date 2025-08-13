@@ -1,5 +1,5 @@
 [package]
-name = "ferveo-nucypher-temp5"
+name = "ferveo-nucypher-temp6"
 version = "0.4.0-alpha"
 edition = "2021"
 license = "GPL-3.0"
@@ -21,8 +21,8 @@ ark-poly = { workspace = true }
 ark-serialize = { workspace = true }
 ark-std = { workspace = true }
 bincode = { workspace = true }
-ferveo-common = { package = "ferveo-common-nucypher-temp5", path = "../ferveo-common", version = "^0.4.0-alpha" }
-ferveo-tdec = { package = "ferveo-tdec-temp5", path = "../ferveo-tdec", features = ["api", "test-common"], version = "^0.4.0-alpha" }
+ferveo-common = { package = "ferveo-nucypher-common-temp6", path = "../ferveo-common", version = "^0.4.0-alpha" }
+ferveo-tdec = { package = "ferveo-nucypher-tdec-temp6", path = "../ferveo-tdec", features = ["api", "test-common"], version = "^0.4.0-alpha" }
 hex = { workspace = true }
 itertools = { workspace = true }
 measure_time = { workspace = true }
@@ -31,7 +31,7 @@ rand_core = { workspace = true }
 rand_old = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_with = { workspace = true }
-subproductdomain = { package = "subproductdomain-nucypher-temp5", path = "../subproductdomain", version = "^0.4.0-alpha" }
+subproductdomain = { package = "subproductdomain-nucypher-temp6", path = "../subproductdomain", version = "^0.4.0-alpha" }
 thiserror = { workspace = true }
 zeroize = { workspace = true, features = ["derive"] }
 generic-array = { workspace = true }

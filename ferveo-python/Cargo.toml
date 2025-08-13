@@ -14,7 +14,7 @@ extension-module = ["pyo3/extension-module"]
 default = ["extension-module"]
 
 [dependencies]
-ferveo = { package = "ferveo-nucypher-temp5", path = "../ferveo", features = ["bindings-python"] }
+ferveo = { package = "ferveo-nucypher-temp6", path = "../ferveo", features = ["bindings-python"] }
 pyo3 = { workspace = true }
 
 [build-dependencies]
