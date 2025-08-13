@@ -119,8 +119,7 @@ pub fn bench_create_decryption_share(c: &mut Criterion) {
         };
         let simple_precomputed = {
             let setup = SetupSimple::new(shares_num, MSG_SIZE_CASES[0], rng);
-            let selected_participants =
-                (0..setup.shared.threshold).collect::<Vec<_>>();
+            let selected_participants = (0..shares_num).collect::<Vec<_>>();
             move || {
                 black_box(
                     setup
