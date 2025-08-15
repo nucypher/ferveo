@@ -983,51 +983,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
-name = "ferveo-nucypher-common-temp6"
-version = "0.4.0-alpha"
-dependencies = [
- "ark-bls12-381",
- "ark-ec",
- "ark-serialize",
- "ark-std",
- "bincode",
- "generic-array",
- "rand 0.8.5",
- "serde",
- "serde_with",
-]
-
-[[package]]
-name = "ferveo-nucypher-tdec-temp6"
-version = "0.4.0-alpha"
-dependencies = [
- "ark-bls12-381",
- "ark-ec",
- "ark-ff",
- "ark-poly",
- "ark-serialize",
- "ark-std",
- "bincode",
- "chacha20poly1305",
- "criterion",
- "ferveo-nucypher-common-temp6",
- "hex",
- "itertools",
- "miracl_core",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "serde",
- "serde_bytes",
- "serde_with",
- "sha2",
- "subproductdomain-nucypher-temp6",
- "thiserror 1.0.69",
- "zeroize",
-]
-
-[[package]]
-name = "ferveo-nucypher-temp6"
-version = "0.4.0-alpha"
+name = "ferveo-nucypher"
+version = "0.4.0"
 dependencies = [
  "ark-bls12-381",
  "ark-ec",
@@ -1041,8 +998,8 @@ dependencies = [
  "criterion",
  "derive_more",
  "digest",
- "ferveo-nucypher-common-temp6",
- "ferveo-nucypher-tdec-temp6",
+ "ferveo-nucypher-common",
+ "ferveo-nucypher-tdec",
  "generic-array",
  "getrandom 0.2.16",
  "hex",
@@ -1056,7 +1013,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "serde_with",
- "subproductdomain-nucypher-temp6",
+ "subproductdomain-nucypher",
  "test-case",
  "thiserror 1.0.69",
  "wasm-bindgen",
@@ -1065,19 +1022,62 @@ dependencies = [
 ]
 
 [[package]]
-name = "ferveo-python"
-version = "0.4.0-alpha"
+name = "ferveo-nucypher-common"
+version = "0.4.0"
 dependencies = [
- "ferveo-nucypher-temp6",
+ "ark-bls12-381",
+ "ark-ec",
+ "ark-serialize",
+ "ark-std",
+ "bincode",
+ "generic-array",
+ "rand 0.8.5",
+ "serde",
+ "serde_with",
+]
+
+[[package]]
+name = "ferveo-nucypher-tdec"
+version = "0.4.0"
+dependencies = [
+ "ark-bls12-381",
+ "ark-ec",
+ "ark-ff",
+ "ark-poly",
+ "ark-serialize",
+ "ark-std",
+ "bincode",
+ "chacha20poly1305",
+ "criterion",
+ "ferveo-nucypher-common",
+ "hex",
+ "itertools",
+ "miracl_core",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "serde",
+ "serde_bytes",
+ "serde_with",
+ "sha2",
+ "subproductdomain-nucypher",
+ "thiserror 1.0.69",
+ "zeroize",
+]
+
+[[package]]
+name = "ferveo-python"
+version = "0.4.0"
+dependencies = [
+ "ferveo-nucypher",
  "pyo3",
  "pyo3-build-config 0.25.1",
 ]
 
 [[package]]
 name = "ferveo-wasm"
-version = "0.4.0-alpha"
+version = "0.4.0"
 dependencies = [
- "ferveo-nucypher-temp6",
+ "ferveo-nucypher",
  "itertools",
  "wasm-bindgen-test",
 ]
@@ -3372,8 +3372,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
-name = "subproductdomain-nucypher-temp6"
-version = "0.4.0-alpha"
+name = "subproductdomain-nucypher"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "ark-bls12-381",

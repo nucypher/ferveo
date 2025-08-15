@@ -5,7 +5,7 @@ use ark_ff::Field;
 use ark_poly::EvaluationDomain;
 use criterion::{black_box, criterion_group, BenchmarkId, Criterion};
 use digest::crypto_common::rand_core::SeedableRng;
-use ferveo_nucypher_temp6::*;
+use ferveo_nucypher::*;
 use rand::prelude::StdRng;
 
 const NUM_SHARES_CASES: [usize; 6] = [2, 4, 8, 16, 32, 64];
