@@ -5,20 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.1.0 (2023-07-07)
-
-<csr-id-ca43921af214903e2d1345bb05b5f9c6e1987919/>
+## v0.4.0 (2025-08-15)
 
 ### Chore
 
+ - <csr-id-983110c4dbb41eb7f0fba2c06f561b68718d0f29/> move shared dependencies to workspace crate
  - <csr-id-ca43921af214903e2d1345bb05b5f9c6e1987919/> adjust changelogs for cargo-smart-release
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 30 commits contributed to the release over the course of 570 calendar days.
- - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 42 commits contributed to the release.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#72](https://github.com/nucypher/ferveo/issues/72)
 
 ### Commit Details
@@ -30,6 +29,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#72](https://github.com/nucypher/ferveo/issues/72)**
     - Refactor subproductdomain ([`2d8026b`](https://github.com/nucypher/ferveo/commit/2d8026b2299fd9b67c77fb3b4e565ff9f4e6505b))
  * **Uncategorized**
+    - Merge pull request #188 from nucypher/rocknroll ([`1e66268`](https://github.com/nucypher/ferveo/commit/1e66268dfbfbf76566b4bcf6c25a9852692bb380))
+    - Merge pull request #211 from derekpierre/mrkrabs ([`763e06b`](https://github.com/nucypher/ferveo/commit/763e06bb2375e2ded95b409e282ae1f491e16d59))
+    - Merge pull request #205 from cygnusv/mrkrabs ([`bb51e96`](https://github.com/nucypher/ferveo/commit/bb51e963f552d2ced387d0ac5c4b311f13715eb4))
+    - Update cargo.toml of all ferveo packages for public release. ([`d21ea18`](https://github.com/nucypher/ferveo/commit/d21ea1826f81f47ee88a64dcb98678560e691e57))
+    - Update cargo.toml of all ferveo packages for test release. ([`000dc17`](https://github.com/nucypher/ferveo/commit/000dc1715c31f2a32f2366feb6ca652b57d40130))
+    - Update wasm-bindgen ([`19e228b`](https://github.com/nucypher/ferveo/commit/19e228b70920b359d93175dfcc5470062832102c))
+    - Update cargo.toml of all ferveo packages ([`4e03d43`](https://github.com/nucypher/ferveo/commit/4e03d43255c2fceb729bf2227bff396a25d700c5))
+    - Update authors ([`380e984`](https://github.com/nucypher/ferveo/commit/380e9840f0b491da002ff02b863230f5824b500e))
+    - Merge pull request #189 from piotr-roslaniec/workspace-deps ([`be98542`](https://github.com/nucypher/ferveo/commit/be9854252fdff297d99a63eb443a473ecfd41f5a))
+    - Move shared dependencies to workspace crate ([`983110c`](https://github.com/nucypher/ferveo/commit/983110c4dbb41eb7f0fba2c06f561b68718d0f29))
+    - Merge pull request #138 from nucypher/development ([`434fd5d`](https://github.com/nucypher/ferveo/commit/434fd5d07b54e72d120e9aa06cbc3e47848e6bcf))
+    - Release ferveo-common-pre-release v0.1.0, subproductdomain-pre-release v0.1.0, group-threshold-cryptography-pre-release v0.1.0, ferveo-pre-release v0.2.0 ([`ffb9b21`](https://github.com/nucypher/ferveo/commit/ffb9b21619d0f5dc0fb309bf2f493d3c0c25e1f0))
     - Release ferveo-common-pre-release v0.1.0, subproductdomain-pre-release v0.1.0, group-threshold-cryptography-pre-release v0.1.0, ferveo-pre-release v0.2.0 ([`a7b889e`](https://github.com/nucypher/ferveo/commit/a7b889e3a20cfffc96bcb801dfb0946227cb32d9))
     - Adjust changelogs for cargo-smart-release ([`ca43921`](https://github.com/nucypher/ferveo/commit/ca43921af214903e2d1345bb05b5f9c6e1987919))
     - Release 0.1.0 crate versions ([`c02e305`](https://github.com/nucypher/ferveo/commit/c02e3050b7a9dcf0260a5eb4e42ff74f3788c3bf))
@@ -60,4 +71,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Fix clippy ([`cca3270`](https://github.com/nucypher/ferveo/commit/cca32700b3b13aafab6fcb899f852d3643dddcfd))
     - Fix clippy ([`7cad9ae`](https://github.com/nucypher/ferveo/commit/7cad9aea331ed8e510bca6afd043fe61a466ef08))
 </details>
+
+## v0.1.0 (2023-07-07)
+
+<csr-id-ca43921af214903e2d1345bb05b5f9c6e1987919/>
+
+### Chore
+
+ - <csr-id-ca43921af214903e2d1345bb05b5f9c6e1987919/> adjust changelogs for cargo-smart-release
 

@@ -5,100 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.3.0 (2023-08-28)
+## 0.4.0 (2025-08-15)
 
-### New Features (BREAKING)
+### Chore
 
- - <csr-id-1800d3c5db164947c7cae35433fb8e3ad2650b66/> add ciphertext header to ciphertext api
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 10 commits contributed to the release over the course of 27 calendar days.
- - 27 days passed between releases.
- - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Fix changelogs for cargo-smart-release ([`fe4ec4e`](https://github.com/nucypher/ferveo/commit/fe4ec4ec7667f513b6ebb4bd604303e6ff53a425))
-    - Merge pull request #156 from derekpierre/acp ([`e2c4c2e`](https://github.com/nucypher/ferveo/commit/e2c4c2ee9efa20ee2f835530117dd03d67b142fb))
-    - Merge pull request #155 from nucypher/update-ciphertext-api ([`bc0a6a5`](https://github.com/nucypher/ferveo/commit/bc0a6a56b9ae63aa6573c6ad045c73356b053058))
-    - Apply pr suggestions ([`c06217c`](https://github.com/nucypher/ferveo/commit/c06217c06e16df17d0525027312d5c368f443cb6))
-    - SharedSecret wasm-binding now derives AsRef. ([`c3fe68a`](https://github.com/nucypher/ferveo/commit/c3fe68a3214b398db617e687e5244371661a77f7))
-    - Merge pull request #149 from cygnusv/thin ([`f44e1be`](https://github.com/nucypher/ferveo/commit/f44e1be4fe9a0a165d8b0b50ad29bb7f6818f672))
-    - Appease linter. ([`2c1288b`](https://github.com/nucypher/ferveo/commit/2c1288b1adb983fdb432490d0a64a9a7cd929d76))
-    - DkgPublicKey wasm-binding now derives From and AsRef. ([`ce7d280`](https://github.com/nucypher/ferveo/commit/ce7d280c46173297b0d123b54bac6e57e9f9cc36))
-    - Add ciphertext header to ciphertext api ([`1800d3c`](https://github.com/nucypher/ferveo/commit/1800d3c5db164947c7cae35433fb8e3ad2650b66))
-    - Clippy stuff ([`4337c3c`](https://github.com/nucypher/ferveo/commit/4337c3c312719987405f620f2e377cf493ece6d3))
-</details>
-
-## v0.2.1 (2023-08-01)
+ - <csr-id-983110c4dbb41eb7f0fba2c06f561b68718d0f29/> move shared dependencies to workspace crate
+ - <csr-id-dc2f1675b32f9550bf9333091e8f06ad130397e9/> fix a bad rebase
+ - <csr-id-f98a417091644cf7b99b7c4702fadb0629a9d0cf/> relax dkg ceremony constraints
+ - <csr-id-72b8484010979d5564dff9f89556f0e1564911e1/> document todos
+ - <csr-id-d547a81743fc21679cc2e2d199c7e2f97424fe5d/> remove unused code
+ - <csr-id-280c37e8eda75a982b0c281f8da655f149c035df/> remove unused code
+ - <csr-id-e79b4e5b05f83d16e23388edb04f2fed4674a355/> document benchmark todos
+ - <csr-id-87c5f34fd44dfefe85f345c324535868a70df30a/> fix unused import breaking release compilation
+ - <csr-id-0e6c03ee643af057ddae5c275d33879019776c5b/> fix false-positives in cargo machete check
+ - <csr-id-749a846bb9a5c129bbc0cf7ff25a84ca6dbdb8a5/> remove unused curves
+ - <csr-id-58002f50155df31a11b9d58d94750a2ed1076102/> rename ferveo-tpke package to ferveo-tdec
+ - <csr-id-de4cde2db6ac5f87f7675e8956bb4c71f067bb4f/> rename tpke dir to ferveo-tpke
+ - <csr-id-99632e8af6477a1e8d46d198fb7144a5c015a49f/> fix linter on stable
+ - <csr-id-0eb5bd48b598709dd0fc54adb424f5f41ce52e92/> adjust changelogs for cargo-smart-release
 
 ### New Features
 
+ - <csr-id-6670da7df8e0ff8c2210900cdb44a18dfd220892/> enforce canonical share indices instead of validator ordering
+ - <csr-id-830cbc859b23c0bf43373bf47c18aedbb54943a2/> add share_index field to validator
+ - <csr-id-40cf1c380f682fd99ebeafae8ae296befb3fb81e/> rename group_threshold_cryptography_pre_release crate to ferveo_tpke
+ - <csr-id-52efe010264bdd5978111e148190359b9383d53e/> derive eq in DkgPublicKey
  - <csr-id-50511fff3c9829d6f2004360be93b67730f66f1f/> replace FerveoVariant static methods with class atributed
-
-### Bug Fixes
-
- - <csr-id-be900653a80e3570300f5a126af98660ab59a7d2/> python typings don't match runtime
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 11 commits contributed to the release over the course of 21 calendar days.
- - 24 days passed between releases.
- - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Release ferveo-pre-release v0.2.1 ([`37ea895`](https://github.com/nucypher/ferveo/commit/37ea895e787ae013ffb2c8bb2d738b29a1c32163))
-    - Merge pull request #139 from nucypher/fix-typings ([`dc9d81a`](https://github.com/nucypher/ferveo/commit/dc9d81a4128e1966effc11d6e6bb815958482d90))
-    - Rename FerveoVariant attributes ([`0e7c561`](https://github.com/nucypher/ferveo/commit/0e7c5615a0660a69077e7b431dd24c5bb3d0f10d))
-    - Add __hash__ to FerveoVariant ([`06321d7`](https://github.com/nucypher/ferveo/commit/06321d798fc30768173eec447aed753c34890194))
-    - Add equality to FerveoVariant python bindings ([`cea467e`](https://github.com/nucypher/ferveo/commit/cea467e0bd48a096f70dd1c7ca24a7e4bd88b3d4))
-    - Apply pr suggestions ([`6c1d4be`](https://github.com/nucypher/ferveo/commit/6c1d4becd89005d6698734caa9d681dde727bff6))
-    - Add api conversion method to FerveoVariant ([`fbb97be`](https://github.com/nucypher/ferveo/commit/fbb97be59d991a263233a0b876da982143b2cbf2))
-    - Apply pr suggestions ([`7cbe65d`](https://github.com/nucypher/ferveo/commit/7cbe65def65a76043d21763723ce98787cbf8eed))
-    - Replace FerveoVariant static methods with class atributed ([`50511ff`](https://github.com/nucypher/ferveo/commit/50511fff3c9829d6f2004360be93b67730f66f1f))
-    - Merge pull request #138 from nucypher/development ([`434fd5d`](https://github.com/nucypher/ferveo/commit/434fd5d07b54e72d120e9aa06cbc3e47848e6bcf))
-    - Python typings don't match runtime ([`be90065`](https://github.com/nucypher/ferveo/commit/be900653a80e3570300f5a126af98660ab59a7d2))
-</details>
-
-## v0.2.0 (2023-07-07)
-
-<csr-id-caef6ef73dd43a9952d783fcf18abb893b36635f/>
-<csr-id-159475028209948eb40388458a24b0a086afc311/>
-<csr-id-d3fb002e52774cd14bff0d1187a2634fad6eea51/>
-<csr-id-d786fae33b01cd0863f29b70810dfcc847f2542b/>
-<csr-id-09f26b39ddc71d9a4b1f226e2dafbdb4c51a7caa/>
-<csr-id-ec58fe1828d0560525c80cd1dc4013915b0ac54e/>
-<csr-id-0eb5bd48b598709dd0fc54adb424f5f41ce52e92/>
-
-### New Features
-
  - <csr-id-e8d05981ee2cc983966c037babeebe5ba0134ffc/> expose ferveo variant in bindings
  - <csr-id-e51656260f2ec8c607add8a63e6832786915b201/> expose missing method
 
 ### Bug Fixes
 
+ - <csr-id-975dae0d5f8d1a2e5c061fbc8d11b1cc73c867d7/> not using subset of participants in precomputed variant
+ - <csr-id-e903c1ba6f84c9656aa5777b62a0885362c6fa08/> add missing exception definition
+ - <csr-id-aebaab39e18a1c114e2aaae62ec9061d49f7a78a/> prevent precomputed shares from being created with inapprioriate variant
+ - <csr-id-b8fd959943c604eb0152e6715a13095501b906bb/> allow double allocation when using SecretBox
+ - <csr-id-be900653a80e3570300f5a126af98660ab59a7d2/> python typings don't match runtime
  - <csr-id-99ebfecdb7967c4858f918d27ce13cc635c329ac/> dkg serialization in wasm bindings
 
 ### Other
 
+ - <csr-id-0117a87d8fd753b60d55570c6587a81d5cfd6051/> introduce refreshing api in ferveo
+ - <csr-id-93807a2c92a271e7c0f8ebc31c76604d805fbd7c/> remove deprecated exceptions
+ - <csr-id-47138489bc9567674b57d61b0d105ff6c1c7cb6c/> introduce refreshing api in ferveo
+ - <csr-id-81bc1cbb7c51db655db859684f29f86150bba072/> relax dkg ceremony constraints
+ - <csr-id-e6a7f6e55a34d892e664160f1f8cffe6e88c79da/> prevent panics during transcript aggregation
  - <csr-id-caef6ef73dd43a9952d783fcf18abb893b36635f/> When announcing an aggregation, the resulting key should also be announced and checked so that it can be included on chain
  - <csr-id-159475028209948eb40388458a24b0a086afc311/> Strengthened state guards against aggregation. Necessary for preparing blocks easily
  - <csr-id-d3fb002e52774cd14bff0d1187a2634fad6eea51/> Fixing up the benchmarks to reflect the refactor in dkg
@@ -106,24 +57,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-09f26b39ddc71d9a4b1f226e2dafbdb4c51a7caa/> Added retry logic to the dkg
  - <csr-id-ec58fe1828d0560525c80cd1dc4013915b0ac54e/> Removed the announce phase from the dkg
 
-### Chore
+### Refactor
 
- - <csr-id-0eb5bd48b598709dd0fc54adb424f5f41ce52e92/> adjust changelogs for cargo-smart-release
+ - <csr-id-b67aef9622d3b7a936ba3f930fb13609ae55a409/> hide g_inv from internat apis
+ - <csr-id-ba12d6b861447d4f2017cee37fe075651d114534/> update serde serialization
+ - <csr-id-0ef7de4c9b4442e2c6125d457de9420146be50b7/> rename public key share to public key
+ - <csr-id-cfa8c990aa166623d4c596f2a4eb5638ab8a8848/> avoid using crypto primitives directly, part 2
+ - <csr-id-8b26396cc26ceeddca52dc37ac9461f0bb93ecfe/> avoid using crypto primitives directly, part 1
+ - <csr-id-514221ebb052f6757c49c0c7ed2ff097fb878b34/> hide dkg fields in the internal api
+ - <csr-id-3d987585e28c5543107af5cb3705af28fae88461/> move a test to a dkg test module
+ - <csr-id-4bb41585cd6f93e58bbd047c27fd3e68ab9e723e/> refactor aggregate method params
+ - <csr-id-4af8017fa6921c14080dab7790f519cd9394a7d5/> unify share creating methods
+ - <csr-id-935be2dc056a8d295fff8c2e937fc23f8fa80f7e/> replace dkg validator with validator
+ - <csr-id-52f441cae1ac8ed6c88743082bd2434f3cad9012/> deduplicate test utils
+ - <csr-id-66d25aecb5a3e29784f6d2ef1a7977ce4a2d406a/> use test_case crate to deduplicate tests
+ - <csr-id-06ae244941d8eb93aff63a4ff1e5088c3deccd1b/> refactor dkg params into a seperate struct
+
+### Test
+
+ - <csr-id-4a8375d1873560241ae8eea96230a42635ed1764/> fix tests sensitive to message ordering
+ - <csr-id-9aca6aeeef0f88b5d9968829944caf6aec068398/> document domain point determinism
+ - <csr-id-6fd65bd506a0502da39ea4fa292e5fc1669abc27/> update tests for dkgs with relaxed constraints
 
 ### New Features (BREAKING)
 
+ - <csr-id-1800d3c5db164947c7cae35433fb8e3ad2650b66/> add ciphertext header to ciphertext api
  - <csr-id-8b6e6f5834d7b736a1d7baf3ddbfa7c60837b9bb/> hide dkg public params from bindings
 
 ### Bug Fixes (BREAKING)
 
  - <csr-id-7388027cb6c77357e8b4d24a891e24a9b4ea2031/> rename wasm method
 
+### Other (BREAKING)
+
+ - <csr-id-6e3369d11cfd4ec751775e1eee82f8192b51943e/> remove fast variant
+ - <csr-id-c9f1adc19198464d99d5759391e6b967ab505a70/> remove state from dkg, part 2
+ - <csr-id-315d2b4cc2825e13820d9c64639490c44b538385/> remove state from dkg, part 1
+
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 262 commits contributed to the release over the course of 652 calendar days.
- - 12 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 447 commits contributed to the release.
+ - 60 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#68](https://github.com/nucypher/ferveo/issues/68), [#70](https://github.com/nucypher/ferveo/issues/70), [#71](https://github.com/nucypher/ferveo/issues/71), [#72](https://github.com/nucypher/ferveo/issues/72)
 
 ### Commit Details
@@ -141,6 +117,191 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#72](https://github.com/nucypher/ferveo/issues/72)**
     - Refactor subproductdomain ([`2d8026b`](https://github.com/nucypher/ferveo/commit/2d8026b2299fd9b67c77fb3b4e565ff9f4e6505b))
  * **Uncategorized**
+    - Merge pull request #188 from nucypher/rocknroll ([`1e66268`](https://github.com/nucypher/ferveo/commit/1e66268dfbfbf76566b4bcf6c25a9852692bb380))
+    - Merge pull request #211 from derekpierre/mrkrabs ([`763e06b`](https://github.com/nucypher/ferveo/commit/763e06bb2375e2ded95b409e282ae1f491e16d59))
+    - Merge pull request #205 from cygnusv/mrkrabs ([`bb51e96`](https://github.com/nucypher/ferveo/commit/bb51e963f552d2ced387d0ac5c4b311f13715eb4))
+    - Update cargo.toml of all ferveo packages for public release. ([`d21ea18`](https://github.com/nucypher/ferveo/commit/d21ea1826f81f47ee88a64dcb98678560e691e57))
+    - Update cargo.toml of all ferveo packages for test release. ([`000dc17`](https://github.com/nucypher/ferveo/commit/000dc1715c31f2a32f2366feb6ca652b57d40130))
+    - Fix formatting based on cargo fmt check. ([`a43e9f1`](https://github.com/nucypher/ferveo/commit/a43e9f1c918994c75958c227f90d4476578eeae6))
+    - Sq reminder to randomize ([`9596f58`](https://github.com/nucypher/ferveo/commit/9596f587a50d938e52edb7879db1ba77f981cb03))
+    - Sq update wasm ([`c4eaa4a`](https://github.com/nucypher/ferveo/commit/c4eaa4a76f3d93075cefea9d1d19066466ba3b6d))
+    - Update wasm-bindgen ([`19e228b`](https://github.com/nucypher/ferveo/commit/19e228b70920b359d93175dfcc5470062832102c))
+    - Update cargo.toml of all ferveo packages ([`4e03d43`](https://github.com/nucypher/ferveo/commit/4e03d43255c2fceb729bf2227bff396a25d700c5))
+    - Add cargo-smart-release as a dev dependency ([`72c8f1f`](https://github.com/nucypher/ferveo/commit/72c8f1f40eb030ef00c780838985d6a3c3f5c7a2))
+    - Update authors ([`380e984`](https://github.com/nucypher/ferveo/commit/380e9840f0b491da002ff02b863230f5824b500e))
+    - During refresh, validate share update against the target validator public key ([`9f9fd64`](https://github.com/nucypher/ferveo/commit/9f9fd64e3273191c4a67a3b1205f13b05591fed9))
+    - Python binding tests for handover ([`f9ac7c2`](https://github.com/nucypher/ferveo/commit/f9ac7c295e409c8ec265257cea59e71b5d3c6b12))
+    - Reminder to randomize ETH addresses in tests ([`5a6d072`](https://github.com/nucypher/ferveo/commit/5a6d0726ab51541ac78b8f0bbea906a75aa93855))
+    - Refactor tests in python bindings ([`c8e4c08`](https://github.com/nucypher/ferveo/commit/c8e4c08d2119709fd0f0baf45e8b6d4cfb3971e4))
+    - Handover in python bindings ([`833c2b5`](https://github.com/nucypher/ferveo/commit/833c2b5f444cb9ff860dc0783ec7068c4a24e304))
+    - High-level API for finalizing handover ([`281c354`](https://github.com/nucypher/ferveo/commit/281c354b939ea43faec7501f9170b594f44d6b1a))
+    - Make HandoverTranscript serializable ([`9b9fec1`](https://github.com/nucypher/ferveo/commit/9b9fec12eb61b2d539fab920112035bc7895f498))
+    - Unused type ([`1b61817`](https://github.com/nucypher/ferveo/commit/1b6181712fb3cc45c6136136df95ffdaf40ff246))
+    - Function to generate handover transcript at the API level ([`b2944e1`](https://github.com/nucypher/ferveo/commit/b2944e1c35442ed038c9eb0218b783efdeb64b08))
+    - Function to generate handover transcripts at the DKG level ([`58c3c4d`](https://github.com/nucypher/ferveo/commit/58c3c4dd1314983771206144ae151bce05a17e77))
+    - Rename to finalize_handover() at PVSS level ([`f247e58`](https://github.com/nucypher/ferveo/commit/f247e58d610c010f38d17e7ffcce62ba2ab2e2d2))
+    - Comments ([`f2566ca`](https://github.com/nucypher/ferveo/commit/f2566ca8f801decf41c50f38dcaa91cdd021ba1a))
+    - Use aggregate.get_share_for_validator() ([`2f87562`](https://github.com/nucypher/ferveo/commit/2f87562ac912dd3d7dca2c33d7473cbdd40a41aa))
+    - Refactor domain points ([`70ac464`](https://github.com/nucypher/ferveo/commit/70ac4642ad2545114a4ff2a982a11ce764112fd0))
+    - Bye bye, PubliclyVerifiableParams ([`24db93f`](https://github.com/nucypher/ferveo/commit/24db93f46672e0edd44270eb1981b492fd1c891e))
+    - PubliclyVerifiableDKG now internally maps Validators by index, not address ([`67ea2b7`](https://github.com/nucypher/ferveo/commit/67ea2b71f2c587d69615bf6ef9a30c28ad51ca15))
+    - Remove annoying debug message ([`5284d92`](https://github.com/nucypher/ferveo/commit/5284d923faf7ac2ac02671cc46f82f40e93459cb))
+    - Merge pull request #198 from cygnusv/gary ([`969a118`](https://github.com/nucypher/ferveo/commit/969a1182582969922202293d4f492c9cce5a651d))
+    - Some additional test clarifications ([`f0f342b`](https://github.com/nucypher/ferveo/commit/f0f342bf58dbfe3c2b5f473ad50ca63ebb30c468))
+    - High-level test showing handover using the PVSS API ([`cdf2c2f`](https://github.com/nucypher/ferveo/commit/cdf2c2f14236c9f4aa42dccbb727911f9dabbfd6))
+    - Additional pvss-level checks before and after handover ([`7b5ff45`](https://github.com/nucypher/ferveo/commit/7b5ff45b709a6ce9b13124e15093d29918684780))
+    - Simplify do_verify_full and do_verify_aggregation API ([`eccc0e3`](https://github.com/nucypher/ferveo/commit/eccc0e304a411f896d6e83d744581dd271ec843a))
+    - Function to validate single share from transcript components ([`9980328`](https://github.com/nucypher/ferveo/commit/9980328a0da5036e672e250ed621d787d765ef1f))
+    - First pass at handover function at PVSS level ([`7d7a761`](https://github.com/nucypher/ferveo/commit/7d7a761ae55dd52f54b5e330d54db6d90653cec8))
+    - Add share index to HandoverTranscript struct ([`4d6f8a4`](https://github.com/nucypher/ferveo/commit/4d6f8a41760869697fd117ef496569a223abe1f8))
+    - Always validate handover transcripts when finalizing them ([`653edd3`](https://github.com/nucypher/ferveo/commit/653edd353be98d6ac2159b8150d751e5a917cb91))
+    - Extract function to generate share commitments from transcript poly commitments ([`4156211`](https://github.com/nucypher/ferveo/commit/4156211fd5d6fdc703fa7b2e9cf136c293650ff2))
+    - Linting ([`5bf2f80`](https://github.com/nucypher/ferveo/commit/5bf2f80e103447c328974c18176ba1c5cfe8df77))
+    - Function to finalize handover by the departing participant ([`f7f1230`](https://github.com/nucypher/ferveo/commit/f7f1230b5bdd1769aa391e22bf6ff2de106fa04a))
+    - Extend test to show handover can finalize correctly ([`852ca44`](https://github.com/nucypher/ferveo/commit/852ca44e186503744cb92d6959ba527eb54103c4))
+    - Draft for testing handover transcripts ([`9ac5f88`](https://github.com/nucypher/ferveo/commit/9ac5f88801e2cdf422a9cdad2cbe55ae12730c6c))
+    - First draft of HandoverTranscript - a.k.a. The Baton ([`3a4b356`](https://github.com/nucypher/ferveo/commit/3a4b3568e9e9efe539069e53604098712e16a227))
+    - Merge pull request #186 from cygnusv/spongebob ([`bc64858`](https://github.com/nucypher/ferveo/commit/bc6485811b40b1025115159a2504f49fac4789a8))
+    - Link some TODOs and FIXMEs with issues ([`f7a0065`](https://github.com/nucypher/ferveo/commit/f7a00658cd121c2c1304d3ea628240765053515d))
+    - Remove generator inverse from API ([`bf1cf0f`](https://github.com/nucypher/ferveo/commit/bf1cf0fd965edb3e7530ccefab428d1dad08c9dd))
+    - Remove unnecessary code in context.rs ([`0efb567`](https://github.com/nucypher/ferveo/commit/0efb567655f681d6f007fe1624c7d60515d0423b))
+    - At the API level, use local type for Refresh Transcripts ([`664f8ea`](https://github.com/nucypher/ferveo/commit/664f8eae55e0d27cddc49b1996e128bb2879c004))
+    - Common test parameters for shares_num and threshold ([`66bfd37`](https://github.com/nucypher/ferveo/commit/66bfd37cb705e4e4e0862b0aa5c4c1c6d3fee698))
+    - Code areas marked for refactor or removal ([`35eb653`](https://github.com/nucypher/ferveo/commit/35eb65318e24e689bb5370895b75aa7ab2827eaa))
+    - Fix share refresh test at the API level! ([`096b91c`](https://github.com/nucypher/ferveo/commit/096b91c12fad2da9f1969f24a8d9e2be98388f1b))
+    - Add refresh functionality at API level ([`b6aac7d`](https://github.com/nucypher/ferveo/commit/b6aac7d1bad08d3d823aeeb27c6fe730b26185a1))
+    - New AggregatedTranscript constructor from an existing aggregate ([`5c797aa`](https://github.com/nucypher/ferveo/commit/5c797aab811576e63ef97071df155555672dead1))
+    - Consider using multipairings ([`a3f607d`](https://github.com/nucypher/ferveo/commit/a3f607dcf5961973ad365f5bb5ed14d5272d3547))
+    - Generating random DKG public keys should only be a test function ([`031aad5`](https://github.com/nucypher/ferveo/commit/031aad5788fae91e58fb0dd0831336ddf17b0b4f))
+    - Use PublicKeys instead of internal G2 type when possible ([`8296118`](https://github.com/nucypher/ferveo/commit/8296118807587b04a6773c9edb2116635c1a349a))
+    - Explicitly rename DKG PublicKeys to avoid confusion with Validator PKs ([`dceac71`](https://github.com/nucypher/ferveo/commit/dceac71f876f4f5f487aa3538697efa35a64d861))
+    - Assorted cleanup ([`b3df880`](https://github.com/nucypher/ferveo/commit/b3df8808f391cb1710be507725277e3ad08a6bdc))
+    - Tidy up imports in several places ([`8a52e07`](https://github.com/nucypher/ferveo/commit/8a52e07e2883794fa945be04d82af6301a48bf19))
+    - Pass Keypairs as input to unblind BlindedKeyShares ([`bad0d3b`](https://github.com/nucypher/ferveo/commit/bad0d3bf1aad626c4b6af7cf0ffa8f83654728f1))
+    - Recovery tests are broken. Marked as ignored and adjusted to compile ([`8f37b71`](https://github.com/nucypher/ferveo/commit/8f37b71023e7d66740446434d88a091abc9a87d8))
+    - Point out that aggregate coefficients need to be updated too ([`48a5463`](https://github.com/nucypher/ferveo/commit/48a546334d7abcb0307b624d1ef983a4dd5cef18))
+    - Fix test_dkg_simple_tdec_share_refreshing test! ([`1990248`](https://github.com/nucypher/ferveo/commit/1990248b04269a20e4f954fa86557216844ee701))
+    - DKG level method for validators to create refresh transcripts ([`cd44ebe`](https://github.com/nucypher/ferveo/commit/cd44ebe0d0f5d0b10aa26cec6523135872075a40))
+    - Method to refresh an AggregateTranscript ([`9515704`](https://github.com/nucypher/ferveo/commit/951570477116d60443510848e4ab6c6311d226da))
+    - Use UpdateTranscripts as input to update BlindedKeyShares ([`69b5099`](https://github.com/nucypher/ferveo/commit/69b509916833697bda5ea4bc93039d33d09fbbef))
+    - Basic refresh tests work again! ([`a620dfd`](https://github.com/nucypher/ferveo/commit/a620dfd16ffd82033da0198ff46dfbb6e8248583))
+    - Don't update private key shares directly at the PVSS level ([`f83a860`](https://github.com/nucypher/ferveo/commit/f83a860ca55c2adcd2c587cef87a70e13c36c880))
+    - Use BlindedKeyShare at the PVSS level ([`13adb7b`](https://github.com/nucypher/ferveo/commit/13adb7ba99e95bc8c0e19c62ab12b7a9cd4d3909))
+    - Introduce UpdatableBlindedKeyShare as part of refresh API ([`f7d04bc`](https://github.com/nucypher/ferveo/commit/f7d04bcb5969cd6bd52b3c615365ddf6ce475eef))
+    - Preparing for refactor 3 ([`7a08698`](https://github.com/nucypher/ferveo/commit/7a08698b480fcb68aaf2b96018220178f6d91ddc))
+    - Preparing refactor 2 ([`bf44976`](https://github.com/nucypher/ferveo/commit/bf449765be4bcfe48625a393bef1b2bf7f292272))
+    - Preparing refactor ([`dae4d4e`](https://github.com/nucypher/ferveo/commit/dae4d4e3a4a3ac432761dc88a90a29d64e15cb84))
+    - Code quality ([`956032f`](https://github.com/nucypher/ferveo/commit/956032ff964e7ace5cf0025c29af52d6a6a074c3))
+    - Comments ([`3bf9014`](https://github.com/nucypher/ferveo/commit/3bf9014faf3521fc602b5dd1a644f04cf761fd43))
+    - UpdateTranscript validation: poly commitments fit the update type ([`60268c3`](https://github.com/nucypher/ferveo/commit/60268c371242b7f0f185e30bdb96390bf0adec4b))
+    - Cargo-fix'n stuff ([`418b204`](https://github.com/nucypher/ferveo/commit/418b2048646c2fb7a847057562d18c04fc9741a3))
+    - UpdateTranscript validation: add consistency checks with update poly ([`c83e2d9`](https://github.com/nucypher/ferveo/commit/c83e2d92fb8385e5bca009e0d5e2a4f791fa5ea6))
+    - First version of UpdateTranscript validation ([`50b2259`](https://github.com/nucypher/ferveo/commit/50b22590ea5cb09ee81c777b13dc49dc026d4d1d))
+    - Use UpdateTranscripts instead of ShareUpdate ([`b63c927`](https://github.com/nucypher/ferveo/commit/b63c927378076556a8e1f50e996d1c4837901402))
+    - Move methods to create updates from ShareUpdate to UpdateTranscript ([`40df9ae`](https://github.com/nucypher/ferveo/commit/40df9aefa24cf81bf1730ebfaa0171871d394c73))
+    - UpdateTranscript struct to encapsulate updates and poly commitments ([`cac942a`](https://github.com/nucypher/ferveo/commit/cac942a591f34ba3440c1f53318915ad96ceb47b))
+    - Verify share update in first tests ([`e7704db`](https://github.com/nucypher/ferveo/commit/e7704dbedcf593cd3b03708bd2f8d8c44b891e6a))
+    - Clarification ([`86469bc`](https://github.com/nucypher/ferveo/commit/86469bc388fded0978efee19ade8a4a317ac0279))
+    - ShareUpdate verification method ([`bf94aba`](https://github.com/nucypher/ferveo/commit/bf94aba7be8d480cd54374ea9fe4a0bcf85ed27c))
+    - Some tests fixed: share updating should be done on top of blinded shares ([`ec9e368`](https://github.com/nucypher/ferveo/commit/ec9e3687799526c2567321cfa981e823e150204a))
+    - Clarifying some refresh tests ([`1020d00`](https://github.com/nucypher/ferveo/commit/1020d007afd8472bde2da93d16a9a5d58df80b24))
+    - Jammin' with Piotr: draft of share update helpers with verifiability ([`574d0ba`](https://github.com/nucypher/ferveo/commit/574d0ba63f5c239f6ebd53320c17d03e84e6bdd3))
+    - Merge pull request #189 from piotr-roslaniec/workspace-deps ([`be98542`](https://github.com/nucypher/ferveo/commit/be9854252fdff297d99a63eb443a473ecfd41f5a))
+    - Move shared dependencies to workspace crate ([`983110c`](https://github.com/nucypher/ferveo/commit/983110c4dbb41eb7f0fba2c06f561b68718d0f29))
+    - Merge pull request #187 from piotr-roslaniec/remove-fast-variant ([`b72a338`](https://github.com/nucypher/ferveo/commit/b72a33803852bfaf444d6c2c4a278f93f334ab89))
+    - Remove fast variant ([`6e3369d`](https://github.com/nucypher/ferveo/commit/6e3369d11cfd4ec751775e1eee82f8192b51943e))
+    - Fix a bad rebase ([`dc2f167`](https://github.com/nucypher/ferveo/commit/dc2f1675b32f9550bf9333091e8f06ad130397e9))
+    - Merge pull request #185 from piotr-roslaniec/aggregate-from-subset ([`299a471`](https://github.com/nucypher/ferveo/commit/299a471d2ee658ca374c3400ccac8fd24bb8d1a1))
+    - Merge pull request #183 from piotr-roslaniec/remove-dkg-state ([`aa69b36`](https://github.com/nucypher/ferveo/commit/aa69b364a57c511f96f8c2f1b1f0c36ab2309e50))
+    - Merge pull request #182 from piotr-roslaniec/domain_points ([`703cbdd`](https://github.com/nucypher/ferveo/commit/703cbdd83451c7e3a0eacdb4f3bdc64839234f69))
+    - Not using subset of participants in precomputed variant ([`975dae0`](https://github.com/nucypher/ferveo/commit/975dae0d5f8d1a2e5c061fbc8d11b1cc73c867d7))
+    - Fix tests sensitive to message ordering ([`4a8375d`](https://github.com/nucypher/ferveo/commit/4a8375d1873560241ae8eea96230a42635ed1764))
+    - Document domain point determinism ([`9aca6ae`](https://github.com/nucypher/ferveo/commit/9aca6aeeef0f88b5d9968829944caf6aec068398))
+    - Introduce refreshing api in ferveo ([`0117a87`](https://github.com/nucypher/ferveo/commit/0117a87d8fd753b60d55570c6587a81d5cfd6051))
+    - Merge pull request #175 from piotr-roslaniec/rewrite-refreshing ([`2c97934`](https://github.com/nucypher/ferveo/commit/2c97934251c04754b8c5353492823e3a97dc53a9))
+    - Remove deprecated exceptions ([`93807a2`](https://github.com/nucypher/ferveo/commit/93807a2c92a271e7c0f8ebc31c76604d805fbd7c))
+    - Hide g_inv from internat apis ([`b67aef9`](https://github.com/nucypher/ferveo/commit/b67aef9622d3b7a936ba3f930fb13609ae55a409))
+    - Update serde serialization ([`ba12d6b`](https://github.com/nucypher/ferveo/commit/ba12d6b861447d4f2017cee37fe075651d114534))
+    - Rename public key share to public key ([`0ef7de4`](https://github.com/nucypher/ferveo/commit/0ef7de4c9b4442e2c6125d457de9420146be50b7))
+    - Remove state from dkg, part 2 ([`c9f1adc`](https://github.com/nucypher/ferveo/commit/c9f1adc19198464d99d5759391e6b967ab505a70))
+    - Remove state from dkg, part 1 ([`315d2b4`](https://github.com/nucypher/ferveo/commit/315d2b4cc2825e13820d9c64639490c44b538385))
+    - Introduce refreshing api in ferveo ([`4713848`](https://github.com/nucypher/ferveo/commit/47138489bc9567674b57d61b0d105ff6c1c7cb6c))
+    - Avoid using crypto primitives directly, part 2 ([`cfa8c99`](https://github.com/nucypher/ferveo/commit/cfa8c990aa166623d4c596f2a4eb5638ab8a8848))
+    - Avoid using crypto primitives directly, part 1 ([`8b26396`](https://github.com/nucypher/ferveo/commit/8b26396cc26ceeddca52dc37ac9461f0bb93ecfe))
+    - Merge pull request #173 from piotr-roslaniec/relax-dkg-ceremony ([`a438438`](https://github.com/nucypher/ferveo/commit/a438438418fbc27eef63e0847f3b3577b8d37a2b))
+    - Apply pr suggestions ([`61d6e64`](https://github.com/nucypher/ferveo/commit/61d6e641ecaf81c3bbc2febec0aa5d73cccfd8b7))
+    - Merge pull request #172 from piotr-roslaniec/external-share-idx ([`15776e7`](https://github.com/nucypher/ferveo/commit/15776e73f1086f299ab592492157728e84c2007f))
+    - Update tests for dkgs with relaxed constraints ([`6fd65bd`](https://github.com/nucypher/ferveo/commit/6fd65bd506a0502da39ea4fa292e5fc1669abc27))
+    - Hide dkg fields in the internal api ([`514221e`](https://github.com/nucypher/ferveo/commit/514221ebb052f6757c49c0c7ed2ff097fb878b34))
+    - Move a test to a dkg test module ([`3d98758`](https://github.com/nucypher/ferveo/commit/3d987585e28c5543107af5cb3705af28fae88461))
+    - Relax dkg ceremony constraints ([`81bc1cb`](https://github.com/nucypher/ferveo/commit/81bc1cbb7c51db655db859684f29f86150bba072))
+    - Relax dkg ceremony constraints ([`f98a417`](https://github.com/nucypher/ferveo/commit/f98a417091644cf7b99b7c4702fadb0629a9d0cf))
+    - Add missing exception definition ([`e903c1b`](https://github.com/nucypher/ferveo/commit/e903c1ba6f84c9656aa5777b62a0885362c6fa08))
+    - Document todos ([`72b8484`](https://github.com/nucypher/ferveo/commit/72b8484010979d5564dff9f89556f0e1564911e1))
+    - Refactor aggregate method params ([`4bb4158`](https://github.com/nucypher/ferveo/commit/4bb41585cd6f93e58bbd047c27fd3e68ab9e723e))
+    - Prevent panics during transcript aggregation ([`e6a7f6e`](https://github.com/nucypher/ferveo/commit/e6a7f6e55a34d892e664160f1f8cffe6e88c79da))
+    - Remove unused code ([`d547a81`](https://github.com/nucypher/ferveo/commit/d547a81743fc21679cc2e2d199c7e2f97424fe5d))
+    - Unify share creating methods ([`4af8017`](https://github.com/nucypher/ferveo/commit/4af8017fa6921c14080dab7790f519cd9394a7d5))
+    - Remove unused code ([`280c37e`](https://github.com/nucypher/ferveo/commit/280c37e8eda75a982b0c281f8da655f149c035df))
+    - Replace dkg validator with validator ([`935be2d`](https://github.com/nucypher/ferveo/commit/935be2dc056a8d295fff8c2e937fc23f8fa80f7e))
+    - Enforce canonical share indices instead of validator ordering ([`6670da7`](https://github.com/nucypher/ferveo/commit/6670da7df8e0ff8c2210900cdb44a18dfd220892))
+    - Add share_index field to validator ([`830cbc8`](https://github.com/nucypher/ferveo/commit/830cbc859b23c0bf43373bf47c18aedbb54943a2))
+    - Merge pull request #171 from piotr-roslaniec/python-versions ([`de9cf36`](https://github.com/nucypher/ferveo/commit/de9cf36ad88a0242e43bbc6339eb840b6d97d88c))
+    - Prevent precomputed shares from being created with inapprioriate variant ([`aebaab3`](https://github.com/nucypher/ferveo/commit/aebaab39e18a1c114e2aaae62ec9061d49f7a78a))
+    - Document benchmark todos ([`e79b4e5`](https://github.com/nucypher/ferveo/commit/e79b4e5b05f83d16e23388edb04f2fed4674a355))
+    - Allow double allocation when using SecretBox ([`b8fd959`](https://github.com/nucypher/ferveo/commit/b8fd959943c604eb0152e6715a13095501b906bb))
+    - Deduplicate test utils ([`52f441c`](https://github.com/nucypher/ferveo/commit/52f441cae1ac8ed6c88743082bd2434f3cad9012))
+    - Use test_case crate to deduplicate tests ([`66d25ae`](https://github.com/nucypher/ferveo/commit/66d25aecb5a3e29784f6d2ef1a7977ce4a2d406a))
+    - Refactor dkg params into a seperate struct ([`06ae244`](https://github.com/nucypher/ferveo/commit/06ae244941d8eb93aff63a4ff1e5088c3deccd1b))
+    - Merge pull request #166 from nucypher/chores ([`7350d91`](https://github.com/nucypher/ferveo/commit/7350d91708af55b5aa939a3f7e9cd62e7de7359a))
+    - Fix unused import breaking release compilation ([`87c5f34`](https://github.com/nucypher/ferveo/commit/87c5f34fd44dfefe85f345c324535868a70df30a))
+    - Fix false-positives in cargo machete check ([`0e6c03e`](https://github.com/nucypher/ferveo/commit/0e6c03ee643af057ddae5c275d33879019776c5b))
+    - Remove unused curves ([`749a846`](https://github.com/nucypher/ferveo/commit/749a846bb9a5c129bbc0cf7ff25a84ca6dbdb8a5))
+    - Rename ferveo-tpke package to ferveo-tdec ([`58002f5`](https://github.com/nucypher/ferveo/commit/58002f50155df31a11b9d58d94750a2ed1076102))
+    - Rename tpke dir to ferveo-tpke ([`de4cde2`](https://github.com/nucypher/ferveo/commit/de4cde2db6ac5f87f7675e8956bb4c71f067bb4f))
+    - Rename group_threshold_cryptography_pre_release crate to ferveo_tpke ([`40cf1c3`](https://github.com/nucypher/ferveo/commit/40cf1c380f682fd99ebeafae8ae296befb3fb81e))
+    - Derive eq in DkgPublicKey ([`52efe01`](https://github.com/nucypher/ferveo/commit/52efe010264bdd5978111e148190359b9383d53e))
+    - Merge pull request #158 from cygnusv/detection ([`a979fd6`](https://github.com/nucypher/ferveo/commit/a979fd6d15a0f9f7313fbcef08606674566bf64e))
+    - Linting and stuff ([`1704f86`](https://github.com/nucypher/ferveo/commit/1704f86c40de0a074878f358fe075a8086bf1a55))
+    - TODOs and comments ([`3b3ff48`](https://github.com/nucypher/ferveo/commit/3b3ff487555958255cdd078cd553f534f074b108))
+    - Fix test_dkg_simple_tdec_share_refreshing() ([`8407f78`](https://github.com/nucypher/ferveo/commit/8407f781e25761a17179002c59dbc00ea0326d8e))
+    - Definitely fix test_dkg_simple_tdec_share_recovery ([`ab5e58c`](https://github.com/nucypher/ferveo/commit/ab5e58c44707a7b52d93ca911ec0d452e4a7a2d7))
+    - Almost fix test_dkg_simple_tdec_share_recovery ([`8ef9e7f`](https://github.com/nucypher/ferveo/commit/8ef9e7ff809af400808dbbc750d2afa25a7cde53))
+    - Remove incorrect share refresh utility functions ([`ce675a6`](https://github.com/nucypher/ferveo/commit/ce675a61573fa2e43894229d551ea027fccc2e4a))
+    - Simplify share refresh test ([`d732196`](https://github.com/nucypher/ferveo/commit/d7321966f7bb67fb3b2d1daa9c8545140e8df5f3))
+    - Simplify simple recovery test ([`7c26487`](https://github.com/nucypher/ferveo/commit/7c264874d442d1ef5286499b2d250bb1a63d914e))
+    - Make sure test for recovery at original point is correct ([`b65798f`](https://github.com/nucypher/ferveo/commit/b65798f28cd62323adc886aae5b39f13202e23a3))
+    - Clarify how the degree in make_random_polynomial_with_root is defined ([`6115976`](https://github.com/nucypher/ferveo/commit/6115976bdf4d07a1a4ea28ad05e1669e2028eaac))
+    - Cleaning up the DKG recovery test, in preparation for bug fixing ([`2d30abf`](https://github.com/nucypher/ferveo/commit/2d30abf5b4265ee7b890f07237d49f9d256daa20))
+    - Helper functions to prepare share updates for both recovery & refresh ([`39ec865`](https://github.com/nucypher/ferveo/commit/39ec865c02466e727bca067fd59614d7123c5ae5))
+    - Rename random polynomial function for refresh & recovery ([`b6d1f41`](https://github.com/nucypher/ferveo/commit/b6d1f416fc96fe637765126b7fe8dca253f94c23))
+    - Adapting recovery & refresh tests ([`5c141e1`](https://github.com/nucypher/ferveo/commit/5c141e189c5bf0d33190b9f359f1d7ce589703b8))
+    - Relocate refresh.rs module from tpke to ferveo crate ([`372f5d7`](https://github.com/nucypher/ferveo/commit/372f5d7224e2abccbc2b1bbd344f3a761f987f3b))
+    - Remove Pvss type alias ([`59aacbb`](https://github.com/nucypher/ferveo/commit/59aacbb2a71e9910daed2d8dabfd491f3e786ba0))
+    - Merge pull request #159 from nucypher/set-msrv-wasm-tools ([`0a73aa3`](https://github.com/nucypher/ferveo/commit/0a73aa38950c43fc059d210b43496a6cbaceb341))
+    - Fix linter on stable ([`99632e8`](https://github.com/nucypher/ferveo/commit/99632e8af6477a1e8d46d198fb7144a5c015a49f))
+    - Release ferveo-common-pre-release v0.1.1, group-threshold-cryptography-pre-release v0.2.0, ferveo-pre-release v0.3.0, safety bump ferveo-pre-release v0.3.0 ([`9c1970b`](https://github.com/nucypher/ferveo/commit/9c1970bb2d9bc36983b041b779a99cb0e95b6ec1))
+    - Fix changelogs for cargo-smart-release ([`fe4ec4e`](https://github.com/nucypher/ferveo/commit/fe4ec4ec7667f513b6ebb4bd604303e6ff53a425))
+    - Merge pull request #156 from derekpierre/acp ([`e2c4c2e`](https://github.com/nucypher/ferveo/commit/e2c4c2ee9efa20ee2f835530117dd03d67b142fb))
+    - Merge pull request #155 from nucypher/update-ciphertext-api ([`bc0a6a5`](https://github.com/nucypher/ferveo/commit/bc0a6a56b9ae63aa6573c6ad045c73356b053058))
+    - Apply pr suggestions ([`c06217c`](https://github.com/nucypher/ferveo/commit/c06217c06e16df17d0525027312d5c368f443cb6))
+    - SharedSecret wasm-binding now derives AsRef. ([`c3fe68a`](https://github.com/nucypher/ferveo/commit/c3fe68a3214b398db617e687e5244371661a77f7))
+    - Merge pull request #149 from cygnusv/thin ([`f44e1be`](https://github.com/nucypher/ferveo/commit/f44e1be4fe9a0a165d8b0b50ad29bb7f6818f672))
+    - Appease linter. ([`2c1288b`](https://github.com/nucypher/ferveo/commit/2c1288b1adb983fdb432490d0a64a9a7cd929d76))
+    - DkgPublicKey wasm-binding now derives From and AsRef. ([`ce7d280`](https://github.com/nucypher/ferveo/commit/ce7d280c46173297b0d123b54bac6e57e9f9cc36))
+    - Add ciphertext header to ciphertext api ([`1800d3c`](https://github.com/nucypher/ferveo/commit/1800d3c5db164947c7cae35433fb8e3ad2650b66))
+    - Clippy stuff ([`4337c3c`](https://github.com/nucypher/ferveo/commit/4337c3c312719987405f620f2e377cf493ece6d3))
+    - Release ferveo-pre-release v0.2.1 ([`37ea895`](https://github.com/nucypher/ferveo/commit/37ea895e787ae013ffb2c8bb2d738b29a1c32163))
+    - Merge pull request #139 from nucypher/fix-typings ([`dc9d81a`](https://github.com/nucypher/ferveo/commit/dc9d81a4128e1966effc11d6e6bb815958482d90))
+    - Rename FerveoVariant attributes ([`0e7c561`](https://github.com/nucypher/ferveo/commit/0e7c5615a0660a69077e7b431dd24c5bb3d0f10d))
+    - Add __hash__ to FerveoVariant ([`06321d7`](https://github.com/nucypher/ferveo/commit/06321d798fc30768173eec447aed753c34890194))
+    - Add equality to FerveoVariant python bindings ([`cea467e`](https://github.com/nucypher/ferveo/commit/cea467e0bd48a096f70dd1c7ca24a7e4bd88b3d4))
+    - Apply pr suggestions ([`6c1d4be`](https://github.com/nucypher/ferveo/commit/6c1d4becd89005d6698734caa9d681dde727bff6))
+    - Add api conversion method to FerveoVariant ([`fbb97be`](https://github.com/nucypher/ferveo/commit/fbb97be59d991a263233a0b876da982143b2cbf2))
+    - Apply pr suggestions ([`7cbe65d`](https://github.com/nucypher/ferveo/commit/7cbe65def65a76043d21763723ce98787cbf8eed))
+    - Replace FerveoVariant static methods with class atributed ([`50511ff`](https://github.com/nucypher/ferveo/commit/50511fff3c9829d6f2004360be93b67730f66f1f))
+    - Merge pull request #138 from nucypher/development ([`434fd5d`](https://github.com/nucypher/ferveo/commit/434fd5d07b54e72d120e9aa06cbc3e47848e6bcf))
+    - Python typings don't match runtime ([`be90065`](https://github.com/nucypher/ferveo/commit/be900653a80e3570300f5a126af98660ab59a7d2))
     - Release ferveo-common-pre-release v0.1.0, subproductdomain-pre-release v0.1.0, group-threshold-cryptography-pre-release v0.1.0, ferveo-pre-release v0.2.0 ([`ffb9b21`](https://github.com/nucypher/ferveo/commit/ffb9b21619d0f5dc0fb309bf2f493d3c0c25e1f0))
     - Adjust changelogs for cargo-smart-release ([`0eb5bd4`](https://github.com/nucypher/ferveo/commit/0eb5bd48b598709dd0fc54adb424f5f41ce52e92))
     - Adjusting changelogs prior to release of ferveo-common-pre-release v0.1.0, subproductdomain-pre-release v0.1.0, group-threshold-cryptography-pre-release v0.1.0, ferveo-pre-release v0.2.0 ([`0ccba13`](https://github.com/nucypher/ferveo/commit/0ccba13b0608e2023d8792ac9b0402af5ebaad0b))
@@ -400,4 +561,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Latest ferveo ([`6c6033c`](https://github.com/nucypher/ferveo/commit/6c6033cdf797c2642462451dd63f2180cc3a2cce))
     - Latest ferveo ([`0f17c3b`](https://github.com/nucypher/ferveo/commit/0f17c3be5cfa55b5f878defcb74ab2b4e13c3190))
 </details>
+
+## 0.3.0 (2023-08-28)
+
+### New Features (BREAKING)
+
+ - <csr-id-1800d3c5db164947c7cae35433fb8e3ad2650b66/> add ciphertext header to ciphertext api
+
+## v0.2.1 (2023-08-01)
+
+### New Features
+
+ - <csr-id-50511fff3c9829d6f2004360be93b67730f66f1f/> replace FerveoVariant static methods with class atributed
+
+### Bug Fixes
+
+ - <csr-id-be900653a80e3570300f5a126af98660ab59a7d2/> python typings don't match runtime
+
+## v0.2.0 (2023-07-07)
+
+<csr-id-caef6ef73dd43a9952d783fcf18abb893b36635f/>
+<csr-id-159475028209948eb40388458a24b0a086afc311/>
+<csr-id-d3fb002e52774cd14bff0d1187a2634fad6eea51/>
+<csr-id-d786fae33b01cd0863f29b70810dfcc847f2542b/>
+<csr-id-09f26b39ddc71d9a4b1f226e2dafbdb4c51a7caa/>
+<csr-id-ec58fe1828d0560525c80cd1dc4013915b0ac54e/>
+<csr-id-0eb5bd48b598709dd0fc54adb424f5f41ce52e92/>
+
+### New Features
+
+ - <csr-id-e8d05981ee2cc983966c037babeebe5ba0134ffc/> expose ferveo variant in bindings
+ - <csr-id-e51656260f2ec8c607add8a63e6832786915b201/> expose missing method
+
+### Bug Fixes
+
+ - <csr-id-99ebfecdb7967c4858f918d27ce13cc635c329ac/> dkg serialization in wasm bindings
+
+### Other
+
+ - <csr-id-caef6ef73dd43a9952d783fcf18abb893b36635f/> When announcing an aggregation, the resulting key should also be announced and checked so that it can be included on chain
+ - <csr-id-159475028209948eb40388458a24b0a086afc311/> Strengthened state guards against aggregation. Necessary for preparing blocks easily
+ - <csr-id-d3fb002e52774cd14bff0d1187a2634fad6eea51/> Fixing up the benchmarks to reflect the refactor in dkg
+ - <csr-id-d786fae33b01cd0863f29b70810dfcc847f2542b/> Formatting
+ - <csr-id-09f26b39ddc71d9a4b1f226e2dafbdb4c51a7caa/> Added retry logic to the dkg
+ - <csr-id-ec58fe1828d0560525c80cd1dc4013915b0ac54e/> Removed the announce phase from the dkg
+
+### Chore
+
+ - <csr-id-0eb5bd48b598709dd0fc54adb424f5f41ce52e92/> adjust changelogs for cargo-smart-release
+
+### New Features (BREAKING)
+
+ - <csr-id-8b6e6f5834d7b736a1d7baf3ddbfa7c60837b9bb/> hide dkg public params from bindings
+
+### Bug Fixes (BREAKING)
+
+ - <csr-id-7388027cb6c77357e8b4d24a891e24a9b4ea2031/> rename wasm method
 

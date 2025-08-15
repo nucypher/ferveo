@@ -5,55 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.1.1 (2023-08-28)
+## 0.4.0 (2025-08-15)
 
-Maintenance release
+### Chore
 
-### Commit Statistics
+ - <csr-id-983110c4dbb41eb7f0fba2c06f561b68718d0f29/> move shared dependencies to workspace crate
+ - <csr-id-0eb5bd48b598709dd0fc54adb424f5f41ce52e92/> adjust changelogs for cargo-smart-release
 
-<csr-read-only-do-not-edit/>
+### New Features
 
- - 4 commits contributed to the release over the course of 49 calendar days.
- - 52 days passed between releases.
- - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Fix changelogs for cargo-smart-release ([`fe4ec4e`](https://github.com/nucypher/ferveo/commit/fe4ec4ec7667f513b6ebb4bd604303e6ff53a425))
-    - Merge pull request #149 from cygnusv/thin ([`f44e1be`](https://github.com/nucypher/ferveo/commit/f44e1be4fe9a0a165d8b0b50ad29bb7f6818f672))
-    - Clippy stuff ([`4337c3c`](https://github.com/nucypher/ferveo/commit/4337c3c312719987405f620f2e377cf493ece6d3))
-    - Merge pull request #138 from nucypher/development ([`434fd5d`](https://github.com/nucypher/ferveo/commit/434fd5d07b54e72d120e9aa06cbc3e47848e6bcf))
-</details>
-
-## v0.1.0 (2023-07-07)
-
-<csr-id-ab6701666e3b05bd783ce0309025e842fa83e4c1/>
-<csr-id-d786fae33b01cd0863f29b70810dfcc847f2542b/>
-<csr-id-ec58fe1828d0560525c80cd1dc4013915b0ac54e/>
-<csr-id-0eb5bd48b598709dd0fc54adb424f5f41ce52e92/>
+ - <csr-id-52efe010264bdd5978111e148190359b9383d53e/> derive eq in DkgPublicKey
 
 ### Other
 
+ - <csr-id-47138489bc9567674b57d61b0d105ff6c1c7cb6c/> introduce refreshing api in ferveo
  - <csr-id-ab6701666e3b05bd783ce0309025e842fa83e4c1/> Made ferveo-common wasm compatible (a tiny change). Fixes a world of pain upstream in Anoma
  - <csr-id-d786fae33b01cd0863f29b70810dfcc847f2542b/> Formatting
  - <csr-id-ec58fe1828d0560525c80cd1dc4013915b0ac54e/> Removed the announce phase from the dkg
 
-### Chore
-
- - <csr-id-0eb5bd48b598709dd0fc54adb424f5f41ce52e92/> adjust changelogs for cargo-smart-release
-
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 83 commits contributed to the release over the course of 652 calendar days.
- - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 101 commits contributed to the release.
+ - 7 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#68](https://github.com/nucypher/ferveo/issues/68), [#70](https://github.com/nucypher/ferveo/issues/70), [#71](https://github.com/nucypher/ferveo/issues/71), [#72](https://github.com/nucypher/ferveo/issues/72)
 
 ### Commit Details
@@ -71,6 +46,24 @@ Maintenance release
  * **[#72](https://github.com/nucypher/ferveo/issues/72)**
     - Refactor subproductdomain ([`2d8026b`](https://github.com/nucypher/ferveo/commit/2d8026b2299fd9b67c77fb3b4e565ff9f4e6505b))
  * **Uncategorized**
+    - Merge pull request #188 from nucypher/rocknroll ([`1e66268`](https://github.com/nucypher/ferveo/commit/1e66268dfbfbf76566b4bcf6c25a9852692bb380))
+    - Merge pull request #211 from derekpierre/mrkrabs ([`763e06b`](https://github.com/nucypher/ferveo/commit/763e06bb2375e2ded95b409e282ae1f491e16d59))
+    - Merge pull request #205 from cygnusv/mrkrabs ([`bb51e96`](https://github.com/nucypher/ferveo/commit/bb51e963f552d2ced387d0ac5c4b311f13715eb4))
+    - Update cargo.toml of all ferveo packages for public release. ([`d21ea18`](https://github.com/nucypher/ferveo/commit/d21ea1826f81f47ee88a64dcb98678560e691e57))
+    - Update cargo.toml of all ferveo packages for test release. ([`000dc17`](https://github.com/nucypher/ferveo/commit/000dc1715c31f2a32f2366feb6ca652b57d40130))
+    - Update cargo.toml of all ferveo packages ([`4e03d43`](https://github.com/nucypher/ferveo/commit/4e03d43255c2fceb729bf2227bff396a25d700c5))
+    - Update authors ([`380e984`](https://github.com/nucypher/ferveo/commit/380e9840f0b491da002ff02b863230f5824b500e))
+    - Merge pull request #189 from piotr-roslaniec/workspace-deps ([`be98542`](https://github.com/nucypher/ferveo/commit/be9854252fdff297d99a63eb443a473ecfd41f5a))
+    - Move shared dependencies to workspace crate ([`983110c`](https://github.com/nucypher/ferveo/commit/983110c4dbb41eb7f0fba2c06f561b68718d0f29))
+    - Merge pull request #175 from piotr-roslaniec/rewrite-refreshing ([`2c97934`](https://github.com/nucypher/ferveo/commit/2c97934251c04754b8c5353492823e3a97dc53a9))
+    - Introduce refreshing api in ferveo ([`4713848`](https://github.com/nucypher/ferveo/commit/47138489bc9567674b57d61b0d105ff6c1c7cb6c))
+    - Merge pull request #166 from nucypher/chores ([`7350d91`](https://github.com/nucypher/ferveo/commit/7350d91708af55b5aa939a3f7e9cd62e7de7359a))
+    - Derive eq in DkgPublicKey ([`52efe01`](https://github.com/nucypher/ferveo/commit/52efe010264bdd5978111e148190359b9383d53e))
+    - Release ferveo-common-pre-release v0.1.1, group-threshold-cryptography-pre-release v0.2.0, ferveo-pre-release v0.3.0, safety bump ferveo-pre-release v0.3.0 ([`9c1970b`](https://github.com/nucypher/ferveo/commit/9c1970bb2d9bc36983b041b779a99cb0e95b6ec1))
+    - Fix changelogs for cargo-smart-release ([`fe4ec4e`](https://github.com/nucypher/ferveo/commit/fe4ec4ec7667f513b6ebb4bd604303e6ff53a425))
+    - Merge pull request #149 from cygnusv/thin ([`f44e1be`](https://github.com/nucypher/ferveo/commit/f44e1be4fe9a0a165d8b0b50ad29bb7f6818f672))
+    - Clippy stuff ([`4337c3c`](https://github.com/nucypher/ferveo/commit/4337c3c312719987405f620f2e377cf493ece6d3))
+    - Merge pull request #138 from nucypher/development ([`434fd5d`](https://github.com/nucypher/ferveo/commit/434fd5d07b54e72d120e9aa06cbc3e47848e6bcf))
     - Release ferveo-common-pre-release v0.1.0, subproductdomain-pre-release v0.1.0, group-threshold-cryptography-pre-release v0.1.0, ferveo-pre-release v0.2.0 ([`ffb9b21`](https://github.com/nucypher/ferveo/commit/ffb9b21619d0f5dc0fb309bf2f493d3c0c25e1f0))
     - Adjust changelogs for cargo-smart-release ([`0eb5bd4`](https://github.com/nucypher/ferveo/commit/0eb5bd48b598709dd0fc54adb424f5f41ce52e92))
     - Release 0.1.0 crate versions ([`c02e305`](https://github.com/nucypher/ferveo/commit/c02e3050b7a9dcf0260a5eb4e42ff74f3788c3bf))
@@ -151,4 +144,25 @@ Maintenance release
     - Merge pull request #65 from anoma/joe/20210922 ([`d6d603f`](https://github.com/nucypher/ferveo/commit/d6d603fbe82706525a194f42cbab9c3431dd7cc4))
     - Latest ferveo ([`0f17c3b`](https://github.com/nucypher/ferveo/commit/0f17c3be5cfa55b5f878defcb74ab2b4e13c3190))
 </details>
+
+## 0.1.1 (2023-08-28)
+
+Maintenance release
+
+## v0.1.0 (2023-07-07)
+
+<csr-id-ab6701666e3b05bd783ce0309025e842fa83e4c1/>
+<csr-id-d786fae33b01cd0863f29b70810dfcc847f2542b/>
+<csr-id-ec58fe1828d0560525c80cd1dc4013915b0ac54e/>
+<csr-id-0eb5bd48b598709dd0fc54adb424f5f41ce52e92/>
+
+### Other
+
+ - <csr-id-ab6701666e3b05bd783ce0309025e842fa83e4c1/> Made ferveo-common wasm compatible (a tiny change). Fixes a world of pain upstream in Anoma
+ - <csr-id-d786fae33b01cd0863f29b70810dfcc847f2542b/> Formatting
+ - <csr-id-ec58fe1828d0560525c80cd1dc4013915b0ac54e/> Removed the announce phase from the dkg
+
+### Chore
+
+ - <csr-id-0eb5bd48b598709dd0fc54adb424f5f41ce52e92/> adjust changelogs for cargo-smart-release
 

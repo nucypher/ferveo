@@ -5,19 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.2.0 (2023-08-28)
+## 0.4.0 (2025-08-15)
 
-### New Features (BREAKING)
+### Chore
 
- - <csr-id-1800d3c5db164947c7cae35433fb8e3ad2650b66/> add ciphertext header to ciphertext api
+ - <csr-id-983110c4dbb41eb7f0fba2c06f561b68718d0f29/> move shared dependencies to workspace crate
+ - <csr-id-802e7121d5eb5a31617bf88c4e14fe79d45e68e3/> remove duplicated field
+ - <csr-id-58002f50155df31a11b9d58d94750a2ed1076102/> rename ferveo-tpke package to ferveo-tdec
+
+### Bug Fixes
+
+ - <csr-id-975dae0d5f8d1a2e5c061fbc8d11b1cc73c867d7/> not using subset of participants in precomputed variant
+
+### Other
+
+ - <csr-id-47138489bc9567674b57d61b0d105ff6c1c7cb6c/> introduce refreshing api in ferveo
+
+### Refactor
+
+ - <csr-id-0ef7de4c9b4442e2c6125d457de9420146be50b7/> rename public key share to public key
+ - <csr-id-8b26396cc26ceeddca52dc37ac9461f0bb93ecfe/> avoid using crypto primitives directly, part 1
+
+### Test
+
+ - <csr-id-4a8375d1873560241ae8eea96230a42635ed1764/> fix tests sensitive to message ordering
+
+### Other (BREAKING)
+
+ - <csr-id-6e3369d11cfd4ec751775e1eee82f8192b51943e/> remove fast variant
+ - <csr-id-315d2b4cc2825e13820d9c64639490c44b538385/> remove state from dkg, part 1
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 10 commits contributed to the release over the course of 49 calendar days.
- - 52 days passed between releases.
- - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 46 commits contributed to the release.
+ - 10 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -27,17 +50,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
-    - Fix changelogs for cargo-smart-release ([`fe4ec4e`](https://github.com/nucypher/ferveo/commit/fe4ec4ec7667f513b6ebb4bd604303e6ff53a425))
-    - Merge pull request #155 from nucypher/update-ciphertext-api ([`bc0a6a5`](https://github.com/nucypher/ferveo/commit/bc0a6a56b9ae63aa6573c6ad045c73356b053058))
-    - Merge pull request #149 from cygnusv/thin ([`f44e1be`](https://github.com/nucypher/ferveo/commit/f44e1be4fe9a0a165d8b0b50ad29bb7f6818f672))
-    - Add ciphertext header to ciphertext api ([`1800d3c`](https://github.com/nucypher/ferveo/commit/1800d3c5db164947c7cae35433fb8e3ad2650b66))
-    - Remove unused & incorrect ciphertext length method ([`f427f0d`](https://github.com/nucypher/ferveo/commit/f427f0d12043f751905827ea31c7a179bd9a6180))
-    - Test for bad AAD input ([`e51e6ec`](https://github.com/nucypher/ferveo/commit/e51e6ec6632720409c0fc9a525265c0ca1a0404b))
-    - Use AEAD payloads (message + AAD) as input to chacha20poly1305. Fix #146 ([`e662e17`](https://github.com/nucypher/ferveo/commit/e662e178d80f26b9a727b790e6d3e6f3456a6085))
-    - Use symmetric ciphertext hash when creating/checking the auth_tag ([`396b1d2`](https://github.com/nucypher/ferveo/commit/396b1d28297ea1a840c0b9dc4f6c6be061cd6bba))
-    - Refactor Ciphertext implementation. Fixes #144 ([`41e5be5`](https://github.com/nucypher/ferveo/commit/41e5be5dc0edc3c81e82d34f523108a7d06bd09c))
-    - Merge pull request #138 from nucypher/development ([`434fd5d`](https://github.com/nucypher/ferveo/commit/434fd5d07b54e72d120e9aa06cbc3e47848e6bcf))
+    - Merge pull request #188 from nucypher/rocknroll ([`1e66268`](https://github.com/nucypher/ferveo/commit/1e66268dfbfbf76566b4bcf6c25a9852692bb380))
+    - Merge pull request #211 from derekpierre/mrkrabs ([`763e06b`](https://github.com/nucypher/ferveo/commit/763e06bb2375e2ded95b409e282ae1f491e16d59))
+    - Merge pull request #205 from cygnusv/mrkrabs ([`bb51e96`](https://github.com/nucypher/ferveo/commit/bb51e963f552d2ced387d0ac5c4b311f13715eb4))
+    - Update cargo.toml of all ferveo packages for public release. ([`d21ea18`](https://github.com/nucypher/ferveo/commit/d21ea1826f81f47ee88a64dcb98678560e691e57))
+    - Fix incorrect selected participants size that caused benchmarking to fail. ([`24fac18`](https://github.com/nucypher/ferveo/commit/24fac1860435045b736c8078c8f3fbc5806fd9bc))
+    - Update cargo.toml of all ferveo packages for test release. ([`000dc17`](https://github.com/nucypher/ferveo/commit/000dc1715c31f2a32f2366feb6ca652b57d40130))
+    - Sq update wasm ([`c4eaa4a`](https://github.com/nucypher/ferveo/commit/c4eaa4a76f3d93075cefea9d1d19066466ba3b6d))
+    - Update wasm-bindgen ([`19e228b`](https://github.com/nucypher/ferveo/commit/19e228b70920b359d93175dfcc5470062832102c))
+    - Update cargo.toml of all ferveo packages ([`4e03d43`](https://github.com/nucypher/ferveo/commit/4e03d43255c2fceb729bf2227bff396a25d700c5))
+    - Update authors ([`380e984`](https://github.com/nucypher/ferveo/commit/380e9840f0b491da002ff02b863230f5824b500e))
+    - Refactor domain points ([`70ac464`](https://github.com/nucypher/ferveo/commit/70ac4642ad2545114a4ff2a982a11ce764112fd0))
+    - Merge pull request #186 from cygnusv/spongebob ([`bc64858`](https://github.com/nucypher/ferveo/commit/bc6485811b40b1025115159a2504f49fac4789a8))
+    - Link some TODOs and FIXMEs with issues ([`f7a0065`](https://github.com/nucypher/ferveo/commit/f7a00658cd121c2c1304d3ea628240765053515d))
+    - Remove generator inverse from API ([`bf1cf0f`](https://github.com/nucypher/ferveo/commit/bf1cf0fd965edb3e7530ccefab428d1dad08c9dd))
+    - Remove unnecessary code in context.rs ([`0efb567`](https://github.com/nucypher/ferveo/commit/0efb567655f681d6f007fe1624c7d60515d0423b))
+    - Code areas marked for refactor or removal ([`35eb653`](https://github.com/nucypher/ferveo/commit/35eb65318e24e689bb5370895b75aa7ab2827eaa))
+    - Consider encrypt_in_place for AEAD ([`ee98c24`](https://github.com/nucypher/ferveo/commit/ee98c249c0bba582af26d304d329e69676e97d45))
+    - Consider using multipairings ([`a3f607d`](https://github.com/nucypher/ferveo/commit/a3f607dcf5961973ad365f5bb5ed14d5272d3547))
+    - Use PublicKeys instead of internal G2 type when possible ([`8296118`](https://github.com/nucypher/ferveo/commit/8296118807587b04a6773c9edb2116635c1a349a))
+    - Explicitly rename DKG PublicKeys to avoid confusion with Validator PKs ([`dceac71`](https://github.com/nucypher/ferveo/commit/dceac71f876f4f5f487aa3538697efa35a64d861))
+    - Add TODO about using explicit imports (see #194) ([`cff8dfd`](https://github.com/nucypher/ferveo/commit/cff8dfd2940a70d595d959b417f7cec16c57a4eb))
+    - Assorted cleanup ([`b3df880`](https://github.com/nucypher/ferveo/commit/b3df8808f391cb1710be507725277e3ad08a6bdc))
+    - PrivateKeys are never blinded directly ([`b8a4c5c`](https://github.com/nucypher/ferveo/commit/b8a4c5ca0ec40bc14a541c087f8b2e85cc0c8297))
+    - Tidy up imports in several places ([`8a52e07`](https://github.com/nucypher/ferveo/commit/8a52e07e2883794fa945be04d82af6301a48bf19))
+    - Pass Keypairs as input to unblind BlindedKeyShares ([`bad0d3b`](https://github.com/nucypher/ferveo/commit/bad0d3bf1aad626c4b6af7cf0ffa8f83654728f1))
+    - Some tests fixed: share updating should be done on top of blinded shares ([`ec9e368`](https://github.com/nucypher/ferveo/commit/ec9e3687799526c2567321cfa981e823e150204a))
+    - Yay! Tests work when blinding is deactivated, so the problem is unblinding ([`ba6cd93`](https://github.com/nucypher/ferveo/commit/ba6cd93670403ac0ea4a64e87cb49c535b46dcaa))
+    - Clarifying some refresh tests ([`1020d00`](https://github.com/nucypher/ferveo/commit/1020d007afd8472bde2da93d16a9a5d58df80b24))
+    - Distinction between ShareCommitments and TDec PublicKeys ([`0cfa02e`](https://github.com/nucypher/ferveo/commit/0cfa02e836796a894ea0cecec70bce34ffae30e4))
+    - Merge pull request #189 from piotr-roslaniec/workspace-deps ([`be98542`](https://github.com/nucypher/ferveo/commit/be9854252fdff297d99a63eb443a473ecfd41f5a))
+    - Move shared dependencies to workspace crate ([`983110c`](https://github.com/nucypher/ferveo/commit/983110c4dbb41eb7f0fba2c06f561b68718d0f29))
+    - Merge pull request #187 from piotr-roslaniec/remove-fast-variant ([`b72a338`](https://github.com/nucypher/ferveo/commit/b72a33803852bfaf444d6c2c4a278f93f334ab89))
+    - Remove fast variant ([`6e3369d`](https://github.com/nucypher/ferveo/commit/6e3369d11cfd4ec751775e1eee82f8192b51943e))
+    - Merge pull request #185 from piotr-roslaniec/aggregate-from-subset ([`299a471`](https://github.com/nucypher/ferveo/commit/299a471d2ee658ca374c3400ccac8fd24bb8d1a1))
+    - Merge pull request #183 from piotr-roslaniec/remove-dkg-state ([`aa69b36`](https://github.com/nucypher/ferveo/commit/aa69b364a57c511f96f8c2f1b1f0c36ab2309e50))
+    - Not using subset of participants in precomputed variant ([`975dae0`](https://github.com/nucypher/ferveo/commit/975dae0d5f8d1a2e5c061fbc8d11b1cc73c867d7))
+    - Fix tests sensitive to message ordering ([`4a8375d`](https://github.com/nucypher/ferveo/commit/4a8375d1873560241ae8eea96230a42635ed1764))
+    - Merge pull request #175 from piotr-roslaniec/rewrite-refreshing ([`2c97934`](https://github.com/nucypher/ferveo/commit/2c97934251c04754b8c5353492823e3a97dc53a9))
+    - Rename public key share to public key ([`0ef7de4`](https://github.com/nucypher/ferveo/commit/0ef7de4c9b4442e2c6125d457de9420146be50b7))
+    - Remove state from dkg, part 1 ([`315d2b4`](https://github.com/nucypher/ferveo/commit/315d2b4cc2825e13820d9c64639490c44b538385))
+    - Introduce refreshing api in ferveo ([`4713848`](https://github.com/nucypher/ferveo/commit/47138489bc9567674b57d61b0d105ff6c1c7cb6c))
+    - Avoid using crypto primitives directly, part 1 ([`8b26396`](https://github.com/nucypher/ferveo/commit/8b26396cc26ceeddca52dc37ac9461f0bb93ecfe))
+    - Merge pull request #171 from piotr-roslaniec/python-versions ([`de9cf36`](https://github.com/nucypher/ferveo/commit/de9cf36ad88a0242e43bbc6339eb840b6d97d88c))
+    - Remove duplicated field ([`802e712`](https://github.com/nucypher/ferveo/commit/802e7121d5eb5a31617bf88c4e14fe79d45e68e3))
+    - Merge pull request #166 from nucypher/chores ([`7350d91`](https://github.com/nucypher/ferveo/commit/7350d91708af55b5aa939a3f7e9cd62e7de7359a))
+    - Rename ferveo-tpke package to ferveo-tdec ([`58002f5`](https://github.com/nucypher/ferveo/commit/58002f50155df31a11b9d58d94750a2ed1076102))
 </details>
+
+## 0.2.0 (2023-08-28)
+
+### New Features (BREAKING)
+
+ - <csr-id-1800d3c5db164947c7cae35433fb8e3ad2650b66/> add ciphertext header to ciphertext api
 
 ## v0.1.0 (2023-07-07)
 
@@ -46,274 +111,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Chore
 
  - <csr-id-ca43921af214903e2d1345bb05b5f9c6e1987919/> adjust changelogs for cargo-smart-release
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 250 commits contributed to the release over the course of 702 calendar days.
- - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
- - 3 unique issues were worked on: [#70](https://github.com/nucypher/ferveo/issues/70), [#71](https://github.com/nucypher/ferveo/issues/71), [#72](https://github.com/nucypher/ferveo/issues/72)
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **[#70](https://github.com/nucypher/ferveo/issues/70)**
-    - Dkg State Machine refactor ([`8594316`](https://github.com/nucypher/ferveo/commit/85943169e27d7dbbdce835d6563ac4d838a410e1))
- * **[#71](https://github.com/nucypher/ferveo/issues/71)**
-    - Added serialization/deserialization to the dkg state machine ([`653be13`](https://github.com/nucypher/ferveo/commit/653be13c8a9d7de2e98ac76eca3aadf8f8cadf4a))
- * **[#72](https://github.com/nucypher/ferveo/issues/72)**
-    - Refactor subproductdomain ([`2d8026b`](https://github.com/nucypher/ferveo/commit/2d8026b2299fd9b67c77fb3b4e565ff9f4e6505b))
- * **Uncategorized**
-    - Release ferveo-common-pre-release v0.1.0, subproductdomain-pre-release v0.1.0, group-threshold-cryptography-pre-release v0.1.0, ferveo-pre-release v0.2.0 ([`ffb9b21`](https://github.com/nucypher/ferveo/commit/ffb9b21619d0f5dc0fb309bf2f493d3c0c25e1f0))
-    - Release ferveo-common-pre-release v0.1.0, subproductdomain-pre-release v0.1.0, group-threshold-cryptography-pre-release v0.1.0, ferveo-pre-release v0.2.0 ([`a7b889e`](https://github.com/nucypher/ferveo/commit/a7b889e3a20cfffc96bcb801dfb0946227cb32d9))
-    - Adjust changelogs for cargo-smart-release ([`ca43921`](https://github.com/nucypher/ferveo/commit/ca43921af214903e2d1345bb05b5f9c6e1987919))
-    - Adjusting changelogs prior to release of ferveo-common-pre-release v0.1.0, subproductdomain-pre-release v0.1.0, group-threshold-cryptography-pre-release v0.1.0, ferveo-pre-release v0.2.0 ([`0ccba13`](https://github.com/nucypher/ferveo/commit/0ccba13b0608e2023d8792ac9b0402af5ebaad0b))
-    - Release 0.1.0 crate versions ([`c02e305`](https://github.com/nucypher/ferveo/commit/c02e3050b7a9dcf0260a5eb4e42ff74f3788c3bf))
-    - Merge pull request #134 from piotr-roslaniec/remove-ftt-opt ([`2338213`](https://github.com/nucypher/ferveo/commit/23382139265bc043769d41f4da9e0998f9ba9757))
-    - Use general evaluation domain ([`2c20efb`](https://github.com/nucypher/ferveo/commit/2c20efb59d7d1075d6b1413b2ae7fbb55c422143))
-    - Fix using bad number of domain points ([`d5ec5e0`](https://github.com/nucypher/ferveo/commit/d5ec5e0f9d1303e51a805c4dafbab7ed2efcb7be))
-    - Merge pull request #119 from nucypher/nucypher-core-integration ([`52c1f27`](https://github.com/nucypher/ferveo/commit/52c1f27627798fa266d2e5079f5121cc71e8e284))
-    - Merge pull request #118 from nucypher/expose-bindings-from-main-crate ([`11d6cea`](https://github.com/nucypher/ferveo/commit/11d6ceaf26f45c76dec0c5a9fcf5eae5301502d3))
-    - Merge pull request #114 from piotr-roslaniec/python-exceptions ([`87d8f1c`](https://github.com/nucypher/ferveo/commit/87d8f1cf23e27e01c4a91c964a8327b24e4ad360))
-    - Publish 0.1.0-alpha.2 ([`8ce4697`](https://github.com/nucypher/ferveo/commit/8ce469734f08511ee3c897d09aa323a8a1ac62fe))
-    - Release pre-release crates ([`8df87ff`](https://github.com/nucypher/ferveo/commit/8df87ff36ac81bd9e60013cda892d31ddf402868))
-    - Update crates to 2021 edition #111 ([`591c05e`](https://github.com/nucypher/ferveo/commit/591c05e64ef9d2f7218418b6aa9d33181c60c88f))
-    - Expose typed python exceptions ([`6b6f6d7`](https://github.com/nucypher/ferveo/commit/6b6f6d724eeb11c1b638ce51c94f904dec9f73b1))
-    - Merge pull request #107 from piotr-roslaniec/zeroize ([`a7eebe5`](https://github.com/nucypher/ferveo/commit/a7eebe57ecbb1aed57410c54710ad79fa6402601))
-    - Apply pr suggestions ([`1a48fea`](https://github.com/nucypher/ferveo/commit/1a48fea1c43e038e5f29f9f0a884666ca8dbe9e2))
-    - Merge remote-tracking branch 'upstream/main' into zeroize ([`c9b230a`](https://github.com/nucypher/ferveo/commit/c9b230aa011cc537d7d5dcee84cd63a595b471cc))
-    - Zeroize nonce ([`03974b2`](https://github.com/nucypher/ferveo/commit/03974b2f5d3bb195ced9b9072fbf5703e976962e))
-    - Zeroize plaintext ([`a7e1914`](https://github.com/nucypher/ferveo/commit/a7e1914a7cb677105ffe58d74e02a04afb5fc8a7))
-    - Zeroize private key share ([`61068f0`](https://github.com/nucypher/ferveo/commit/61068f04f777a81ec5d2662e8a4ebd34ced2094e))
-    - Zeroize chacha ([`61c84da`](https://github.com/nucypher/ferveo/commit/61c84da62144c46fd850989f5c9ec17a3ef6ac07))
-    - Zeroize on drop ([`b2402e7`](https://github.com/nucypher/ferveo/commit/b2402e7eade318efde104220dcf92c390d45ccca))
-    - Zeroize shared secret ([`54ce650`](https://github.com/nucypher/ferveo/commit/54ce65076c45f937fa0e29a780206f2e32063a92))
-    - Merge remote-tracking branch 'upstream/main' into static-arrays ([`7f663f3`](https://github.com/nucypher/ferveo/commit/7f663f3e006e7a9657f84c1fdfb02d04bde413da))
-    - Merge pull request #113 from piotr-roslaniec/fix-simple-tdec-shares ([`85fe85a`](https://github.com/nucypher/ferveo/commit/85fe85aeface8eba8752c00d029e7a200216e9e3))
-    - Remove implicit ordering from domain points in public dkg params ([`6ab1df9`](https://github.com/nucypher/ferveo/commit/6ab1df92d0d55f5c93d8eeae505a2d8146b27811))
-    - Merge pull request #102 from piotr-roslaniec/local-verification-wasm ([`aacdf04`](https://github.com/nucypher/ferveo/commit/aacdf0462d73720e97c1d7924fc49e3d252a691a))
-    - Fix failing test ([`c4912f5`](https://github.com/nucypher/ferveo/commit/c4912f5b11e87a96cb726e9122559ee042ffc15f))
-    - Js bindings fail to correctly decrypt the ciphertext ([`ae79060`](https://github.com/nucypher/ferveo/commit/ae790601f691a7727489dbd8606dcd6ed0e4106d))
-    - Fix ci checks ([`f22fb4a`](https://github.com/nucypher/ferveo/commit/f22fb4a56e0b4e54a0f1b7c8d7f4e2bf14cd2d18))
-    - Update wasm bindings ([`9215238`](https://github.com/nucypher/ferveo/commit/9215238e30987c13cbe66d4c05b118f9ff49d815))
-    - Fix failing test ([`ffa71bc`](https://github.com/nucypher/ferveo/commit/ffa71bc19672ace4d6c298cad6d2e0ef58fff74c))
-    - Js bindings fail to correctly decrypt the ciphertext ([`3e7db72`](https://github.com/nucypher/ferveo/commit/3e7db72e5878bfc54b0324c4c79a2a058fc9e0e9))
-    - Fix ci checks ([`50a853b`](https://github.com/nucypher/ferveo/commit/50a853b9d755c77817b6eefcf1f6d0c1af601184))
-    - Update wasm bindings ([`1cc7036`](https://github.com/nucypher/ferveo/commit/1cc7036007c05c231f241047ef01e394b8710205))
-    - Merge pull request #93 from piotr-roslaniec/local-verification ([`a6ff917`](https://github.com/nucypher/ferveo/commit/a6ff91794d5a8ddd2b9ffcb7b398f58039017a96))
-    - Update python bindings ([`a77fc7a`](https://github.com/nucypher/ferveo/commit/a77fc7ac4aa4e2b5bd9a45faa44e40792fc8b65e))
-    - Merge branch 'main' into local-verification ([`dd1eccf`](https://github.com/nucypher/ferveo/commit/dd1eccf1575d98d5bec2486452d3aa435faa02da))
-    - Merge pull request #95 from piotr-roslaniec/implicit-ordering ([`9fded5b`](https://github.com/nucypher/ferveo/commit/9fded5bbd7b85985644844d31cf391dce52aea97))
-    - Refactor for 1.64.0 msrv ([`a23500c`](https://github.com/nucypher/ferveo/commit/a23500ca3918cf9456709340b00e1a54f651bb05))
-    - Refactor internal ordering tracking ([`6bb4746`](https://github.com/nucypher/ferveo/commit/6bb4746ab1b2c7b0cd3ae7336fb5d8e5415b1abe))
-    - Merge pull request #92 from piotr-roslaniec/simple-tdec-py-bindings ([`4b9d8c4`](https://github.com/nucypher/ferveo/commit/4b9d8c4c50f64e5f84b35999557573fcd050f1c9))
-    - Refactor bindings to support simple and precomputed tdec variants ([`edc2f26`](https://github.com/nucypher/ferveo/commit/edc2f26269d51d132066c3ff60c94466d4dbe5d8))
-    - Merge pull request #75 from nucypher/release-ferveo-py ([`2529f74`](https://github.com/nucypher/ferveo/commit/2529f743fe6f07935938cbef81faa0230e478f87))
-    - Merge branch 'main' into release-ferveo-py ([`d503b8a`](https://github.com/nucypher/ferveo/commit/d503b8ab657cd6500dbc85cbf6c0d15804be57bc))
-    - Fix ci ([`0ca00c9`](https://github.com/nucypher/ferveo/commit/0ca00c998239e0cb641fea4ccdd085b4122c72a1))
-    - Merge pull request #91 from nucypher/typed-errors ([`b2eb9ef`](https://github.com/nucypher/ferveo/commit/b2eb9ef48cb977a2db724630ea8c0390d2976da6))
-    - Add missing serializatin methods ([`9740da8`](https://github.com/nucypher/ferveo/commit/9740da827cb72145a5b3011f51dfcda5216b712b))
-    - Merge pull request #56 from nucypher/ferveo-light-tdec ([`8fa25b6`](https://github.com/nucypher/ferveo/commit/8fa25b66bf32585b2ef406bbec3999fd9ce75225))
-    - Merge remote-tracking branch 'upstream/main' into ferveo-light-tdec ([`2c5d7c8`](https://github.com/nucypher/ferveo/commit/2c5d7c86af4a70f4694565093c399f5a9296873a))
-    - Merge pull request #62 from nucypher/client-server-api ([`3a6e3c4`](https://github.com/nucypher/ferveo/commit/3a6e3c4b59c192289f86c0e37f119b29ccd3d620))
-    - Merge pull request #67 from nucypher/arkworks-0.4 ([`bd78f97`](https://github.com/nucypher/ferveo/commit/bd78f9741246a2118bf6e3fdf48c72d6adf51b9e))
-    - Merge pull request #72 from piotr-roslaniec/tpke-wasm-api-example ([`a6caaad`](https://github.com/nucypher/ferveo/commit/a6caaad16a10e6a77450f0196f63e5be4ba46f2e))
-    - Merge pull request #68 from nucypher/error-handling ([`093f17e`](https://github.com/nucypher/ferveo/commit/093f17e22f606b33a468bd62ad37cf22f3dda265))
-    - Merge branch 'error-handling' into tpke-wasm-api-example ([`707f460`](https://github.com/nucypher/ferveo/commit/707f460666acc2781d6dcfa49e0f75f1159f466f))
-    - Replace cargo-udeps with cargo-machete ([`9d38a03`](https://github.com/nucypher/ferveo/commit/9d38a03f0f229ff91c5c9d21cc290b30e88ad993))
-    - Merge branch 'error-handling' into release-ferveo-py ([`d2a0ca0`](https://github.com/nucypher/ferveo/commit/d2a0ca045beb4dd298f2c06b20b313456a1e81f9))
-    - Merge pull request #51 from nucypher/ferveo-pss ([`23955a9`](https://github.com/nucypher/ferveo/commit/23955a9a557b49e425b43e809d9c2555b85e66c5))
-    - Sketch error handling in ferveo ([`a68d2d9`](https://github.com/nucypher/ferveo/commit/a68d2d9b62414fd06afa234f240508d1c41e68a8))
-    - Fix benchmarks not running on ci ([`af9505d`](https://github.com/nucypher/ferveo/commit/af9505d277eb43760698c5677d2cc0583d6484f4))
-    - Refactor serialization ([`b9535fe`](https://github.com/nucypher/ferveo/commit/b9535fefae0795f4b43f726378c5c65d0e776937))
-    - Trim external apis ([`0b95048`](https://github.com/nucypher/ferveo/commit/0b9504833ff4025236d9821c5bdc40e66f6774d6))
-    - Replace unwrap calls with result type ([`a9b4331`](https://github.com/nucypher/ferveo/commit/a9b4331c3755a0bb0dc0ca5cc355a892dc13d7d3))
-    - Self review ([`2d926de`](https://github.com/nucypher/ferveo/commit/2d926de9a96a9492063fe4ad69a4dee51d5cae88))
-    - Merge branch 'client-server-api' into arkworks-0.4 ([`ed88c8b`](https://github.com/nucypher/ferveo/commit/ed88c8b9f4bc11b5921ad82274776dc4603fc9c5))
-    - Replace unmaintained rust-crypto crate with sha2 ([`3040970`](https://github.com/nucypher/ferveo/commit/3040970d1d61cbb13a7577422a5422eca445deca))
-    - Merge branch 'ferveo-light-tdec' into client-server-api ([`8d5bef8`](https://github.com/nucypher/ferveo/commit/8d5bef892ee8d365e0a6fcc720ae4718a6475cd4))
-    - Update arkworks to 0.4.0 - first pass ([`b1999b8`](https://github.com/nucypher/ferveo/commit/b1999b86a2b04c719ec29b1263612de88a0cfd49))
-    - Update dev deps settings ([`d588cc8`](https://github.com/nucypher/ferveo/commit/d588cc8d339f8f4fb336fa447dbd914faee80604))
-    - Update after rebase ([`aa39d7a`](https://github.com/nucypher/ferveo/commit/aa39d7a0f5e91d2945348cc49f0b5788bcf681af))
-    - Merge pull request #54 from theref/TODO ([`6022f00`](https://github.com/nucypher/ferveo/commit/6022f00eaa0a495d0edf7dc92c703a5928824e18))
-    - Add simple tdec to wasm bindings ([`1cc35b4`](https://github.com/nucypher/ferveo/commit/1cc35b480ebeb1f0ac6dcfd6c91e5ce627e9929c))
-    - Fix import style ([`6d92b01`](https://github.com/nucypher/ferveo/commit/6d92b010139b915da1a89ffa686bf24871c7afd1))
-    - Update client api tests ([`2e6b231`](https://github.com/nucypher/ferveo/commit/2e6b2317c44a0445db85fc9a1c58a71bb85e5c14))
-    - Refactor module visibility ([`d287129`](https://github.com/nucypher/ferveo/commit/d287129e0a687edc7dc40ce196461be6617dcbba))
-    - Simple tdec on client side fails ([`7257843`](https://github.com/nucypher/ferveo/commit/7257843a9722f4a63bfbe82fcfbaf2088711dfb6))
-    - Merge pull request #48 from nucypher/benchmark-primitives-size ([`58515cf`](https://github.com/nucypher/ferveo/commit/58515cf06c39c578eced7f276d0e7b1b98fd00e9))
-    - Merge branch 'ferveo-pss' into ferveo-light-tdec ([`20f0eda`](https://github.com/nucypher/ferveo/commit/20f0edaa20865ef40ce34e99417c35b42b44e1f9))
-    - Merge pull request #46 from nucypher/verify-simple-tdec-shares ([`530de97`](https://github.com/nucypher/ferveo/commit/530de97b5008b94b60420adc5735cf1b656b8218))
-    - Merge branch 'main' into ferveo-pss ([`1857ef6`](https://github.com/nucypher/ferveo/commit/1857ef6d4249ea2a120ee4264dbfe1745fd25f15))
-    - Merge branch 'main' into verify-simple-tdec-shares ([`48a2513`](https://github.com/nucypher/ferveo/commit/48a2513d0e479067fb8e0a5dee574ec3fefb9ce7))
-    - Add ferveo-python example ([`fd47f97`](https://github.com/nucypher/ferveo/commit/fd47f97510fad4132712dc58714c19fc0fd0d7e4))
-    - Simple tdec on server side ([`39f7f39`](https://github.com/nucypher/ferveo/commit/39f7f39cf618e6c46a809707cfc93bf1aae4e49e))
-    - Sketch the server api ([`5ba7451`](https://github.com/nucypher/ferveo/commit/5ba7451f1ae54995e90570b2e970263124ffa803))
-    - Switch to cargo-criterion in ci ([`3a216b6`](https://github.com/nucypher/ferveo/commit/3a216b63ee47907e8838a6fcec4abc06fa517d12))
-    - Fix benchmark not working on ci ([`e69c735`](https://github.com/nucypher/ferveo/commit/e69c735712ff8e85ae025b841287b645a94e3147))
-    - Merge pull request #38 from nucypher/validity-checks ([`168bde6`](https://github.com/nucypher/ferveo/commit/168bde69694089000d8363fba08dd86cc6e101ce))
-    - Merge pull request #19 from piotr-roslaniec/use-sha256 ([`ace45c7`](https://github.com/nucypher/ferveo/commit/ace45c783ba0d9b8ba2f308aa5c8a1af034d65ca))
-    - Apply pr suggestions ([`1f76347`](https://github.com/nucypher/ferveo/commit/1f76347c0326424c5776c0e2a99c833d911c9b95))
-    - Merge branch 'main' into use-sha256 ([`fa1c1a8`](https://github.com/nucypher/ferveo/commit/fa1c1a8bf2b338cb379a481d8b042c45af23c470))
-    - Update tpke client api ([`33b2b09`](https://github.com/nucypher/ferveo/commit/33b2b0954d08261e72a7d206446a689fc6b251ac))
-    - Refactor validator checksums into a struct ([`3366d80`](https://github.com/nucypher/ferveo/commit/3366d8011d960c4e493548011ba9610155d8360d))
-    - Convert `api` and `serialization` to features ([`c20ac5e`](https://github.com/nucypher/ferveo/commit/c20ac5ec71b56336bfcccd3d308b32643122f3c7))
-    - Self review ([`2c1ed0c`](https://github.com/nucypher/ferveo/commit/2c1ed0c0ea8fe60dfb95a3801de51ac8e7b29710))
-    - Integrate light tdec into ferveo crate ([`5eb4fcf`](https://github.com/nucypher/ferveo/commit/5eb4fcfdf6ae19dda06871eb09155f067fb97645))
-    - Refactor light tdec ([`20dbfec`](https://github.com/nucypher/ferveo/commit/20dbfec954af517bd9764e81b4bf97abe94ac10d))
-    - Fix after merge ([`a6c3027`](https://github.com/nucypher/ferveo/commit/a6c30279d594c6441f111b300dbe836a801b0574))
-    - Merge branch 'verify-simple-tdec-shares' into ferveo-pss ([`3693ba8`](https://github.com/nucypher/ferveo/commit/3693ba85e11ce2dbfc0d6202cb5eef0505b8f753))
-    - Merge branch 'validity-checks' into verify-simple-tdec-shares ([`a34b995`](https://github.com/nucypher/ferveo/commit/a34b995d68258b0c956cff87dafa2f968f7ab0ef))
-    - Merge branch 'main' into validity-checks ([`dd9e458`](https://github.com/nucypher/ferveo/commit/dd9e4584f9b9715e5c63816234e1c0c0c63df5bc))
-    - Benchmark size of pvss transcripts ([`6c28d48`](https://github.com/nucypher/ferveo/commit/6c28d48ddc8aa0805b0fdb634564a627baf1f52f))
-    - Self review ([`2c9bfec`](https://github.com/nucypher/ferveo/commit/2c9bfec29abf83f7e50fe37b5aceb4908bd40416))
-    - Merge pull request #50 from theref/tidy ([`af53b72`](https://github.com/nucypher/ferveo/commit/af53b72a466cce1dd7b745f60194eec2733899ad))
-    - Integrate key recovery into ferveo ([`7aa400f`](https://github.com/nucypher/ferveo/commit/7aa400f58a2ca766f36b50a248625aa2d3f2b7f1))
-    - Refactor tdec recovery tests in tpke ([`a366089`](https://github.com/nucypher/ferveo/commit/a3660896800cfa35ddab2c07fc1d7dada8f39adb))
-    - Integrate key refreshing into ferveo ([`0223a16`](https://github.com/nucypher/ferveo/commit/0223a1623d8f0d4aa0ade9ccf5f33a235cea57cb))
-    - Merge pull request #32 from nucypher/simple-decryption-precomputed ([`cd50056`](https://github.com/nucypher/ferveo/commit/cd50056e1f36a7485b7f974e40e4c6584241d151))
-    - Refactor key refreshing ([`864dbc2`](https://github.com/nucypher/ferveo/commit/864dbc26cbc6863b7eda7c03ed8e585d0a7159d8))
-    - Remove unused code from `hash_to_curve` ([`1e2dee0`](https://github.com/nucypher/ferveo/commit/1e2dee03e06dd66cc0ad2b55548d5ec254da68a0))
-    - Merge pull request #41 from theref/refresh_bench ([`0f1ac6f`](https://github.com/nucypher/ferveo/commit/0f1ac6ff8743ac7cd0fe3c99a0ef22d6bbb20425))
-    - Replace `bench_with_input` for `bench_function` ([`bf16483`](https://github.com/nucypher/ferveo/commit/bf164835aedf6aba67c936a5c088528ac9eb9a83))
-    - Add a benchmark sketch ([`aa75f85`](https://github.com/nucypher/ferveo/commit/aa75f85e17699cb84926fa33b1cd800d18abac6e))
-    - Apply pr suggestions ([`bdda3d1`](https://github.com/nucypher/ferveo/commit/bdda3d11f0415e86ecf5ce9a5793b3b407d97c8f))
-    - Self review ([`0eb043e`](https://github.com/nucypher/ferveo/commit/0eb043ed5e1fb54f71288362706c3d47c975bdf4))
-    - Fix after rebase ([`2b298af`](https://github.com/nucypher/ferveo/commit/2b298af13302b7ddff8a7db1e41bd2e52d564dd0))
-    - Apply PR suggestions ([`2c46d1e`](https://github.com/nucypher/ferveo/commit/2c46d1eaddd7f51878966667d8b42933e2fc69ea))
-    - Fix after rebase ([`208c55e`](https://github.com/nucypher/ferveo/commit/208c55e76a2a483d2370534c48d9e6e145df1f6f))
-    - Self review ([`0370bd9`](https://github.com/nucypher/ferveo/commit/0370bd99177e1953cdfdb90007a0a49bf21c7274))
-    - Fix after rebase ([`e8b83dc`](https://github.com/nucypher/ferveo/commit/e8b83dc89f712e17eac42952a392bb13419f9f01))
-    - Implement and benchmark subvariant of simple tdec ([`1bde49d`](https://github.com/nucypher/ferveo/commit/1bde49d8c1920f94cf3d33ca6bb705e667eda22c))
-    - Benchmark share combination for simple variant ([`ec84ec3`](https://github.com/nucypher/ferveo/commit/ec84ec39d55d2a18ebca80e8c257aa872038d87c))
-    - Merge branch 'main' into validity-checks ([`208d95c`](https://github.com/nucypher/ferveo/commit/208d95c990084f81eb2e82339e772b0baa8c7748))
-    - Merge pull request #27 from nucypher/dkg-pvss-flow ([`e842b8a`](https://github.com/nucypher/ferveo/commit/e842b8a5bb2cafe2e768ca29e5f0210f969ea748))
-    - Benchmark share verification ([`d499c28`](https://github.com/nucypher/ferveo/commit/d499c2820d8c0cbe959c8092fdefd632da2357af))
-    - Refactor decryption share creation ([`64f5023`](https://github.com/nucypher/ferveo/commit/64f5023663ccf6f33b82e87a21b9c89eb7b135ac))
-    - Implement simple tdec decryption share verification ([`655e5e3`](https://github.com/nucypher/ferveo/commit/655e5e3a9173d6e38ad176efecd0d380f19578f1))
-    - Disable arkworks benchmark ([`91fa243`](https://github.com/nucypher/ferveo/commit/91fa24391002b2c75ff32bf8f0d50c5cbe2faa38))
-    - Benchmark ciphertext validity check ([`a21fb93`](https://github.com/nucypher/ferveo/commit/a21fb93b84a11d77eb454c0a399da1e28a1f5140))
-    - Update tpke/benches/tpke.rs ([`2d20f28`](https://github.com/nucypher/ferveo/commit/2d20f285ed97f3fe44bf7225bf7bc5e88842b753))
-    - Bench ciphertext validity check ([`f0864ae`](https://github.com/nucypher/ferveo/commit/f0864ae82d3b1e8bf06877eb5e84e641d15088dd))
-    - Enable key share blinding in fast tdec ([`57c9763`](https://github.com/nucypher/ferveo/commit/57c9763712be26ecf9e39863b9a37785b2da6c3e))
-    - Refactor to a single share per validator ([`dce013c`](https://github.com/nucypher/ferveo/commit/dce013c0825ad5cabf7fe74edfc9d96ce80a44da))
-    - Remove rebasing artifact ([`e9d7064`](https://github.com/nucypher/ferveo/commit/e9d706481adb3010924c2fc5014d4fff96e742fd))
-    - Fix after rebase ([`dc53f7b`](https://github.com/nucypher/ferveo/commit/dc53f7b568abe296f2f0812b8233e5e388965277))
-    - Fix after rebase ([`50343e3`](https://github.com/nucypher/ferveo/commit/50343e33d1c48e5199bac79f4d75031857fd0a7a))
-    - Self code review ([`b560ad6`](https://github.com/nucypher/ferveo/commit/b560ad6e5e72a4b1521486cbc90e84fcbff2ed6f))
-    - Remove dealer's lagrange coeffs calculation ([`f526ad4`](https://github.com/nucypher/ferveo/commit/f526ad44a8c05151bc7c0d745770e6b7f88e1876))
-    - Simple threshold decryption works ([`d3c76cd`](https://github.com/nucypher/ferveo/commit/d3c76cde43f13a9a7c24d24511acbd980b5b6e44))
-    - Fix clippy ([`cca3270`](https://github.com/nucypher/ferveo/commit/cca32700b3b13aafab6fcb899f852d3643dddcfd))
-    - Simple decryption with one validator works with ferveo dkg ([`4fbaab3`](https://github.com/nucypher/ferveo/commit/4fbaab341e8481d7fbcf103e8b9c29b0a7ea348a))
-    - Incorrect length of decrypted shares after pvss combination ([`efa6150`](https://github.com/nucypher/ferveo/commit/efa6150f3aa07e262290392f41dfa37c83a7a4a4))
-    - Calculate lagrange using public context ([`0c6b9c5`](https://github.com/nucypher/ferveo/commit/0c6b9c560d934c3b4edab8866a4234461bc70274))
-    - Calculate lagrange using private context ([`bd5d743`](https://github.com/nucypher/ferveo/commit/bd5d74385017b80324c2c9d882f2f727ece3bef5))
-    - Initial work on simple threshold decryption ([`fcab224`](https://github.com/nucypher/ferveo/commit/fcab224a9ec79799ec7067e94a5e567ff91b83d4))
-    - Refactor share verification ([`249c3c1`](https://github.com/nucypher/ferveo/commit/249c3c1b3285b4e8e92ee1b444e6f3b3d8001578))
-    - Implement simplified decryption share verification ([`20445cd`](https://github.com/nucypher/ferveo/commit/20445cdc49712f40fb893f370d9510edf4cf7484))
-    - Fix formulas ([`444ff80`](https://github.com/nucypher/ferveo/commit/444ff806b0bee35ef4edfb60c01caed67ae27cbc))
-    - Fix after rebase ([`c80a197`](https://github.com/nucypher/ferveo/commit/c80a1975c9dcf130723ee46ce11bfb8b693301ef))
-    - Decryption share verification for fast variant ([`a0d9930`](https://github.com/nucypher/ferveo/commit/a0d99308c932fda7413fc04f9039f9758d8a692e))
-    - Check ciphertext validity before creating a decryption share ([`e99f43c`](https://github.com/nucypher/ferveo/commit/e99f43c3a3f0095e3989f1231c2b5f8d96f8471a))
-    - Enable key share blinding in fast tdec ([`a484971`](https://github.com/nucypher/ferveo/commit/a484971aea27a5304aa20fbde6f826900107559e))
-    - Refactor to a single share per validator ([`b6c9189`](https://github.com/nucypher/ferveo/commit/b6c9189322f3c50ccef19ad6cb0c4cd922a71f1b))
-    - Remove rebasing artifact ([`838d3d2`](https://github.com/nucypher/ferveo/commit/838d3d21fd99799aea19843c3868476b0f6d97b4))
-    - Fix after rebase ([`26fe690`](https://github.com/nucypher/ferveo/commit/26fe690d14dc29231886f593065d94193a3f913e))
-    - Fix after rebase ([`668184c`](https://github.com/nucypher/ferveo/commit/668184c4b8b4fc38542be7de3bbeb49ab51166f2))
-    - Self code review ([`89ebffc`](https://github.com/nucypher/ferveo/commit/89ebffc583ee13bc5b19a846fef168663e106bcb))
-    - Remove dealer's lagrange coeffs calculation ([`364580e`](https://github.com/nucypher/ferveo/commit/364580eee849b5bdab88ee51a6116f90ce5a8199))
-    - Simple threshold decryption works ([`856790c`](https://github.com/nucypher/ferveo/commit/856790c48d882c87275ddf6d87bbeb1a31ad559b))
-    - Fix clippy ([`7cad9ae`](https://github.com/nucypher/ferveo/commit/7cad9aea331ed8e510bca6afd043fe61a466ef08))
-    - Simple decryption with one validator works with ferveo dkg ([`57255f5`](https://github.com/nucypher/ferveo/commit/57255f5befb64f3c4cce8d97b2d28db0f0c4f0eb))
-    - Incorrect length of decrypted shares after pvss combination ([`81d4dd2`](https://github.com/nucypher/ferveo/commit/81d4dd2c67026f2a672c2c421efa38bdfc5f226b))
-    - Calculate lagrange using public context ([`17cdb5b`](https://github.com/nucypher/ferveo/commit/17cdb5b6850c54815f3629fa4e441e0caa815f7e))
-    - Calculate lagrange using private context ([`719b4a1`](https://github.com/nucypher/ferveo/commit/719b4a1aa1d7775413c3a80500ecc87cc83d64ea))
-    - Initial work on simple threshold decryption ([`08bac73`](https://github.com/nucypher/ferveo/commit/08bac73b78f602f4bc46ef4eb508c0870124094b))
-    - Add benchmark for share refresh ([`5163ba6`](https://github.com/nucypher/ferveo/commit/5163ba62402c451b3ba5f52592eace2e6f43f4ec))
-    - Merge pull request #34 from nucypher/benchmarks-pr-compare ([`185822b`](https://github.com/nucypher/ferveo/commit/185822b781ec6febfef28660acbe6fa39dd893a4))
-    - Update random polynomial benchmark ([`770d251`](https://github.com/nucypher/ferveo/commit/770d2515b56438c30fdf0911ffb7b7103ba17b88))
-    - Fix benchmarks on ci ([`33cf5c2`](https://github.com/nucypher/ferveo/commit/33cf5c2f7ed7c0971c2f349e38df24047b1ea4f6))
-    - Fix after rebase ([`ea19e6a`](https://github.com/nucypher/ferveo/commit/ea19e6a8dffd3519ed51909b57820cae7ac61731))
-    - Add more tpke benchmarks ([`02827bb`](https://github.com/nucypher/ferveo/commit/02827bb98ff2f2ec01c77c1283e8e79aefde0d3c))
-    - Benchmark share combination for simple variant ([`07cbe25`](https://github.com/nucypher/ferveo/commit/07cbe25e24fef7f84523a7485bd71cc57e2f0753))
-    - Fix polynomial benchmark ([`939f913`](https://github.com/nucypher/ferveo/commit/939f913507587fbbe7b0aaa88df11dfbaf52a823))
-    - Add benchmark for Recover Share at Point ([`a8009a9`](https://github.com/nucypher/ferveo/commit/a8009a9fe7e4d5f5f7e2e923e2941e88024edaac))
-    - Merge pull request #35 from nucypher/bench-arkworks ([`48567a3`](https://github.com/nucypher/ferveo/commit/48567a3d28718f354913c74580f5c9b9f964bb51))
-    - Fix after rebase ([`d6af087`](https://github.com/nucypher/ferveo/commit/d6af0877ca201c027681550e72bb71834af67034))
-    - Move poly bench to arkworks ([`f98b528`](https://github.com/nucypher/ferveo/commit/f98b5281af6a81ebaeb3c570d8965ee81a74b185))
-    - Fix after rebase ([`27f9216`](https://github.com/nucypher/ferveo/commit/27f92163b343c9f8d8345a80e65e2ecec2ed58b7))
-    - Simplify arkworks benchmarks ([`1b6b852`](https://github.com/nucypher/ferveo/commit/1b6b852f3b815a5635de807f675aa3780f3c039f))
-    - Fix benchmark not working on ci ([`15e1c6e`](https://github.com/nucypher/ferveo/commit/15e1c6ec38cdfc63bca32e4b869c5e7a884f754f))
-    - Fix after rebase ([`c192dfc`](https://github.com/nucypher/ferveo/commit/c192dfc64ebecdcc035d222696da481982c49f27))
-    - Enable tpke benchmarks ([`73bc0a1`](https://github.com/nucypher/ferveo/commit/73bc0a14eacf37389694cabfa2949b6353e12737))
-    - Add remaining benchmarks ([`14240f9`](https://github.com/nucypher/ferveo/commit/14240f989c1a1b4bde6c1310015c6e3fa783b045))
-    - Add a benchmark sketch ([`1a1f5bc`](https://github.com/nucypher/ferveo/commit/1a1f5bc6672b096f5ebbaea85261ea94c2435553))
-    - Add encryption and decryption benchmarks ([`1d02339`](https://github.com/nucypher/ferveo/commit/1d02339d7871a4e4637fbbd4fd349780edb4c591))
-    - Add more tpke benchmarks ([`ac5bbac`](https://github.com/nucypher/ferveo/commit/ac5bbaccc959a5bf3076a0f9540b207e20aa09b5))
-    - Run benchmarks on gh actions ([`20e1123`](https://github.com/nucypher/ferveo/commit/20e1123578295c5286b0ab1698ea7ea97aaa4397))
-    - Benchmark share combination for simple variant ([`6b33e84`](https://github.com/nucypher/ferveo/commit/6b33e84ab428fcb903efffcc2e6178a50d47d04a))
-    - Merge pull request #25 from piotr-roslaniec/sd-benchmarks ([`25c745e`](https://github.com/nucypher/ferveo/commit/25c745e3e830fab8161612af6963bc673ce00bb2))
-    - Fix after rebase ([`3ee6ac5`](https://github.com/nucypher/ferveo/commit/3ee6ac5994c25e485a41e18acd1c438cb162bc66))
-    - Add encryption and decryption benchmarks ([`c007f5e`](https://github.com/nucypher/ferveo/commit/c007f5e2fe6bf54ad294d94c0a7777613d4c7331))
-    - Set group benchmark sample for tpke ([`0271631`](https://github.com/nucypher/ferveo/commit/0271631de705991dab5a30abe8c13a2d0ac80978))
-    - Add more tpke benchmarks ([`3d5847b`](https://github.com/nucypher/ferveo/commit/3d5847b382604bb0fb4c2e213ac16ef22b7a5c50))
-    - Run benchmarks on gh actions ([`ffd67c4`](https://github.com/nucypher/ferveo/commit/ffd67c47238b3dd5d9273ff8e0ba1979d10d4732))
-    - Benchmark share combination for simple variant ([`5751d8c`](https://github.com/nucypher/ferveo/commit/5751d8c1df9ffce19b63fba3ae04fa050b4b511e))
-    - Merge pull request #26 from nucypher/share-recovery ([`94de0a0`](https://github.com/nucypher/ferveo/commit/94de0a002b44daad34bcdf07d773fa4d8148787d))
-    - Merge pull request #37 from theref/share-recovery ([`86a95f3`](https://github.com/nucypher/ferveo/commit/86a95f32403ed6df1c6cb77ba284dffb0eee2df9))
-    - Apply PR suggestions ([`d8d325c`](https://github.com/nucypher/ferveo/commit/d8d325ce88f957c6c97fe5e4c58943bb6a2fc10f))
-    - Use `debug_assert` to make benchmarks more consistent ([`871fdf4`](https://github.com/nucypher/ferveo/commit/871fdf4b8734fb0d55e9aed095557cbe3e61cedf))
-    - Use arkworks for polynomails and benchmark relevant functions ([`92f6f55`](https://github.com/nucypher/ferveo/commit/92f6f551bbbaba5229ae8f3628b8d89147c8fe1a))
-    - Fix after rebase ([`989415a`](https://github.com/nucypher/ferveo/commit/989415a9581063cc1105a7b361f79d780bf55111))
-    - Apply pr suggestions ([`48732e7`](https://github.com/nucypher/ferveo/commit/48732e7d6e221ff985bde4fca35a0137f2ce123a))
-    - Add comments after initial review ([`5456c42`](https://github.com/nucypher/ferveo/commit/5456c422a9f9b2a3964c2d3dd8de5700f0dccdd3))
-    - Fix after rebase ([`7d5ecd9`](https://github.com/nucypher/ferveo/commit/7d5ecd9a54873719f0a1f1ec42957eb94ff97945))
-    - Fix clippy warnings ([`2327378`](https://github.com/nucypher/ferveo/commit/232737832b34658df95a500b61fe856d7bd767f1))
-    - Share refreshing ([`e4e59c8`](https://github.com/nucypher/ferveo/commit/e4e59c8ce60c440c308748097db1423763a358f7))
-    - Refreshing initial pass ([`1697924`](https://github.com/nucypher/ferveo/commit/1697924d35d2c0e689ccd20f4f784be2d03c70b6))
-    - Fix after rebase ([`c0df26e`](https://github.com/nucypher/ferveo/commit/c0df26e23e31107e24cfcad0319ff38cc17e5d19))
-    - Failing to create a proper polynomial for recovery ([`2575edd`](https://github.com/nucypher/ferveo/commit/2575edd70e5d312e83bbc011c54c666bc7312d42))
-    - Wip ([`81870af`](https://github.com/nucypher/ferveo/commit/81870afb4381a7acf7fb773c88b4508bd1d507dc))
-    - Initial work on simple threshold decryption ([`3d0c13b`](https://github.com/nucypher/ferveo/commit/3d0c13b78fa89e3cf221e48c68f9ce7f97dbce17))
-    - Merge pull request #20 from piotr-roslaniec/simple-decryption ([`b2b4809`](https://github.com/nucypher/ferveo/commit/b2b48091092c861ca7a39fcc54573dcd8117db2e))
-    - Apply pr suggestions ([`6dc7173`](https://github.com/nucypher/ferveo/commit/6dc71731e880fdb8c7bd27da7e48649d18fff80f))
-    - Remove some comments ([`526d198`](https://github.com/nucypher/ferveo/commit/526d19887686d94b09aa3b389b58b1f065938352))
-    - Implement simple threshold decryption variant ([`e7ecab0`](https://github.com/nucypher/ferveo/commit/e7ecab0e1b9b310490e7f7ccf6deb73d08c866b4))
-    - Use sha256 instead of blake2b ([`c71dbf2`](https://github.com/nucypher/ferveo/commit/c71dbf2630ebb54a4be725af92a61cfddc8837a0))
-    - Merge pull request #10 from piotr-roslaniec/wasm-bindings ([`f26552d`](https://github.com/nucypher/ferveo/commit/f26552db645e095fb4df6732aa38e1fff1401d72))
-    - Merge pull request #17 from nucypher/benchmark-wasm ([`85fba9e`](https://github.com/nucypher/ferveo/commit/85fba9e27de154b8b9701873ab1d370a07283fe3))
-    - Merge pull request #18 from nucypher/bindings-python ([`227052a`](https://github.com/nucypher/ferveo/commit/227052aacd2b1a9353bfbf37d4522ff8f35d73a3))
-    - Add python bindings and benchmark ([`0091ae1`](https://github.com/nucypher/ferveo/commit/0091ae1f8521337967a6dbb90157875a17fff7f9))
-    - Add info about benchmark setup ([`c0c2c9e`](https://github.com/nucypher/ferveo/commit/c0c2c9e21f65eb2e6cf3a58b9952a3d9b0bb38f6))
-    - Add benchmarks in the browser ([`1688c36`](https://github.com/nucypher/ferveo/commit/1688c36d9d2353a10d566db9b75424edd59a276d))
-    - Update after rebase ([`d77f3b7`](https://github.com/nucypher/ferveo/commit/d77f3b79f6928198f84ce96ac306e0533c9977eb))
-    - Panicks at 'capacity overflow' during js-benches ([`9d358e1`](https://github.com/nucypher/ferveo/commit/9d358e16acf3e033e5e5f8bef15a3b05d00d15c6))
-    - Add bindings for threshold decryption flow ([`71ae0c3`](https://github.com/nucypher/ferveo/commit/71ae0c37131ab863caaff2ae13771304b1bbb5f7))
-    - Expose randomness in dkg setup ([`d8b51ce`](https://github.com/nucypher/ferveo/commit/d8b51cea0b614efb89e2b17c8c23730268a0f65e))
-    - Update after rebase ([`b8b2392`](https://github.com/nucypher/ferveo/commit/b8b2392de11068acde07895dc9b6897a742b9b2d))
-    - Self review ([`7e92e0d`](https://github.com/nucypher/ferveo/commit/7e92e0d2e2b1d0f82ba0483bff0db0d59c079283))
-    - Add bindings for threshold decryption flow ([`9fc2c4b`](https://github.com/nucypher/ferveo/commit/9fc2c4ba504c02bcc9b1d1b7fc990d2ebc37ba51))
-    - Setup benchmarks ([`1b96071`](https://github.com/nucypher/ferveo/commit/1b960712911e2e02ae2f41e9e773134d8ccdbd96))
-    - Add wasm setup ([`ca2e46e`](https://github.com/nucypher/ferveo/commit/ca2e46e67637ce34d531da03124523fb567b7002))
-    - Merge pull request #8 from piotr-roslaniec/aad#1 ([`41b5408`](https://github.com/nucypher/ferveo/commit/41b54081c2061126fa8d661207e13aa74406733f))
-    - Address pr comments ([`3786af1`](https://github.com/nucypher/ferveo/commit/3786af1e6a8c8ec26c82435f125f6d67c05884cd))
-    - Expose checked decryption instead ([`cea2827`](https://github.com/nucypher/ferveo/commit/cea28279e3373d0e816d2986d860705c1893a11e))
-    - Refactor u in ciphertext into commitment ([`5f5b5f3`](https://github.com/nucypher/ferveo/commit/5f5b5f35ea6d9460ebfa55e9aeeeb2ef46b76105))
-    - Address pr comments ([`d9e43a4`](https://github.com/nucypher/ferveo/commit/d9e43a4cebaeb11a3e8c44bbef5933c5f52627ae))
-    - Address pr comments ([`b44430b`](https://github.com/nucypher/ferveo/commit/b44430b32c251e202f7d29334468ac39e5185261))
-    - Address some clippy warnings ([`e8087d2`](https://github.com/nucypher/ferveo/commit/e8087d23ec6d1845585016259e51cc173160bb92))
-    - Refactor into a helper method ([`c56c025`](https://github.com/nucypher/ferveo/commit/c56c025c446c7824ebf19251ae0b3a354fd4f8b2))
-    - Add checked decryption ([`e526c4f`](https://github.com/nucypher/ferveo/commit/e526c4f9db8ddaa406e31dd48c1b3cf00e2323e3))
-    - Use aad in ciphertext validity check ([`0b252e5`](https://github.com/nucypher/ferveo/commit/0b252e50ac0017b0f4b6b4a94ad640d1911cc862))
-    - Replace chacha20 with chacha20poly1305 ([`ce89ead`](https://github.com/nucypher/ferveo/commit/ce89eadb7737e511c743ec01a2fe3bfc9826b32c))
-    - Merge pull request #65 from anoma/joe/20210922 ([`d6d603f`](https://github.com/nucypher/ferveo/commit/d6d603fbe82706525a194f42cbab9c3431dd7cc4))
-    - Latest ferveo ([`0f17c3b`](https://github.com/nucypher/ferveo/commit/0f17c3be5cfa55b5f878defcb74ab2b4e13c3190))
-    - Merge branch 'master' into joe/202108 ([`3e98e43`](https://github.com/nucypher/ferveo/commit/3e98e434758fadfdd16c73ba7ead15fc84005f99))
-    - Merge pull request #50 from anoma/george/tpke ([`3e9eb73`](https://github.com/nucypher/ferveo/commit/3e9eb732b47787f55f818de8dbf9145a70b19130))
-    - Moving tpke code in this repo ([`8d62e52`](https://github.com/nucypher/ferveo/commit/8d62e527ec5e792f62e885a25872fff45c1c3d00))
-</details>
 
