@@ -7,7 +7,7 @@ use ark_bls12_381::Bls12_381;
 pub use ark_bls12_381::Bls12_381 as EllipticCurve;
 use criterion::{black_box, criterion_group, BenchmarkId, Criterion};
 use digest::crypto_common::rand_core::SeedableRng;
-use ferveo_pre_release::*;
+use ferveo_nucypher_temp5::*;
 use rand::prelude::StdRng;
 
 const NUM_SHARES_CASES: [usize; 5] = [4, 8, 16, 32, 64];
@@ -22,7 +22,7 @@ fn gen_keypairs(num: u32) -> Vec<ferveo_common::Keypair<EllipticCurve>> {
 }
 
 pub fn gen_address(i: usize) -> EthereumAddress {
-    EthereumAddress::from_str(&format!("0x{i:040}")).unwrap()
+    EthereumAddress::from_str(&format!("0x{i:040}")).unwrap()  // TODO: Randomize - #207
 }
 
 fn gen_validators(

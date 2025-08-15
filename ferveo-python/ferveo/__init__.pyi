@@ -75,6 +75,12 @@ class Dkg:
     def aggregate_transcripts(
         self, messages: Sequence[ValidatorMessage]
     ) -> AggregatedTranscript: ...
+    def generate_handover_transcript(
+        self,
+        aggregate: AggregatedTranscript,
+        handover_slot_index: int,
+        incoming_validator_keypair: Keypair,
+    ) -> HandoverTranscript: ...
 
 @final
 class Ciphertext:
@@ -104,6 +110,12 @@ class DecryptionSharePrecomputed:
     def __bytes__(self) -> bytes: ...
 
 @final
+class HandoverTranscript:
+    @staticmethod
+    def from_bytes(data: bytes) -> HandoverTranscript: ...
+    def __bytes__(self) -> bytes: ...
+
+@final
 class AggregatedTranscript:
     public_key: DkgPublicKey
     def __init__(self, messages: Sequence[ValidatorMessage]): ...
@@ -125,6 +137,11 @@ class AggregatedTranscript:
         validator_keypair: Keypair,
         selected_validators: Sequence[Validator],
     ) -> DecryptionSharePrecomputed: ...
+    def finalize_handover(
+        self,
+        handover_transcript: HandoverTranscript,
+        validator_keypair: Keypair,
+    ) -> AggregatedTranscript: ...
     @staticmethod
     def from_bytes(data: bytes) -> AggregatedTranscript: ...
     def __bytes__(self) -> bytes: ...

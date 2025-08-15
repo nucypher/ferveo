@@ -121,8 +121,8 @@ mod test_dkg_full {
     use ark_std::test_rng;
     use ferveo_common::Keypair;
     use ferveo_tdec::{
-        self, BlindedKeyShare, DecryptionSharePrecomputed,
-        DecryptionShareSimple, SecretBox, ShareCommitment, SharedSecret,
+        self, DecryptionSharePrecomputed, DecryptionShareSimple, SecretBox,
+        ShareCommitment, SharedSecret,
     };
     use itertools::{izip, Itertools};
     use rand::{seq::SliceRandom, Rng};
@@ -285,7 +285,7 @@ mod test_dkg_full {
                     .ok()
                     .map(|domain_point| (v.share_index, domain_point))
             })
-            .collect::<HashMap<u32, DomainPoint<E>>>();
+            .collect::<HashMap<u32, ferveo_tdec::DomainPoint<E>>>();
 
         let mut decryption_shares: Vec<DecryptionSharePrecomputed<E>> =
             selected_keypairs
@@ -450,16 +450,8 @@ mod test_dkg_full {
 
         // Remove one participant from the contexts and all nested structure
         let removed_validator_index = rng.gen_range(0..validators_num);
-        let removed_validator_addr = dkg
-            .validators
-            .iter()
-            .find(|(_, v)| v.share_index == removed_validator_index)
-            .unwrap()
-            .1
-            .address
-            .clone();
         let mut remaining_validators = dkg.validators.clone();
-        remaining_validators.remove(&removed_validator_addr);
+        remaining_validators.remove(&removed_validator_index);
 
         // Remember to remove one domain point too
         let mut domain_points = dkg.domain_point_map();
@@ -772,38 +764,15 @@ mod test_dkg_full {
         let incoming_validator_keypair = Keypair::<E>::new(rng);
         // println!("Validator {:?}*: {:?}", handover_slot_index, incoming_validator_keypair.public_key());
 
-        // For simplicity, we're going to do the handover with the last participant
-        // let departing_participant = private_contexts.last().unwrap();
-
         // TODO: Rewrite this test so that the offboarding of validator
         // is done by recreating a DKG instance with a new set of
         // validators from the Coordinator, rather than modifying the
         // existing DKG instance.
 
-        // Remove one participant from the contexts and all nested structure
-        let removed_validator_addr = dkg
-            .validators
-            .iter()
-            .find(|(_, v)| v.share_index == handover_slot_index)
-            .unwrap()
-            .1
-            .address
-            .clone();
-        let mut remaining_validators = dkg.validators.clone();
-        remaining_validators.remove(&removed_validator_addr);
-
         // Get departing validator's public key and blinded share
         let departing_validator =
-            dkg.validators.get(&removed_validator_addr).unwrap();
+            dkg.validators.get(&handover_slot_index).unwrap();
         let departing_public_key = departing_validator.public_key;
-        let departing_blinded_share = BlindedKeyShare {
-            blinded_key_share: *local_aggregate
-                .aggregate
-                .shares
-                .get(handover_slot_index as usize)
-                .unwrap(),
-            validator_public_key: departing_public_key.encryption_key,
-        };
         assert_eq!(departing_validator.share_index, handover_slot_index);
         assert_ne!(
             departing_public_key,
@@ -811,13 +780,14 @@ mod test_dkg_full {
         );
 
         // Incoming node creates a handover transcript
-        let handover_transcript = HandoverTranscript::<E>::new(
-            handover_slot_index,
-            &departing_blinded_share,
-            departing_public_key,
-            &incoming_validator_keypair,
-            rng,
-        );
+        let handover_transcript = dkg
+            .generate_handover_transcript(
+                &local_aggregate,
+                handover_slot_index,
+                &incoming_validator_keypair,
+                rng,
+            )
+            .unwrap();
 
         // Make sure handover transcript is valid. This is publicly verifiable.
         // We're doing this for testing purposes, but in practice, this is done
@@ -848,13 +818,16 @@ mod test_dkg_full {
 
         let aggregate_after_handover = local_aggregate
             .aggregate
-            .handover(&handover_transcript, departing_keypair)
+            .finalize_handover(&handover_transcript, departing_keypair)
             .unwrap();
 
         // If we use a different keypair, we should get an error
         let error = local_aggregate
             .aggregate
-            .handover(&handover_transcript, &incoming_validator_keypair)
+            .finalize_handover(
+                &handover_transcript,
+                &incoming_validator_keypair,
+            )
             .unwrap_err();
         assert_eq!(
             error.to_string(),

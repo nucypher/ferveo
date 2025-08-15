@@ -612,7 +612,7 @@ pub mod test_common {
     }
 
     pub fn gen_address(i: usize) -> EthereumAddress {
-        EthereumAddress::from_string(&format!("0x{i:040}")).unwrap()
+        EthereumAddress::from_string(&format!("0x{i:040}")).unwrap() // TODO: Randomize - #207
     }
 
     pub fn gen_validator(i: usize, keypair: &Keypair) -> Validator {

@@ -4,7 +4,10 @@
   "description": "A usage example for ferveo-wasm",
   "main": "index.js",
   "private": true,
-  "author": "Piotr Rosłaniec <p.roslaniec@gmail.com>",
+  "collaborators": [
+    "David Nuñez <david@nucypher.com>",
+    "Piotr Rosłaniec <p.roslaniec@gmail.com>"
+  ],
   "scripts": {
     "build": "webpack --mode=production --node-env=production",
     "start": "webpack-dev-server",

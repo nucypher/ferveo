@@ -1,6 +1,6 @@
 [package]
-name = "ferveo-pre-release"
-version = "0.3.0"
+name = "ferveo-nucypher-temp5"
+version = "0.4.0-alpha"
 edition = "2021"
 license = "GPL-3.0"
 repository = "https://github.com/nucypher/ferveo"
@@ -8,7 +8,7 @@ readme = "README.md"
 description = "An implementation of a DKG protocol for threshold decryption."
 keywords = ["DKG"]
 categories = ["cryptography"]
-authors = ["Heliax AG <hello@heliax.dev>", "Piotr Roslaniec <p.roslaniec@gmail.com>"]
+authors = ["David Nuñez <david@nucypher.com>", "Piotr Roslaniec <p.roslaniec@gmail.com>", "Heliax AG <hello@heliax.dev>"]
 
 [lib]
 bench = false
@@ -21,8 +21,8 @@ ark-poly = { workspace = true }
 ark-serialize = { workspace = true }
 ark-std = { workspace = true }
 bincode = { workspace = true }
-ferveo-common = { package = "ferveo-common-pre-release", path = "../ferveo-common", version = "^0.1.1" }
-ferveo-tdec = { workspace = true, features = ["api", "test-common"] }
+ferveo-common = { package = "ferveo-common-nucypher-temp5", path = "../ferveo-common", version = "^0.4.0-alpha" }
+ferveo-tdec = { package = "ferveo-tdec-temp5", path = "../ferveo-tdec", features = ["api", "test-common"], version = "^0.4.0-alpha" }
 hex = { workspace = true }
 itertools = { workspace = true }
 measure_time = { workspace = true }
@@ -31,7 +31,7 @@ rand_core = { workspace = true }
 rand_old = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_with = { workspace = true }
-subproductdomain = { package = "subproductdomain-pre-release", path = "../subproductdomain", version = "^0.1.0" }
+subproductdomain = { package = "subproductdomain-nucypher-temp5", path = "../subproductdomain", version = "^0.4.0-alpha" }
 thiserror = { workspace = true }
 zeroize = { workspace = true, features = ["derive"] }
 generic-array = { workspace = true }
@@ -51,6 +51,7 @@ test-case = { workspace = true }
 console_error_panic_hook = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 wasm-bindgen = { workspace = true, features = ["serde-serialize"] }
+cargo-smart-release = { workspace = true }
 
 [features]
 bindings-python = ["pyo3"]
