@@ -1,6 +1,6 @@
 [package]
 name = "ferveo-wasm"
-version = "0.4.0-alpha"
+version = "0.4.0"
 authors = ["David Nuñez <david@nucypher.com>", "Piotr Roslaniec <p.roslaniec@gmail.com>"]
 edition = "2021"
 license = "GPL-3.0-only"
@@ -14,7 +14,7 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-ferveo = { package = "ferveo-nucypher-temp5", path = "../ferveo", features = ["bindings-wasm"] }
+ferveo = { package = "ferveo-nucypher", path = "../ferveo", features = ["bindings-wasm"] }
 
 [dev-dependencies]
 wasm-bindgen-test = { workspace = true }

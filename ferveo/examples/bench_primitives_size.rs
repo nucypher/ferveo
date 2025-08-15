@@ -7,7 +7,7 @@ use std::{
 };
 
 use ark_bls12_381::Bls12_381 as EllipticCurve;
-use ferveo_nucypher_temp5::*;
+use ferveo_nucypher::*;
 use itertools::iproduct;
 use rand::prelude::StdRng;
 use rand_core::SeedableRng;
