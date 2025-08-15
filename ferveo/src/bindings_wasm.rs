@@ -206,7 +206,7 @@ pub struct DecryptionSharePrecomputed(
 
 generate_common_methods!(DecryptionSharePrecomputed);
 
-type InnerPublicKey = api::PublicKey;
+type InnerPublicKey = api::ValidatorPublicKey;
 
 #[wasm_bindgen]
 #[derive(
@@ -324,14 +324,6 @@ generate_equals!(DkgPublicKey);
 generate_boxed_bytes_serialization!(DkgPublicKey, InnerDkgPublicKey);
 
 #[wasm_bindgen]
-impl DkgPublicKey {
-    #[wasm_bindgen]
-    pub fn random() -> DkgPublicKey {
-        Self(api::DkgPublicKey::random())
-    }
-}
-
-#[wasm_bindgen]
 pub struct Dkg(api::Dkg);
 
 #[wasm_bindgen]
@@ -358,11 +350,6 @@ impl Dkg {
         )
         .map_err(map_js_err)?;
         Ok(Self(dkg))
-    }
-
-    #[wasm_bindgen(js_name = "publicKey")]
-    pub fn public_key(&self) -> DkgPublicKey {
-        DkgPublicKey(self.0.public_key())
     }
 
     #[wasm_bindgen(js_name = "generateTranscript")]
@@ -460,7 +447,6 @@ impl Validator {
     }
 }
 
-// TODO: Consider removing and replacing with tuple
 #[derive(TryFromJsValue)]
 #[wasm_bindgen]
 #[derive(Clone, Debug, derive_more::AsRef, derive_more::From)]
@@ -496,6 +482,14 @@ impl ValidatorMessage {
 #[wasm_bindgen]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AggregatedTranscript(api::AggregatedTranscript);
+
+#[wasm_bindgen]
+impl AggregatedTranscript {
+    #[wasm_bindgen(getter, js_name = "publicKey")]
+    pub fn public_key(&self) -> DkgPublicKey {
+        DkgPublicKey(self.0.public_key())
+    }
+}
 
 generate_common_methods!(AggregatedTranscript);
 
@@ -534,8 +528,15 @@ impl AggregatedTranscript {
         ciphertext_header: &CiphertextHeader,
         aad: &[u8],
         validator_keypair: &Keypair,
+        selected_validators_js: &ValidatorArray,
     ) -> JsResult<DecryptionSharePrecomputed> {
         set_panic_hook();
+        let selected_validators =
+            try_from_js_array::<Validator>(selected_validators_js)?;
+        let selected_validators = selected_validators
+            .into_iter()
+            .map(|v| v.to_inner())
+            .collect::<JsResult<Vec<_>>>()?;
         let decryption_share = self
             .0
             .create_decryption_share_precomputed(
@@ -543,6 +544,7 @@ impl AggregatedTranscript {
                 &ciphertext_header.0,
                 aad,
                 &validator_keypair.0,
+                &selected_validators,
             )
             .map_err(map_js_err)?;
         Ok(DecryptionSharePrecomputed(decryption_share))
@@ -572,7 +574,7 @@ impl AggregatedTranscript {
 
 #[wasm_bindgen]
 #[derive(Serialize, Deserialize)]
-pub struct Keypair(api::Keypair);
+pub struct Keypair(api::ValidatorKeypair);
 
 generate_common_methods!(Keypair);
 
@@ -580,7 +582,7 @@ generate_common_methods!(Keypair);
 impl Keypair {
     #[wasm_bindgen(getter, js_name = "secureRandomnessSize")]
     pub fn secure_randomness_size() -> usize {
-        api::Keypair::secure_randomness_size()
+        api::ValidatorKeypair::secure_randomness_size()
     }
 
     #[wasm_bindgen(getter, js_name = "publicKey")]
@@ -590,14 +592,14 @@ impl Keypair {
 
     #[wasm_bindgen]
     pub fn random() -> Self {
-        Self(api::Keypair::new(&mut thread_rng()))
+        Self(api::ValidatorKeypair::new(&mut thread_rng()))
     }
 
     #[wasm_bindgen(js_name = "fromSecureRandomness")]
     pub fn from_secure_randomness(bytes: &[u8]) -> JsResult<Keypair> {
         set_panic_hook();
-        let keypair =
-            api::Keypair::from_secure_randomness(bytes).map_err(map_js_err)?;
+        let keypair = api::ValidatorKeypair::from_secure_randomness(bytes)
+            .map_err(map_js_err)?;
         Ok(Self(keypair))
     }
 }
@@ -610,7 +612,7 @@ pub mod test_common {
     }
 
     pub fn gen_address(i: usize) -> EthereumAddress {
-        EthereumAddress::from_string(&format!("0x{i:040}")).unwrap()
+        EthereumAddress::from_string(&format!("0x{i:040}")).unwrap() // TODO: Randomize - #207
     }
 
     pub fn gen_validator(i: usize, keypair: &Keypair) -> Validator {

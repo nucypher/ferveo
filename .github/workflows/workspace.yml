@@ -53,7 +53,7 @@ jobs:
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
-            rust: 1.67 # MSRV, `cargo msrv`
+            rust: 1.87 # MSRV, `cargo msrv`
           - target: x86_64-unknown-linux-gnu
             rust: stable
     steps:
@@ -84,7 +84,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.67 # MSRV
+          - 1.87 # MSRV
           - stable
         target:
           - wasm32-unknown-unknown
@@ -115,13 +115,13 @@ jobs:
       - run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - run: wasm-pack build --target nodejs
         working-directory: ferveo-wasm
-      - uses: borales/actions-yarn@v3.0.0
+      - uses: borales/actions-yarn@v5.0.0
         with:
           cmd: --cwd ferveo-wasm/examples/node install
-      - uses: borales/actions-yarn@v3.0.0
+      - uses: borales/actions-yarn@v5.0.0
         with:
           cmd: --cwd ferveo-wasm/examples/node build
-      - uses: borales/actions-yarn@v3.0.0
+      - uses: borales/actions-yarn@v5.0.0
         with:
           cmd: --cwd ferveo-wasm/examples/node test
 
@@ -297,4 +297,4 @@ jobs:
           auto-push: true  # Use the branch at `gh-pages-branch` to store historical info of benchmark data.
           github-token: ${{ secrets.GITHUB_TOKEN }}
           comment-on-alert: true
-          alert-comment-cc-users: '@piotr-roslaniec'
+          alert-comment-cc-users: '@cygnusv'

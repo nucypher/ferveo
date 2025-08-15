@@ -67,6 +67,27 @@ ciphertext = encrypt(msg, aad, client_aggregate.public_key)
 # The client can serialize/deserialize ciphertext for transport
 ciphertext_ser = bytes(ciphertext)
 
+# Let's simulate a handover
+handover_slot_index = 0
+incoming_validator_keypair = Keypair.random()
+incoming_validator = Validator(
+    gen_eth_addr(1234567), incoming_validator_keypair.public_key(), handover_slot_index
+)
+departing_keypair = validator_keypairs[handover_slot_index]
+
+handover_transcript = dkg.generate_handover_transcript(
+    server_aggregate,
+    handover_slot_index,
+    incoming_validator_keypair,
+)
+
+new_aggregate = server_aggregate.finalize_handover(
+    handover_transcript, departing_keypair
+)
+
+validator_keypairs[handover_slot_index] = incoming_validator_keypair
+validators[handover_slot_index] = incoming_validator
+
 # Having aggregated the transcripts, the validators can now create decryption shares
 decryption_shares = []
 for validator, validator_keypair in zip(validators, validator_keypairs):
@@ -77,15 +98,8 @@ for validator, validator_keypair in zip(validators, validator_keypairs):
         validators=validators,
         me=validator,
     )
-
-    # We can also obtain the aggregated transcript from the side-channel (deserialize)
-    aggregate = AggregatedTranscript(messages)
-    assert aggregate.verify(validators_num, messages)
-
-    # The ciphertext is obtained from the client
-
     # Create a decryption share for the ciphertext
-    decryption_share = aggregate.create_decryption_share_simple(
+    decryption_share = new_aggregate.create_decryption_share_simple(
         dkg, ciphertext.header, aad, validator_keypair
     )
     decryption_shares.append(decryption_share)

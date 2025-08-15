@@ -1,6 +1,6 @@
 [package]
-name = "ferveo-pre-release"
-version = "0.3.0"
+name = "ferveo-nucypher"
+version = "0.4.0"
 edition = "2021"
 license = "GPL-3.0"
 repository = "https://github.com/nucypher/ferveo"
@@ -8,55 +8,50 @@ readme = "README.md"
 description = "An implementation of a DKG protocol for threshold decryption."
 keywords = ["DKG"]
 categories = ["cryptography"]
-authors = ["Heliax AG <hello@heliax.dev>", "Piotr Roslaniec <p.roslaniec@gmail.com>"]
+authors = ["David Nuñez <david@nucypher.com>", "Piotr Roslaniec <p.roslaniec@gmail.com>", "Heliax AG <hello@heliax.dev>"]
 
 [lib]
 bench = false
 
 [dependencies]
-ark-bls12-381 = "0.4"
-ark-ec = "0.4"
-ark-ff = "0.4"
-ark-poly = "0.4"
-ark-serialize = "0.4"
-ark-std = "0.4"
-bincode = "1.3"
-ferveo-common = { package = "ferveo-common-pre-release", path = "../ferveo-common", version = "^0.1.1" }
-ferveo-tdec = { package = "ferveo-tdec", path = "../ferveo-tdec", features = ["api", "test-common"], version = "^0.2.0" }
-hex = "0.4.3"
-itertools = "0.10.5"
-measure_time = "0.8"
-rand = "0.8"
-rand_core = "0.6.4"
-rand_old = { package = "rand", version = "0.7" } # used by benchmarks/pairing.rs
-serde = { version = "1.0", features = ["derive"] }
-serde_with = "2.2.0"
-subproductdomain = { package = "subproductdomain-pre-release", path = "../subproductdomain", version = "^0.1.0" }
-thiserror = "1.0"
-zeroize = { version = "1.6.0", default-features = false, features = ["derive"] }
-generic-array = "0.14.7"
-derive_more = { version = "0.99", default-features = false, features = ["from", "as_ref", "into"] }
-
-# Python bindings
-pyo3 = { version = "0.18.2", features = ["macros", "multiple-pymethods"], optional = true }
-
-# WASM bindings
-console_error_panic_hook = { version = "0.1.7", optional = true }
-getrandom = { version = "0.2", features = ["js"], optional = true }
-js-sys = { version = "0.3.63", optional = true }
-wasm-bindgen = { version = "0.2.86", optional = true }
-wasm-bindgen-derive = { version = "0.2.1", optional = true }
+ark-bls12-381 = { workspace = true }
+ark-ec = { workspace = true }
+ark-ff = { workspace = true }
+ark-poly = { workspace = true }
+ark-serialize = { workspace = true }
+ark-std = { workspace = true }
+bincode = { workspace = true }
+ferveo-common = { package = "ferveo-nucypher-common", path = "../ferveo-common", version = "^0.4.0" }
+ferveo-tdec = { package = "ferveo-nucypher-tdec", path = "../ferveo-tdec", features = ["api", "test-common"], version = "^0.4.0" }
+hex = { workspace = true }
+itertools = { workspace = true }
+measure_time = { workspace = true }
+rand = { workspace = true }
+rand_core = { workspace = true }
+rand_old = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_with = { workspace = true }
+subproductdomain = { package = "subproductdomain-nucypher", path = "../subproductdomain", version = "^0.4.0" }
+thiserror = { workspace = true }
+zeroize = { workspace = true, features = ["derive"] }
+generic-array = { workspace = true }
+derive_more = { workspace = true, features = ["from", "as_ref", "into"] }
+pyo3 = { workspace = true, features = ["macros", "multiple-pymethods"], optional = true }
+console_error_panic_hook = { workspace = true, optional = true }
+getrandom = { workspace = true, features = ["js"], optional = true }
+js-sys = { workspace = true, optional = true }
+wasm-bindgen = { workspace = true, optional = true }
+wasm-bindgen-derive = { workspace = true, optional = true }
 
 [dev-dependencies]
-criterion = "0.3" # supports pprof, # TODO: Figure out if/how we can update to 0.4
-digest = { version = "0.10.0", features = ["alloc"] }
-pprof = { version = "0.6", features = ["flamegraph", "criterion"] }
-test-case = "3.3.1"
-
-# WASM bindings
-console_error_panic_hook = "0.1.7"
-serde = { version = "1.0", features = ["derive"] }
-wasm-bindgen = { version = "0.2.86", features = ["serde-serialize"] }
+criterion = { workspace = true }
+digest = { workspace = true, features = ["alloc"] }
+pprof = { workspace = true, features = ["flamegraph", "criterion"] }
+test-case = { workspace = true }
+console_error_panic_hook = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+wasm-bindgen = { workspace = true, features = ["serde-serialize"] }
+cargo-smart-release = { workspace = true }
 
 [features]
 bindings-python = ["pyo3"]

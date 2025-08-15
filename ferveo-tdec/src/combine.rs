@@ -1,14 +1,11 @@
 #![allow(non_snake_case)]
 
-use std::ops::Mul;
-
-use ark_ec::{pairing::Pairing, CurveGroup};
+use ark_ec::pairing::Pairing;
 use ark_ff::{Field, One, PrimeField, Zero};
 use ferveo_common::serialization;
 use itertools::izip;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use subproductdomain::SubproductDomain;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 #[serde_as]
@@ -19,45 +16,8 @@ pub struct SharedSecret<E: Pairing>(
     #[serde_as(as = "serialization::SerdeAs")] pub(crate) E::TargetField,
 );
 
-use crate::{
-    verify_decryption_shares_fast, Ciphertext, DecryptionShareFast,
-    DecryptionSharePrecomputed, DecryptionShareSimple, Error,
-    PublicDecryptionContextFast, Result,
-};
+use crate::{DecryptionSharePrecomputed, DecryptionShareSimple};
 
-pub fn prepare_combine_fast<E: Pairing>(
-    public_decryption_contexts: &[PublicDecryptionContextFast<E>],
-    shares: &[DecryptionShareFast<E>],
-) -> Vec<E::G2Prepared> {
-    let mut domain = vec![]; // omega_i, vector of domain points
-    let mut n_0 = E::ScalarField::one();
-    for d_i in shares.iter() {
-        domain.push(public_decryption_contexts[d_i.decrypter_index].domain);
-        // n_0_i = 1 * t^1 * t^2 ...
-        n_0 *= public_decryption_contexts[d_i.decrypter_index].lagrange_n_0;
-    }
-    let s = SubproductDomain::<E::ScalarField>::new(domain);
-    let mut lagrange = s.inverse_lagrange_coefficients(); // 1/L_i
-
-    // Given a vector of field elements {v_i}, compute the vector {coeff * v_i^(-1)}
-    ark_ff::batch_inversion_and_mul(&mut lagrange, &n_0); // n_0 * L_i
-
-    // L_i * [b]Z_i
-    izip!(shares.iter(), lagrange.iter())
-        .map(|(d_i, lambda)| {
-            let decrypter = &public_decryption_contexts[d_i.decrypter_index];
-            let blinded_key_share =
-                decrypter.blinded_key_share.blinded_key_share;
-            E::G2Prepared::from(
-                // [b]Z_i * L_i
-                blinded_key_share.mul(*lambda).into_affine(),
-            )
-        })
-        .collect::<Vec<_>>()
-}
-
-// TODO: Combine `tpke::prepare_combine_simple` and `tpke::share_combine_simple` into
-//  one function and expose it in the tpke::api?
 pub fn prepare_combine_simple<E: Pairing>(
     domain: &[E::ScalarField],
 ) -> Vec<E::ScalarField> {
@@ -82,51 +42,6 @@ pub fn lagrange_basis_at<E: Pairing>(
         lagrange_coeffs.push(prod);
     }
     lagrange_coeffs
-}
-
-// TODO: Hide this from external users. Currently blocked by usage in benchmarks.
-pub fn share_combine_fast_unchecked<E: Pairing>(
-    shares: &[DecryptionShareFast<E>],
-    prepared_key_shares: &[E::G2Prepared],
-) -> SharedSecret<E> {
-    let mut pairing_a = vec![];
-    let mut pairing_b = vec![];
-
-    for (d_i, prepared_key_share) in izip!(shares, prepared_key_shares.iter()) {
-        pairing_a.push(
-            // D_i
-            E::G1Prepared::from(d_i.decryption_share),
-        );
-        pairing_b.push(
-            // Z_{i,omega_i}) = [dk_{i}^{-1}]*\hat{Y}_{i_omega_j}]
-            // Reference: https://nikkolasg.github.io/ferveo/pvss.html#validator-decryption-of-private-key-shares
-            // Prepared key share is a sum of L_i * [b]Z_i
-            prepared_key_share.clone(),
-        );
-    }
-    // e(D_i, [b*omega_i^-1] Z_{i,omega_i})
-    let shared_secret = E::multi_pairing(pairing_a, pairing_b).0;
-    SharedSecret(shared_secret)
-}
-
-pub fn share_combine_fast<E: Pairing>(
-    pub_contexts: &[PublicDecryptionContextFast<E>],
-    ciphertext: &Ciphertext<E>,
-    decryption_shares: &[DecryptionShareFast<E>],
-    prepared_key_shares: &[E::G2Prepared],
-) -> Result<SharedSecret<E>> {
-    let is_valid_shares = verify_decryption_shares_fast(
-        pub_contexts,
-        ciphertext,
-        decryption_shares,
-    );
-    if !is_valid_shares {
-        return Err(Error::DecryptionShareVerificationFailed);
-    }
-    Ok(share_combine_fast_unchecked(
-        decryption_shares,
-        prepared_key_shares,
-    ))
 }
 
 pub fn share_combine_simple<E: Pairing>(
@@ -172,6 +87,7 @@ mod tests {
             point *= fft_domain.group_gen();
         }
 
+        // TODO: #197
         let mut lagrange_n_0 = domain.iter().product::<ScalarField>();
         if domain.len() % 2 == 1 {
             lagrange_n_0 = -lagrange_n_0;
