@@ -2,7 +2,7 @@
 
 ![ci-badge](https://github.com/nucypher/ferveo/actions/workflows/workspace.yml/badge.svg)
 
-_This project is under active development. For questions, please join us at [Threshold Network Discord](https://discord.com/invite/threshold&ved=2ahUKEwivucaW2Y3-AhXiwosKHQCEAKUQFnoECA0QAQ&usg=AOvVaw08x-9JYJFDcd6PEOx0xAeg)_
+_This project is under active development. For questions, please join us at [TACo Discord](https://discord.gg/buildwithtaco)_
 
 ---
 
@@ -32,8 +32,13 @@ A preprint paper describing the construction of Ferveo and the novel cryptosyste
 A Rust toolchain with version `>= 1.87.0` is required. In the future, Ferveo will target the `stable` toolchain.
 Installation via [rustup](https://rustup.rs/) is recommended.
 
-Run `cargo build --release` to build.
+Run `cargo build --no-default-features --release` to build.
 Please note that performance may be significantly poorer when compiling in `Debug` mode.
+
+## Formatting
+
+Be sure to run `cargo fmt --all` locally before committing your changes. This will ensure that the code is formatted
+according to the project's style guidelines.
 
 ## Testing
 
@@ -42,6 +47,6 @@ in `Debug` mode.
 
 ## Benchmarks
 
-Run `cargo bench --benches` to run benchmarks. Benchmark report is available in the `target/criterion/report` folder.
+Run `cargo bench --benches --no-default-features` to run benchmarks. Benchmark report is available in the `target/criterion/report` folder.
 
-
+**NOTE: Benchmarks are optional (the benchmark CI job is disabled) and take quite some time (~10 mins)**
