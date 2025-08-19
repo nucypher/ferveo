@@ -2,7 +2,7 @@
 
 ![ci-badge](https://github.com/nucypher/ferveo/actions/workflows/workspace.yml/badge.svg)
 
-_This project is under active development. For questions, please join us at [Threshold Network Discord](https://discord.com/invite/threshold&ved=2ahUKEwivucaW2Y3-AhXiwosKHQCEAKUQFnoECA0QAQ&usg=AOvVaw08x-9JYJFDcd6PEOx0xAeg)_
+_This project is under active development. For questions, please join us at [TACo Discord](https://discord.gg/buildwithtaco)_
 
 ---
 
