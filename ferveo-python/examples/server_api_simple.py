@@ -24,9 +24,6 @@ validators = [
     for i, keypair in enumerate(validator_keypairs)
 ]
 
-# Validators must be sorted by their public key
-validators.sort(key=lambda v: v.address)
-
 # Each validator holds their own DKG instance and generates a transcript every
 # validator, including themselves
 messages = []
