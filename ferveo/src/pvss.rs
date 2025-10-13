@@ -198,9 +198,9 @@ pub fn get_share_commitments_from_poly_commitments<E: Pairing>(
     poly_comms: &[E::G1Affine],
     domain: &ark_poly::GeneralEvaluationDomain<E::ScalarField>,
 ) -> Vec<E::G1> {
-    let mut commitment = batch_to_projective_g1::<E>(poly_comms);
-    domain.fft_in_place(&mut commitment);
-    commitment
+    let mut commitments = batch_to_projective_g1::<E>(poly_comms);
+    domain.fft_in_place(&mut commitments);
+    commitments
 }
 
 pub fn verify_validator_share<E: Pairing>(
@@ -209,8 +209,6 @@ pub fn verify_validator_share<E: Pairing>(
     share_index: usize,
     validator_public_key: PublicKey<E>,
 ) -> Result<bool> {
-    // TODO: Check #3 is missing
-    // See #3 in 4.2.3 section of https://eprint.iacr.org/2022/898.pdf
     let y_i = pvss_encrypted_shares
         .get(share_index)
         .ok_or(Error::InvalidShareIndex(share_index as u32))?;
@@ -289,13 +287,12 @@ pub fn do_verify_aggregation<E: Pairing>(
 /// Extra methods available to aggregated PVSS transcripts
 impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
     /// Verify that this PVSS instance is a valid aggregation of
-    /// the PVSS instances, produced by [`aggregate`],
+    /// the PVSS instances, produced by [`transcripts`],
     /// and received by the DKG context `dkg`.
-    /// Returns the total nr of shares in the aggregated PVSS
     pub fn verify_aggregation(
         &self,
         dkg: &PubliclyVerifiableDkg<E>,
-        pvss: &[PubliclyVerifiableSS<E>],
+        transcripts: &[PubliclyVerifiableSS<E>],
     ) -> Result<bool> {
         let validators = dkg.validators.values().cloned().collect::<Vec<_>>();
         do_verify_aggregation(
@@ -303,7 +300,7 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
             &self.shares,
             &validators,
             &dkg.domain,
-            pvss,
+            transcripts,
         )
     }
 

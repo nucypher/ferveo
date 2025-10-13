@@ -99,13 +99,13 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         )
         .expect("unable to construct domain");
 
-        let validators: ValidatorsByIndex<E> = validators
+        let validators_by_index: ValidatorsByIndex<E> = validators
             .iter()
             .map(|validator| (validator.share_index, validator.clone()))
             .collect();
 
         // Make sure that `me` is a known validator
-        if let Some(my_validator) = validators.get(&me.share_index) {
+        if let Some(my_validator) = validators_by_index.get(&me.share_index) {
             if my_validator.public_key != me.public_key {
                 return Err(Error::ValidatorPublicKeyMismatch);
             }
@@ -117,7 +117,7 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
             dkg_params: *dkg_params,
             domain,
             me: me.clone(),
-            validators,
+            validators: validators_by_index,
         })
     }
 
