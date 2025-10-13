@@ -121,6 +121,10 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         })
     }
 
+    pub fn all_validators(&self) -> Vec<Validator<E>> {
+        self.validators.values().cloned().collect::<Vec<_>>()
+    }
+
     /// Get the validator with for the given public key
     pub fn get_validator(
         &self,
