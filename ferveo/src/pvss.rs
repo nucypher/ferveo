@@ -469,7 +469,7 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
                 .into_affine(),
         );
         let new_blind_share = handover_transcript
-            .finalize(validator_keypair, share_commitment)
+            .finalize(validator_keypair, &share_commitment)
             .unwrap();
 
         let mut original_shares = self.shares.clone();

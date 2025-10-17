@@ -368,7 +368,7 @@ impl<E: Pairing> HandoverTranscript<E> {
     // See similarity with transcript check #4 (do_verify_full in pvss)
     pub fn validate(
         &self,
-        share_commitment: ShareCommitment<E>,
+        share_commitment: &ShareCommitment<E>,
     ) -> Result<bool> {
         // e(comm_G1, double_blind_share) == e(A_i, comm_share)
         //   or equivalently:
@@ -400,7 +400,7 @@ impl<E: Pairing> HandoverTranscript<E> {
     pub fn finalize(
         &self,
         departing_validator_keypair: &Keypair<E>,
-        share_commitment: ShareCommitment<E>,
+        share_commitment: &ShareCommitment<E>,
     ) -> Result<BlindedKeyShare<E>> {
         let is_valid = &self.validate(share_commitment).unwrap();
         if !is_valid {
@@ -916,7 +916,7 @@ mod tests_refresh {
 
         // Make sure handover transcript is valid. This is publicly verifiable.
         assert!(handover_transcript
-            .validate(departing_public_context.share_commitment)
+            .validate(&departing_public_context.share_commitment)
             .unwrap());
 
         // This portion shows that handover can be finalized by the departing participant,
@@ -930,7 +930,7 @@ mod tests_refresh {
         let new_blinded_share = handover_transcript
             .finalize(
                 &departing_validator_keypair,
-                departing_public_context.share_commitment,
+                &departing_public_context.share_commitment,
             )
             .unwrap();
 
