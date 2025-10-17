@@ -382,6 +382,19 @@ impl AggregatedTranscript {
         Ok(AggregatedTranscript(eeww))
     }
 
+    pub fn validate_handover_transcript(
+        &self,
+        handover_transcript: &HandoverTranscript,
+    ) -> Result<bool> {
+        let share_commitments = self.0.aggregate.get_share_commitments();
+        let share_commitment = share_commitments
+            .get(handover_transcript.0.share_index as usize)
+            .ok_or(
+                Error::InvalidTranscriptAggregate, // FIXME: better error
+            )?;
+        handover_transcript.0.validate(share_commitment)
+    }
+
     pub fn finalize_handover(
         &self,
         handover_transcript: &HandoverTranscript,

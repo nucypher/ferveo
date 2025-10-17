@@ -688,6 +688,17 @@ impl AggregatedTranscript {
         Ok(DecryptionShareSimple(decryption_share))
     }
 
+    pub fn validate_handover_transcript(
+        &self,
+        handover_transcript: &HandoverTranscript,
+    ) -> PyResult<bool> {
+        let is_valid = self
+            .0
+            .validate_handover_transcript(&handover_transcript.0)
+            .map_err(FerveoPythonError::FerveoError)?;
+        Ok(is_valid)
+    }
+
     pub fn finalize_handover(
         &self,
         handover_transcript: &HandoverTranscript,
