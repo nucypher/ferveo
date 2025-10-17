@@ -492,6 +492,21 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
         };
         Ok(aggregrate_post_handover)
     }
+
+    pub fn get_share_commitments(&self) -> Vec<ShareCommitment<E>> {
+        let size = self.shares.len();
+        let domain =
+            ark_poly::GeneralEvaluationDomain::<E::ScalarField>::new(size)
+                .expect("Invalid domain size");
+        let commitment_points = get_share_commitments_from_poly_commitments::<E>(
+            self.coeffs.as_slice(),
+            &domain,
+        );
+        commitment_points
+            .iter()
+            .map(|c| ShareCommitment::<E>(c.into_affine()))
+            .collect()
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
