@@ -413,6 +413,12 @@ impl AggregatedTranscript {
     }
 }
 
+impl HandoverTranscript {
+    pub fn share_index(&self) -> u32 {
+        self.0.share_index
+    }
+}
+
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DecryptionShareSimple {

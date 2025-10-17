@@ -717,6 +717,14 @@ impl AggregatedTranscript {
     }
 }
 
+#[pymethods]
+impl HandoverTranscript {
+    #[getter]
+    pub fn share_index(&self) -> u32 {
+        self.0.share_index()
+    }
+}
+
 // Since adding functions in pyo3 requires a two-step process
 // (`#[pyfunction]` + `wrap_pyfunction!`), and `wrap_pyfunction`
 // needs `#[pyfunction]` in the same module, we need these trampolines
