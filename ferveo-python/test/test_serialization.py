@@ -1,13 +1,14 @@
 import pytest
 
 from ferveo import (
-    Keypair,
-    Validator,
+    AggregatedTranscript,
     Dkg,
     DkgPublicKey,
     FerveoPublicKey,
     FerveoVariant,
-    ValidatorMessage
+    Keypair,
+    Validator,
+    ValidatorMessage,
 )
 
 
@@ -97,3 +98,32 @@ def test_ferveo_variant_serialization():
     assert FerveoVariant.Precomputed == FerveoVariant.Precomputed
     assert FerveoVariant.Simple == FerveoVariant.Simple
     assert FerveoVariant.Precomputed != FerveoVariant.Simple
+
+
+def test_aggregate_transcript_serialization(aggregate):
+    serialized = bytes(aggregate)
+    deserialized = AggregatedTranscript.from_bytes(serialized)
+    assert bytes(aggregate.public_key) == bytes(deserialized.public_key)
+
+
+@pytest.mark.parametrize("handover_slot_index", range(shares_num))
+def test_handover_serialization(dkg, aggregate, handover_slot_index):
+    incoming_validator_keypair = Keypair.random()
+    departing_keypair = validator_keypairs[handover_slot_index]
+
+    handover_transcript = dkg.generate_handover_transcript(
+        aggregate,
+        handover_slot_index,
+        incoming_validator_keypair,
+    )
+
+    assert handover_transcript.share_index == handover_slot_index
+
+    assert aggregate.validate_handover_transcript(handover_transcript)
+
+    new_aggregate = aggregate.finalize_handover(
+        handover_transcript, departing_keypair
+    )
+
+    assert bytes(new_aggregate.public_key) == bytes(aggregate.public_key)
+    assert bytes(new_aggregate) != bytes(aggregate)
