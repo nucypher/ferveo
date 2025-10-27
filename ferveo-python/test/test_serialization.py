@@ -1,3 +1,5 @@
+import pytest
+
 from ferveo import (
     Keypair,
     Validator,
@@ -24,19 +26,24 @@ validators = [
 validators.sort(key=lambda v: v.address)
 
 
-def make_dkg_public_key():
+@pytest.fixture(scope="module")
+def dkg():
     me = validators[0]
-    dkg = Dkg(
+    return Dkg(
         tau=tau,
         shares_num=shares_num,
         security_threshold=security_threshold,
         validators=validators,
         me=me,
     )
+
+
+@pytest.fixture(scope="module")
+def aggregate(dkg):
     transcripts = [ValidatorMessage(v, dkg.generate_transcript()) for v in validators]
     aggregate = dkg.aggregate_transcripts(transcripts)
     assert aggregate.verify(shares_num, transcripts)
-    return aggregate.public_key
+    return aggregate
 
 
 def make_shared_secret():
@@ -67,8 +74,8 @@ def test_keypair_serialization():
     assert serialized == bytes(deserialized)
 
 
-def test_dkg_public_key_serialization():
-    dkg_pk = make_dkg_public_key()
+def test_dkg_public_key_serialization(aggregate):
+    dkg_pk = aggregate.public_key
     serialized = bytes(dkg_pk)
     deserialized = DkgPublicKey.from_bytes(serialized)
     # TODO: Implement __richcmp__
