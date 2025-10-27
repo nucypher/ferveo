@@ -25,7 +25,7 @@ use crate::bindings_python;
 use crate::bindings_wasm;
 pub use crate::EthereumAddress;
 use crate::{
-    do_verify_aggregation, Error, PubliclyVerifiableSS, Result,
+    do_verify_aggregation, Aggregated, Error, PubliclyVerifiableSS, Result,
     UpdateTranscript,
 };
 
@@ -315,6 +315,10 @@ impl AggregatedTranscript {
         )
     }
 
+    pub fn verify_for_dkg(&self, dkg: &Dkg) -> Result<bool> {
+        self.0.aggregate.verify_full(&dkg.0)
+    }
+
     pub fn create_decryption_share_precomputed(
         &self,
         dkg: &Dkg,
@@ -410,6 +414,10 @@ impl AggregatedTranscript {
             crate::AggregatedTranscript::<E>::from_aggregate(new_aggregate)
                 .unwrap();
         Ok(AggregatedTranscript(eeww))
+    }
+
+    pub fn aggregate(&self) -> &PubliclyVerifiableSS<E, Aggregated> {
+        &self.0.aggregate
     }
 }
 

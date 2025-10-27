@@ -646,6 +646,14 @@ impl AggregatedTranscript {
         Ok(is_valid)
     }
 
+    pub fn verify_for_dkg(&self, dkg: &Dkg) -> PyResult<bool> {
+        let is_valid = self
+            .0
+            .verify_for_dkg(&dkg.0)
+            .map_err(FerveoPythonError::FerveoError)?;
+        Ok(is_valid)
+    }
+
     pub fn create_decryption_share_precomputed(
         &self,
         dkg: &Dkg,

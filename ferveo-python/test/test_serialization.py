@@ -106,6 +106,10 @@ def test_aggregate_transcript_serialization(aggregate):
     assert bytes(aggregate.public_key) == bytes(deserialized.public_key)
 
 
+def test_aggregate_transcript_validity(dkg, aggregate):
+    assert aggregate.verify_for_dkg(dkg)
+
+
 @pytest.mark.parametrize("handover_slot_index", range(shares_num))
 def test_handover_serialization(dkg, aggregate, handover_slot_index):
     incoming_validator_keypair = Keypair.random()
