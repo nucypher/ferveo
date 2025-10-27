@@ -1,7 +1,7 @@
 from ferveo import (
+    Dkg,
     Keypair,
     Validator,
-    Dkg,
 )
 
 
