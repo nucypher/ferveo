@@ -9,6 +9,7 @@ use chacha20poly1305::{
 };
 use ferveo_common::serialization;
 use serde::{Deserialize, Serialize};
+use serde_encoded_bytes::{Hex, SliceLike};
 use serde_with::serde_as;
 use sha2::{digest::Digest, Sha256};
 use zeroize::ZeroizeOnDrop;
@@ -30,7 +31,7 @@ pub struct Ciphertext<E: Pairing> {
     pub auth_tag: E::G2Affine,
 
     // V
-    #[serde(with = "serde_bytes")]
+    #[serde(with = "SliceLike::<Hex>")]
     pub ciphertext: Vec<u8>,
 }
 

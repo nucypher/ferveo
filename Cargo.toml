@@ -42,7 +42,7 @@ rand_chacha = "0.3"
 rand_core = "0.6.4"
 rand_old =  { package = "rand", version = "0.7" } # TODO: Used by benchmarks/pairing.rs, update to rand = "0.8" when possible
 serde = "1.0"
-serde_bytes = "0.11.9"
+serde-encoded-bytes = "0.2"
 serde_with = "2.2.0"
 sha2 = "0.10.6"
 subproductdomain = { path = "subproductdomain" }
