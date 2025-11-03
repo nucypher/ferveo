@@ -8,6 +8,7 @@ members = [
     "ferveo-wasm",
     "subproductdomain",
 ]
+resolver = "2"
 
 [workspace.dependencies]
 anyhow = "1.0.47"
@@ -34,7 +35,7 @@ js-sys = "0.3.63"
 measure_time = "0.8"
 miracl_core = "=2.3.0"
 pprof = "0.6"
-pyo3 = "0.18.2"
+pyo3 = "0.27"
 pyo3-build-config = "*"
 rand = "0.8"
 rand_core = "0.6.4"
