@@ -38,6 +38,7 @@ pprof = "0.6"
 pyo3 = "0.27"
 pyo3-build-config = "*"
 rand = "0.8"
+rand_chacha = "0.3"
 rand_core = "0.6.4"
 rand_old =  { package = "rand", version = "0.7" } # TODO: Used by benchmarks/pairing.rs, update to rand = "0.8" when possible
 serde = "1.0"

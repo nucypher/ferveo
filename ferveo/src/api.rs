@@ -51,15 +51,23 @@ pub fn from_bytes<T: CanonicalDeserialize>(bytes: &[u8]) -> Result<T> {
     Ok(item)
 }
 
+pub fn encrypt_with_rng<R: RngCore>(
+    message: SecretBox<Vec<u8>>,
+    aad: &[u8],
+    public_key: &DkgPublicKey,
+    rng: &mut R,
+) -> Result<Ciphertext> {
+    let ciphertext =
+        ferveo_tdec::api::encrypt(message, aad, &public_key.0, rng)?;
+    Ok(Ciphertext(ciphertext))
+}
+
 pub fn encrypt(
     message: SecretBox<Vec<u8>>,
     aad: &[u8],
     public_key: &DkgPublicKey,
 ) -> Result<Ciphertext> {
-    let mut rng = thread_rng();
-    let ciphertext =
-        ferveo_tdec::api::encrypt(message, aad, &public_key.0, &mut rng)?;
-    Ok(Ciphertext(ciphertext))
+    encrypt_with_rng(message, aad, public_key, &mut thread_rng())
 }
 
 pub fn decrypt_with_shared_secret(
@@ -210,7 +218,7 @@ impl Dkg {
     }
 
     pub fn generate_transcript<R: RngCore>(
-        &mut self,
+        &self,
         rng: &mut R,
     ) -> Result<Transcript> {
         self.0.generate_transcript(rng)
@@ -783,7 +791,7 @@ mod test_ferveo_api {
 
         // Unexpected transcripts in the aggregate or transcripts from a different ritual
         // Using same DKG parameters, but different DKG instances and validators
-        let mut dkg =
+        let dkg =
             Dkg::new(TAU, shares_num, security_threshold, &validators, &me)
                 .unwrap();
         let bad_message = (

@@ -19,6 +19,9 @@ pub mod validator;
 #[cfg(test)]
 mod test_common;
 
+#[cfg(test)]
+mod test_serialization;
+
 pub use dkg::*;
 pub use primitives::*;
 pub use pvss::*;

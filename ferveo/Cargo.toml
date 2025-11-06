@@ -49,6 +49,7 @@ digest = { workspace = true, features = ["alloc"] }
 pprof = { workspace = true, features = ["flamegraph", "criterion"] }
 test-case = { workspace = true }
 console_error_panic_hook = { workspace = true }
+rand_chacha = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 wasm-bindgen = { workspace = true, features = ["serde-serialize"] }
 cargo-smart-release = { workspace = true }
