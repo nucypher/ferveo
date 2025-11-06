@@ -24,7 +24,6 @@ use serde_with::serde_as;
 use crate::bindings_python;
 #[cfg(feature = "bindings-wasm")]
 use crate::bindings_wasm;
-pub use crate::EthereumAddress;
 use crate::{
     do_verify_aggregation, Error, PubliclyVerifiableSS, Result,
     UpdateTranscript,
@@ -444,7 +443,7 @@ mod test_ferveo_api {
 
     use crate::{
         api::*,
-        test_common::{gen_address, gen_keypairs, AAD, MSG, TAU},
+        test_common::{gen_keypairs, AAD, MSG, TAU},
     };
 
     type TestInputs =
@@ -463,7 +462,6 @@ mod test_ferveo_api {
             .iter()
             .enumerate()
             .map(|(i, keypair)| Validator {
-                address: gen_address(i),
                 public_key: keypair.public_key(),
                 share_index: i as u32,
             })

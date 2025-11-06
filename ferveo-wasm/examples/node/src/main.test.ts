@@ -10,17 +10,10 @@ import {
   ValidatorMessage,
   DecryptionSharePrecomputed,
   combineDecryptionSharesPrecomputed,
-  EthereumAddress,
 } from "ferveo-wasm";
 
 const zip = <A1, A2>(a: Array<A1>, b: Array<A2>): Array<[A1, A2]> =>
   a.map((k: A1, i: number) => [k, b[i]]);
-
-const genEthAddr = (i: number) => {
-  const ethAddr =
-    "0x" + "0".repeat(40 - i.toString(16).length) + i.toString(16);
-  return EthereumAddress.fromString(ethAddr);
-};
 
 const TAU = 1;
 
@@ -34,7 +27,7 @@ function setupTest(
   for (let i = 0; i < validatorsNum; i++) {
     const keypair = Keypair.random();
     validatorKeypairs.push(keypair);
-    const validator = new Validator(genEthAddr(i), keypair.publicKey, i);
+    const validator = new Validator(keypair.publicKey, i);
     validators.push(validator);
   }
 

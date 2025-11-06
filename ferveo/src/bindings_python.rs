@@ -417,19 +417,9 @@ pub struct Validator(api::Validator);
 #[pymethods]
 impl Validator {
     #[new]
-    pub fn new(
-        address: String,
-        public_key: &FerveoPublicKey,
-        share_index: u32,
-    ) -> PyResult<Self> {
-        let validator = api::Validator::new(address, public_key.0, share_index)
-            .map_err(|err| FerveoPythonError::Other(err.to_string()))?;
-        Ok(Self(validator))
-    }
-
-    #[getter]
-    pub fn address(&self) -> String {
-        self.0.address.to_string()
+    pub fn new(public_key: &FerveoPublicKey, share_index: u32) -> Self {
+        let validator = api::Validator::new(public_key.0, share_index);
+        Self(validator)
     }
 
     #[getter]
@@ -867,12 +857,7 @@ mod test_ferveo_python {
         let validators: HashMap<u32, Validator> = validator_keypairs
             .iter()
             .map(|(&i, keypair)| {
-                let validator = Validator::new(
-                    format!("0x{i:040}"), // TODO: Randomize - #207
-                    &keypair.public_key(),
-                    i,
-                )
-                .unwrap();
+                let validator = Validator::new(&keypair.public_key(), i);
                 (i, validator)
             })
             .collect::<HashMap<u32, Validator>>();
@@ -1138,11 +1123,9 @@ mod test_ferveo_python {
         // New participant that will receive the handover
         let incoming_validator_keypair = Keypair::random();
         let incoming_validator = Validator::new(
-            format!("0x{:040}", 123456789), // TODO: Randomize - #207
             &incoming_validator_keypair.public_key(),
             handover_slot_index,
-        )
-        .unwrap();
+        );
 
         // Incoming node creates a handover transcript
         let handover_transcript = dkg

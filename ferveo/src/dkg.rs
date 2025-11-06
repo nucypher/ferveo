@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     assert_no_share_duplicates, refresh, AggregatedTranscript, Error,
-    EthereumAddress, PubliclyVerifiableSS, Result, UpdateTranscript, Validator,
+    PubliclyVerifiableSS, Result, UpdateTranscript, Validator,
 };
 
 pub type DomainIndexMap<E> = HashMap<u32, DomainPoint<E>>;
@@ -65,8 +65,6 @@ impl DkgParams {
 }
 
 pub type ValidatorsByIndex<E> = BTreeMap<u32, Validator<E>>;
-pub type ValidatorsByAddress<E> = BTreeMap<EthereumAddress, Validator<E>>;
-pub type PVSSMap<E> = BTreeMap<EthereumAddress, PubliclyVerifiableSS<E>>;
 
 /// The DKG context that holds all the local state for participating in the DKG
 // TODO: Consider removing Clone to avoid accidentally NOT-mutating state.
@@ -110,7 +108,9 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
                 return Err(Error::ValidatorPublicKeyMismatch);
             }
         } else {
-            return Err(Error::DealerNotInValidatorSet(me.address.clone()));
+            return Err(Error::DealerNotInValidatorSet(
+                me.public_key.to_string(),
+            ));
         }
 
         Ok(Self {
@@ -195,19 +195,19 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
         &self,
         messages: &[ValidatorMessage<E>],
     ) -> Result<()> {
-        let mut validator_set = HashSet::<EthereumAddress>::new();
+        let mut validator_set = HashSet::<String>::new();
         let mut transcript_set = HashSet::<PubliclyVerifiableSS<E>>::new();
         for (sender, transcript) in messages.iter() {
             let index = sender.share_index;
-            let sender = &sender.address;
+            let sender = sender.public_key.to_string();
             if !self.validators.contains_key(&index) {
-                return Err(Error::UnknownDealer(sender.clone()));
-            } else if validator_set.contains(sender) {
-                return Err(Error::DuplicateDealer(sender.clone()));
+                return Err(Error::UnknownDealer(sender));
+            } else if validator_set.contains(&sender) {
+                return Err(Error::DuplicateDealer(sender));
             } else if transcript_set.contains(transcript) {
-                return Err(Error::DuplicateTranscript(sender.clone()));
+                return Err(Error::DuplicateTranscript(sender));
             } else if !transcript.verify_optimistic() {
-                return Err(Error::InvalidPvssTranscript(sender.clone()));
+                return Err(Error::InvalidPvssTranscript(sender));
             }
             validator_set.insert(sender.clone());
             transcript_set.insert(transcript.clone());
@@ -282,7 +282,6 @@ mod test_dkg_init {
         let known_keypairs = gen_keypairs(SHARES_NUM);
         let unknown_keypair = ferveo_common::Keypair::<E>::new(rng);
         let unknown_validator = Validator::<E> {
-            address: gen_address((SHARES_NUM + 1) as usize),
             public_key: unknown_keypair.public_key(),
             share_index: SHARES_NUM + 5, // Not in the validator set
         };
@@ -292,7 +291,13 @@ mod test_dkg_init {
             &unknown_validator,
         )
         .unwrap_err();
-        assert_eq!(err.to_string(), "Expected validator to be a part of the DKG validator set: 0x0000000000000000000000000000000000000005")
+        assert_eq!(
+            err.to_string(),
+            format!(
+                "Expected validator to be a part of the DKG validator set: {}",
+                unknown_keypair.public_key()
+            )
+        )
     }
 }
 
@@ -341,12 +346,10 @@ mod test_dealing {
 
         // Swap the share indices of two validators
         let me = Validator {
-            address: validators[0].address.clone(),
             public_key: validators[0].public_key,
             share_index: 1,
         };
         let someone_else = Validator {
-            address: validators[1].address.clone(),
             public_key: validators[1].public_key,
             share_index: 0,
         };
@@ -366,7 +369,6 @@ mod test_dealing {
                 dkg.validators.get(&validator.share_index).unwrap();
             assert_eq!(validator_in_dkg.share_index, validator.share_index);
             assert_eq!(validator_in_dkg.public_key, validator.public_key);
-            assert_eq!(validator_in_dkg.address, validator.address);
         }
     }
 
@@ -391,7 +393,6 @@ mod test_dealing {
         let unknown_validator_index =
             dkg.dkg_params.shares_num + VALIDATORS_NUM + 1;
         let sender = Validator::<E> {
-            address: gen_address(unknown_validator_index as usize),
             public_key: ferveo_common::Keypair::<E>::new(rng).public_key(),
             share_index: unknown_validator_index,
         };

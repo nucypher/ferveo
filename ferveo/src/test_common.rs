@@ -1,5 +1,4 @@
-/// Factory functions and variables for testing
-use std::str::FromStr;
+//! Factory functions and variables for testing
 
 use ark_bls12_381::Bls12_381;
 pub use ark_bls12_381::Bls12_381 as E;
@@ -8,8 +7,8 @@ use ferveo_common::Keypair;
 use rand::{seq::SliceRandom, Rng};
 
 use crate::{
-    DkgParams, EthereumAddress, PubliclyVerifiableDkg, PubliclyVerifiableSS,
-    Validator, ValidatorMessage,
+    DkgParams, PubliclyVerifiableDkg, PubliclyVerifiableSS, Validator,
+    ValidatorMessage,
 };
 
 pub type ScalarField = <E as Pairing>::ScalarField;
@@ -29,16 +28,11 @@ pub fn gen_keypairs(n: u32) -> Vec<Keypair<E>> {
     (0..n).map(|_| Keypair::<E>::new(rng)).collect()
 }
 
-pub fn gen_address(i: usize) -> EthereumAddress {
-    EthereumAddress::from_str(&format!("0x{i:040}")).unwrap() // TODO: Randomize - #207
-}
-
 pub fn gen_validators(keypairs: &[Keypair<E>]) -> Vec<Validator<E>> {
     keypairs
         .iter()
         .enumerate()
         .map(|(i, keypair)| Validator {
-            address: gen_address(i),
             public_key: keypair.public_key(),
             share_index: i as u32,
         })

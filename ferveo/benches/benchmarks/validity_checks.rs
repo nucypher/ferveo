@@ -1,8 +1,6 @@
 #![allow(clippy::redundant_closure)]
 #![allow(clippy::unit_arg)]
 
-use std::str::FromStr;
-
 use ark_bls12_381::Bls12_381;
 pub use ark_bls12_381::Bls12_381 as EllipticCurve;
 use criterion::{black_box, criterion_group, BenchmarkId, Criterion};
@@ -21,16 +19,11 @@ fn gen_keypairs(num: u32) -> Vec<ferveo_common::Keypair<EllipticCurve>> {
         .collect()
 }
 
-pub fn gen_address(i: usize) -> EthereumAddress {
-    EthereumAddress::from_str(&format!("0x{i:040}")).unwrap() // TODO: Randomize - #207
-}
-
 fn gen_validators(
     keypairs: &[ferveo_common::Keypair<EllipticCurve>],
 ) -> Vec<Validator<EllipticCurve>> {
     (0..keypairs.len())
         .map(|i| Validator {
-            address: gen_address(i),
             public_key: keypairs[i].public_key(),
             share_index: i as u32,
         })

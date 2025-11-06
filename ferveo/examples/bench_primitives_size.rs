@@ -3,7 +3,6 @@ use std::{
     fs::{create_dir_all, OpenOptions},
     io::prelude::*,
     path::PathBuf,
-    str::FromStr,
 };
 
 use ark_bls12_381::Bls12_381 as EllipticCurve;
@@ -55,16 +54,11 @@ fn gen_keypairs(num: u32) -> Vec<ferveo_common::Keypair<EllipticCurve>> {
         .collect()
 }
 
-pub fn gen_address(i: usize) -> EthereumAddress {
-    EthereumAddress::from_str(&format!("0x{i:040}")).unwrap() // TODO: Randomize - #207
-}
-
 fn gen_validators(
     keypairs: &[ferveo_common::Keypair<EllipticCurve>],
 ) -> Vec<Validator<EllipticCurve>> {
     (0..keypairs.len())
         .map(|i| Validator {
-            address: gen_address(i),
             public_key: keypairs[i].public_key(),
             share_index: i as u32,
         })

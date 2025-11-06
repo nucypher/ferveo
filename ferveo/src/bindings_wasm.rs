@@ -1,4 +1,4 @@
-use std::{fmt, str::FromStr};
+use std::fmt;
 
 use ferveo_common::{FromBytes, ToBytes};
 use js_sys::Error;
@@ -347,34 +347,12 @@ pub struct Transcript(pub(crate) api::Transcript);
 
 generate_common_methods!(Transcript);
 
-#[wasm_bindgen(js_name = EthereumAddress)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct EthereumAddress(api::EthereumAddress);
-
-#[wasm_bindgen]
-impl EthereumAddress {
-    #[wasm_bindgen(js_name = "fromString")]
-    pub fn from_string(address: &str) -> JsResult<EthereumAddress> {
-        set_panic_hook();
-        Ok(Self(
-            api::EthereumAddress::from_str(address).map_err(map_js_err)?,
-        ))
-    }
-
-    #[wasm_bindgen(js_name = "toString")]
-    pub fn to_string(&self) -> JsResult<String> {
-        set_panic_hook();
-        Ok(self.0.to_string())
-    }
-}
-
 // Using a separate Validator struct for WASM bindings to avoid issues with serialization of
 // `ark_ec::models::bls12::Bls12<ark_bls12_381::curves::Config>`, i.e. G2Affine public key
 #[derive(TryFromJsValue)]
 #[wasm_bindgen]
 #[derive(Clone, Debug, derive_more::AsRef, derive_more::From)]
 pub struct Validator {
-    address: EthereumAddress,
     public_key: FerveoPublicKey,
     share_index: u32,
 }
@@ -383,13 +361,11 @@ pub struct Validator {
 impl Validator {
     #[wasm_bindgen(constructor)]
     pub fn new(
-        address: &EthereumAddress,
         public_key: &FerveoPublicKey,
         share_index: u32,
     ) -> JsResult<Validator> {
         set_panic_hook();
         Ok(Self {
-            address: address.clone(),
             public_key: public_key.clone(),
             share_index,
         })
@@ -398,7 +374,6 @@ impl Validator {
     pub(crate) fn to_inner(&self) -> JsResult<api::Validator> {
         set_panic_hook();
         Ok(api::Validator {
-            address: self.address.0.clone(),
             public_key: self.public_key.0,
             share_index: self.share_index,
         })
@@ -407,11 +382,6 @@ impl Validator {
     #[wasm_bindgen(getter, js_name = "publicKey")]
     pub fn public_key(&self) -> FerveoPublicKey {
         self.public_key.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn address(&self) -> EthereumAddress {
-        self.address.clone()
     }
 }
 
@@ -580,13 +550,8 @@ pub mod test_common {
         Keypair::from_secure_randomness(&[i as u8; 32]).unwrap()
     }
 
-    pub fn gen_address(i: usize) -> EthereumAddress {
-        EthereumAddress::from_string(&format!("0x{i:040}")).unwrap() // TODO: Randomize - #207
-    }
-
     pub fn gen_validator(i: usize, keypair: &Keypair) -> Validator {
         Validator {
-            address: gen_address(i),
             public_key: keypair.public_key(),
             share_index: i as u32,
         }

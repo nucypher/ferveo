@@ -16,9 +16,6 @@ from ferveo import (
 )
 
 
-def gen_eth_addr(i: int) -> str:
-    return f"0x{i:040x}"  # TODO: Randomize - #207
-
 def combine_shares_for_variant(v: FerveoVariant, decryption_shares):
     if v == FerveoVariant.Simple:
         return combine_decryption_shares_simple(decryption_shares)
@@ -47,7 +44,7 @@ def scenario_for_variant(
     tau = 1
     validator_keypairs = [Keypair.random() for _ in range(0, validators_num)]
     validators = [
-        Validator(gen_eth_addr(i), keypair.public_key(), i)
+        Validator(keypair.public_key(), i)
         for i, keypair in enumerate(validator_keypairs)
     ]
 

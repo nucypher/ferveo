@@ -25,9 +25,7 @@ class FerveoPublicKey:
 
 @final
 class Validator:
-    def __new__(cls, address: str, public_key: FerveoPublicKey, share_index: int): ...
-
-    address: str
+    def __new__(cls, public_key: FerveoPublicKey, share_index: int): ...
 
     public_key: FerveoPublicKey
 

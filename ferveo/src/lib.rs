@@ -35,19 +35,19 @@ pub enum Error {
 
     /// DKG validator set must contain the validator with the given address
     #[error("Expected validator to be a part of the DKG validator set: {0}")]
-    DealerNotInValidatorSet(EthereumAddress),
+    DealerNotInValidatorSet(String),
 
     /// DKG received an unknown dealer. Dealer must be the part of the DKG validator set.
     #[error("DKG received an unknown dealer: {0}")]
-    UnknownDealer(EthereumAddress),
+    UnknownDealer(String),
 
     /// DKG received a PVSS transcript from a dealer that has already been dealt.
     #[error("DKG received a PVSS transcript from a dealer that has already been dealt: {0}")]
-    DuplicateDealer(EthereumAddress),
+    DuplicateDealer(String),
 
     /// DKG received an invalid transcript for which optimistic verification failed
     #[error("DKG received an invalid transcript from validator: {0}")]
-    InvalidPvssTranscript(EthereumAddress),
+    InvalidPvssTranscript(String),
 
     /// Not enough validators to perform the DKG for a given number of shares
     #[error("Not enough validators (expected {0}, got {1})")]
@@ -109,7 +109,7 @@ pub enum Error {
 
     /// Received a duplicated transcript from a validator
     #[error("Received a duplicated transcript from validator: {0}")]
-    DuplicateTranscript(EthereumAddress),
+    DuplicateTranscript(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

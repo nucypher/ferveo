@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use ferveo_common::{FromBytes, ToBytes};
 use rand_chacha::ChaCha12Rng;
 use rand_core::SeedableRng;
@@ -8,11 +6,10 @@ use secrecy::SecretBox;
 use crate::api::*;
 
 const EXPECTED_VALIDATOR_BINARY_HEX: &str = concat![
-    "2a00000000000000307830303030303030303030303030303030303030303030",
-    "30303030303030303030303030303030303060000000000000009580af6d5259",
-    "701d7bc2eb9cbccf48b4ea5b953953a4bebcf083256c31d885ded41c85329cff",
-    "f48391d8d45c7ee060f70adb5f3169a528fa20fad84ef9fc050bdd1d0e4a8cf9",
-    "8744dae5377d0d47bc847d2e2676be4a2136069fa0dfa93742b800000000",
+    "60000000000000009580af6d5259701d7bc2eb9cbccf48b4ea5b953953a4bebc",
+    "f083256c31d885ded41c85329cfff48391d8d45c7ee060f70adb5f3169a528fa",
+    "20fad84ef9fc050bdd1d0e4a8cf98744dae5377d0d47bc847d2e2676be4a2136",
+    "069fa0dfa93742b800000000",
 ];
 const EXPECTED_VALIDATOR_KEYPAIR_BINARY_HEX: &str = concat![
     "2000000000000000839b4936d38aa2f8d9e4ecf8993f95636692b659f155f572",
@@ -182,7 +179,6 @@ fn test_simple_dkg_handover_serialization() {
         .iter()
         .enumerate()
         .map(|(i, keypair)| Validator {
-            address: EthereumAddress::from_str(&format!("0x{i:040}")).unwrap(),
             public_key: keypair.public_key(),
             share_index: i as u32,
         })
@@ -292,10 +288,6 @@ fn test_simple_dkg_handover_serialization() {
         .unwrap();
 
     validators[handover_slot_index] = Validator {
-        address: EthereumAddress::from_str(&format!(
-            "0x{handover_slot_index:040}"
-        ))
-        .unwrap(),
         public_key: incoming_validator_keypair.public_key(),
         share_index: handover_slot_index as u32,
     };

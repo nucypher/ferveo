@@ -9,19 +9,14 @@ from ferveo import (
 )
 
 
-def gen_eth_addr(i: int) -> str:
-    return f"0x{i:040x}"  # TODO: Randomize - #207
-
-
 tau = 1
 security_threshold = 3
 shares_num = 4
 validator_keypairs = [Keypair.random() for _ in range(shares_num)]
 validators = [
-    Validator(gen_eth_addr(i), keypair.public_key(), i)
+    Validator(keypair.public_key(), i)
     for i, keypair in enumerate(validator_keypairs)
 ]
-validators.sort(key=lambda v: v.address)
 
 
 def make_dkg_public_key():
