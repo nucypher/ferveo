@@ -124,11 +124,12 @@ mod test_dkg_full {
     use ark_std::test_rng;
     use ferveo_common::Keypair;
     use ferveo_tdec::{
-        self, DecryptionSharePrecomputed, DecryptionShareSimple, SecretBox,
+        self, DecryptionSharePrecomputed, DecryptionShareSimple,
         ShareCommitment, SharedSecret,
     };
     use itertools::{izip, Itertools};
     use rand::{seq::SliceRandom, Rng};
+    use secrecy::SecretBox;
     use test_case::test_case;
 
     use super::*;
@@ -210,7 +211,7 @@ mod test_dkg_full {
             .verify_aggregation(&dkg, &transcripts)
             .unwrap());
         let ciphertext = ferveo_tdec::encrypt::<E>(
-            SecretBox::new(MSG.to_vec()),
+            SecretBox::new(MSG.into()),
             AAD,
             &local_aggregate.public_key,
             rng,
@@ -262,7 +263,7 @@ mod test_dkg_full {
             .verify_aggregation(&dkg, &transcripts)
             .unwrap());
         let ciphertext = ferveo_tdec::encrypt::<E>(
-            SecretBox::new(MSG.to_vec()),
+            SecretBox::new(MSG.into()),
             AAD,
             &local_aggregate.public_key,
             rng,
@@ -347,7 +348,7 @@ mod test_dkg_full {
             .verify_aggregation(&dkg, &transcripts)
             .unwrap());
         let ciphertext = ferveo_tdec::encrypt::<E>(
-            SecretBox::new(MSG.to_vec()),
+            SecretBox::new(MSG.into()),
             AAD,
             &local_aggregate.public_key,
             rng,
@@ -430,7 +431,7 @@ mod test_dkg_full {
             .verify_aggregation(&dkg, &transcripts)
             .unwrap());
         let ciphertext = ferveo_tdec::encrypt::<E>(
-            SecretBox::new(MSG.to_vec()),
+            SecretBox::new(MSG.into()),
             AAD,
             &local_aggregate.public_key,
             rng,
@@ -624,7 +625,7 @@ mod test_dkg_full {
 
         // Ciphertext created from the aggregate public key
         let ciphertext = ferveo_tdec::encrypt::<E>(
-            SecretBox::new(MSG.to_vec()),
+            SecretBox::new(MSG.into()),
             AAD,
             &local_aggregate.public_key,
             rng,
@@ -741,7 +742,7 @@ mod test_dkg_full {
 
         // Ciphertext created from the aggregate public key
         let ciphertext = ferveo_tdec::encrypt::<E>(
-            SecretBox::new(MSG.to_vec()),
+            SecretBox::new(MSG.into()),
             AAD,
             &local_aggregate.public_key,
             rng,

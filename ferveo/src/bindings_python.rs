@@ -15,6 +15,7 @@ use pyo3::{
     PyClass,
 };
 use rand::thread_rng;
+use secrecy::SecretBox;
 use serde::{Deserialize, Serialize};
 
 use crate::{api, Error};
@@ -264,7 +265,7 @@ pub fn encrypt(
     dkg_public_key: &DkgPublicKey,
 ) -> PyResult<Ciphertext> {
     let ciphertext =
-        api::encrypt(api::SecretBox::new(message), aad, &dkg_public_key.0)
+        api::encrypt(SecretBox::new(message.into()), aad, &dkg_public_key.0)
             .map_err(FerveoPythonError::FerveoError)?;
     Ok(Ciphertext(ciphertext))
 }

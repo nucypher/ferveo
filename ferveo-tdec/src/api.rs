@@ -19,5 +19,5 @@ pub type TargetField = <E as ark_ec::pairing::Pairing>::TargetField;
 pub use crate::{
     decrypt_symmetric, decrypt_with_shared_secret, encrypt,
     prepare_combine_simple, share_combine_precomputed, share_combine_simple,
-    SecretBox, SharedSecret,
+    SharedSecret,
 };

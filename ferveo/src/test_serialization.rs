@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
 use ferveo_common::{FromBytes, ToBytes};
-use ferveo_tdec::SecretBox;
 use rand_chacha::ChaCha12Rng;
 use rand_core::SeedableRng;
+use secrecy::SecretBox;
 
 use crate::api::*;
 
@@ -252,7 +252,7 @@ fn test_simple_dkg_handover_serialization() {
 
     // Ciphertext created from the aggregate public key
     let ciphertext = encrypt_with_rng(
-        SecretBox::new(msg.to_vec()),
+        SecretBox::new(msg.to_vec().into()),
         aad,
         &local_aggregate.public_key(),
         &mut rng,

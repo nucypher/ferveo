@@ -1,9 +1,9 @@
 use std::{fmt, str::FromStr};
 
 use ferveo_common::{FromBytes, ToBytes};
-use ferveo_tdec::SecretBox;
 use js_sys::Error;
 use rand::thread_rng;
+use secrecy::SecretBox;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_derive::{try_from_js_array, TryFromJsValue};
@@ -232,7 +232,7 @@ pub fn ferveo_encrypt(
 ) -> JsResult<Ciphertext> {
     set_panic_hook();
     let ciphertext =
-        api::encrypt(SecretBox::new(message.to_vec()), aad, &dkg_public_key.0)
+        api::encrypt(SecretBox::new(message.into()), aad, &dkg_public_key.0)
             .map_err(map_js_err)?;
     Ok(Ciphertext(ciphertext))
 }

@@ -29,6 +29,7 @@ measure_time = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
 rand_old = { workspace = true }
+secrecy = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_with = { workspace = true }
 subproductdomain = { package = "subproductdomain-nucypher", path = "../subproductdomain", version = "^0.4.0" }
