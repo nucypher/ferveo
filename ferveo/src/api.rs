@@ -290,7 +290,7 @@ impl AggregatedTranscript {
         let domain =
             GeneralEvaluationDomain::<Fr>::new(validators_num as usize)
                 .expect("Unable to construct an evaluation domain");
-        let is_valid_optimistic = self.0.aggregate.verify_optimistic();
+        let is_valid_optimistic = self.0.aggregate().verify_optimistic();
         if !is_valid_optimistic {
             return Err(Error::InvalidTranscriptAggregate);
         }
@@ -307,8 +307,8 @@ impl AggregatedTranscript {
             .collect::<Vec<_>>();
         // This check also includes `verify_full`. See impl. for details.
         do_verify_aggregation(
-            &self.0.aggregate.coeffs,
-            &self.0.aggregate.shares,
+            &self.0.aggregate().coeffs,
+            &self.0.aggregate().shares,
             &validators,
             &domain,
             &pvss_list,
@@ -342,7 +342,7 @@ impl AggregatedTranscript {
                     .map(|domain_point| (v.share_index, domain_point))
             })
             .collect::<HashMap<u32, ferveo_tdec::DomainPoint<E>>>();
-        self.0.aggregate.create_decryption_share_precomputed(
+        self.0.aggregate().create_decryption_share_precomputed(
             &ciphertext_header.0,
             aad,
             validator_keypair,
@@ -368,7 +368,7 @@ impl AggregatedTranscript {
             Error::DealerNotInValidatorSet(my_public_key.to_string())
         })?;
 
-        let share = self.0.aggregate.create_decryption_share_simple(
+        let share = self.0.aggregate().create_decryption_share_simple(
             &ciphertext_header.0,
             aad,
             validator_keypair,
@@ -382,7 +382,7 @@ impl AggregatedTranscript {
     }
 
     pub fn public_key(&self) -> DkgPublicKey {
-        DkgPublicKey(self.0.public_key)
+        DkgPublicKey(self.0.public_key())
     }
 
     pub fn refresh(
@@ -393,7 +393,7 @@ impl AggregatedTranscript {
         // TODO: Aggregates structs should be refactored, this is a bit of a mess - #162
         let updated_aggregate = self
             .0
-            .aggregate
+            .aggregate()
             .refresh(update_transcripts, validator_keys_map)
             .unwrap();
         let eeww =
@@ -409,7 +409,7 @@ impl AggregatedTranscript {
     ) -> Result<Self> {
         let new_aggregate = self
             .0
-            .aggregate
+            .aggregate()
             .finalize_handover(&handover_transcript.0, validator_keypair)
             .unwrap();
         // TODO: Aggregates structs should be refactored, this is a bit of a mess - #162

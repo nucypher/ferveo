@@ -498,18 +498,13 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct AggregatedTranscript<E: Pairing> {
+pub struct AggregatedTranscript<E: Pairing>(
     #[serde(bound(
         serialize = "PubliclyVerifiableSS<E, Aggregated>: Serialize",
         deserialize = "PubliclyVerifiableSS<E, Aggregated>: DeserializeOwned"
     ))]
-    pub aggregate: PubliclyVerifiableSS<E, Aggregated>,
-    #[serde(bound(
-        serialize = "ferveo_tdec::DkgPublicKey<E>: Serialize",
-        deserialize = "ferveo_tdec::DkgPublicKey<E>: DeserializeOwned"
-    ))]
-    pub public_key: ferveo_tdec::DkgPublicKey<E>,
-}
+    PubliclyVerifiableSS<E, Aggregated>,
+);
 
 // TODO: Add tests - #202
 impl<E: Pairing> AggregatedTranscript<E> {
@@ -523,11 +518,15 @@ impl<E: Pairing> AggregatedTranscript<E> {
     pub fn from_aggregate(
         aggregate: PubliclyVerifiableSS<E, Aggregated>,
     ) -> Result<Self> {
-        let public_key = ferveo_tdec::DkgPublicKey::<E>(aggregate.coeffs[0]);
-        Ok(AggregatedTranscript {
-            aggregate,
-            public_key,
-        })
+        Ok(AggregatedTranscript(aggregate))
+    }
+
+    pub fn aggregate(&self) -> &PubliclyVerifiableSS<E, Aggregated> {
+        &self.0
+    }
+
+    pub fn public_key(&self) -> ferveo_tdec::DkgPublicKey<E> {
+        ferveo_tdec::DkgPublicKey::<E>(self.0.coeffs[0])
     }
 }
 

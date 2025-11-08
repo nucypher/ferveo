@@ -238,7 +238,7 @@ impl<E: Pairing> PubliclyVerifiableDkg<E> {
             .ok_or(Error::InvalidShareIndex(handover_slot_index))?;
 
         let departing_blinded_share = aggregate
-            .aggregate
+            .aggregate()
             .get_share_for_validator(departing_validator)?;
 
         Ok(refresh::HandoverTranscript::<E>::new(
