@@ -66,17 +66,14 @@ fn gen_validators(
 }
 
 fn setup_dkg(
-    validator: usize,
     shares_num: u32,
     security_threshold: u32,
 ) -> PubliclyVerifiableDkg<EllipticCurve> {
     let keypairs = gen_keypairs(shares_num);
     let validators = gen_validators(&keypairs);
-    let me = validators[validator].clone();
     PubliclyVerifiableDkg::new(
         &validators,
         &DkgParams::new(0, security_threshold, shares_num).unwrap(),
-        &me,
     )
     .expect("Setup failed")
 }
@@ -90,12 +87,11 @@ fn setup(
     Vec<PubliclyVerifiableSS<EllipticCurve>>,
 ) {
     let mut transcripts = vec![];
-    for i in 0..shares_num {
-        let dkg = setup_dkg(i as usize, shares_num, security_threshold);
+    let dkg = setup_dkg(shares_num, security_threshold);
+    for _ in 0..shares_num {
         let transcript = dkg.generate_transcript(rng).expect("Test failed");
         transcripts.push(transcript.clone());
     }
-    let dkg = setup_dkg(0, shares_num, security_threshold);
     (dkg, transcripts)
 }
 

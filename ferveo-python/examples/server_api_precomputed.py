@@ -31,7 +31,6 @@ for sender in validators:
         shares_num=shares_num,
         security_threshold=security_threshold,
         validators=validators,
-        me=sender,
     )
     messages.append(ValidatorMessage(sender, dkg.generate_transcript()))
 
@@ -44,7 +43,6 @@ dkg = Dkg(
     shares_num=shares_num,
     security_threshold=security_threshold,
     validators=validators,
-    me=validators[0],
 )
 
 # Server can aggregate the transcripts
@@ -72,7 +70,6 @@ for validator, validator_keypair in zip(selected_validators, selected_keypairs):
         shares_num=shares_num,
         security_threshold=security_threshold,
         validators=validators,
-        me=validator,
     )
 
     # We can also obtain the aggregated transcript from the side-channel (deserialize)

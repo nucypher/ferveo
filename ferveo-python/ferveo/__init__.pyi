@@ -64,7 +64,6 @@ class Dkg:
         shares_num: int,
         security_threshold: int,
         validators: Sequence[Validator],
-        me: Validator,
     ): ...
 
     public_key: DkgPublicKey

@@ -4,7 +4,6 @@
 extern crate wasm_bindgen_test;
 
 use ferveo_wasm::{test_common::*, *};
-use itertools::zip_eq;
 use wasm_bindgen_derive::into_js_array;
 use wasm_bindgen_test::*;
 
@@ -38,14 +37,9 @@ fn setup_dkg(
     // Each validator holds their own DKG instance and generates a transcript every
     // validator, including themselves
     let messages = validators.iter().map(|sender| {
-        let mut validator_dkg = Dkg::new(
-            TAU,
-            shares_num,
-            security_threshold,
-            &validators_js,
-            sender,
-        )
-        .unwrap();
+        let validator_dkg =
+            Dkg::new(TAU, shares_num, security_threshold, &validators_js)
+                .unwrap();
         let transcript = validator_dkg.generate_transcript().unwrap();
         ValidatorMessage::new(sender, &transcript).unwrap()
     });
@@ -53,14 +47,8 @@ fn setup_dkg(
     // Now that every validator holds a dkg instance and a transcript for every other validator,
     // every validator can aggregate the transcripts
 
-    let mut dkg = Dkg::new(
-        TAU,
-        shares_num,
-        security_threshold,
-        &validators_js,
-        &validators[0],
-    )
-    .unwrap();
+    let dkg =
+        Dkg::new(TAU, shares_num, security_threshold, &validators_js).unwrap();
 
     // We only need `shares_num` messages to aggregate the transcripts
     let messages = messages.take(shares_num as usize).collect::<Vec<_>>();
@@ -104,7 +92,7 @@ fn tdec_simple() {
     for validators_num in [shares_num, shares_num + 2] {
         let (
             validator_keypairs,
-            validators,
+            _validators,
             validators_js,
             messages_js,
             msg,
@@ -113,14 +101,14 @@ fn tdec_simple() {
         ) = setup_dkg(shares_num, validators_num, security_threshold);
 
         // Having aggregated the transcripts, the validators can now create decryption shares
-        let decryption_shares = zip_eq(validators, validator_keypairs)
-            .map(|(validator, keypair)| {
-                let mut dkg = Dkg::new(
+        let decryption_shares = validator_keypairs
+            .iter()
+            .map(|keypair| {
+                let dkg = Dkg::new(
                     TAU,
                     shares_num,
                     security_threshold,
                     &validators_js,
-                    &validator,
                 )
                 .unwrap();
                 let aggregate =
@@ -133,7 +121,7 @@ fn tdec_simple() {
                         &dkg,
                         &ciphertext.header().unwrap(),
                         &aad,
-                        &keypair,
+                        keypair,
                     )
                     .unwrap()
             })
@@ -175,14 +163,14 @@ fn tdec_precomputed() {
         let selected_validators_js = into_js_array(selected_validators);
 
         // Having aggregated the transcripts, the validators can now create decryption shares
-        let decryption_shares = zip_eq(validators, validator_keypairs)
-            .map(|(validator, keypair)| {
-                let mut dkg = Dkg::new(
+        let decryption_shares = validator_keypairs
+            .iter()
+            .map(|keypair| {
+                let dkg = Dkg::new(
                     TAU,
                     shares_num,
                     security_threshold,
                     &validators_js,
-                    &validator,
                 )
                 .unwrap();
                 let server_aggregate =
@@ -195,7 +183,7 @@ fn tdec_precomputed() {
                         &dkg,
                         &ciphertext.header().unwrap(),
                         &aad,
-                        &keypair,
+                        keypair,
                         &selected_validators_js,
                     )
                     .unwrap()

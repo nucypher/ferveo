@@ -487,17 +487,11 @@ impl Dkg {
         shares_num: u32,
         security_threshold: u32,
         validators: Vec<Validator>,
-        me: &Validator,
     ) -> PyResult<Self> {
         let validators: Vec<_> = validators.into_iter().map(|v| v.0).collect();
-        let dkg = api::Dkg::new(
-            tau,
-            shares_num,
-            security_threshold,
-            &validators,
-            &me.0,
-        )
-        .map_err(FerveoPythonError::from)?;
+        let dkg =
+            api::Dkg::new(tau, shares_num, security_threshold, &validators)
+                .map_err(FerveoPythonError::from)?;
         Ok(Self(dkg))
     }
 
@@ -872,7 +866,6 @@ mod test_ferveo_python {
                     shares_num,
                     security_threshold,
                     validators.values().cloned().collect(),
-                    sender,
                 )
                 .unwrap();
                 let message = ValidatorMessage::new(
@@ -906,13 +899,11 @@ mod test_ferveo_python {
 
         // Now that every validator holds a dkg instance and a transcript for every other validator,
         // every validator can aggregate the transcripts
-        let me = validators.get(&0).unwrap().clone();
         let mut dkg = Dkg::new(
             TAU,
             shares_num,
             security_threshold,
             validators.values().cloned().collect(),
-            &me,
         )
         .unwrap();
 
@@ -944,7 +935,6 @@ mod test_ferveo_python {
         let decryption_shares: Vec<_> = random_indices
             .iter()
             .map(|&index| {
-                let validator = validators.get(index).unwrap();
                 let validator_keypair = validator_keypairs.get(index).unwrap();
                 // Each validator holds their own instance of DKG and creates their own aggregate
                 let mut validator_dkg = Dkg::new(
@@ -952,7 +942,6 @@ mod test_ferveo_python {
                     shares_num,
                     security_threshold,
                     validators.values().cloned().collect(),
-                    validator,
                 )
                 .unwrap();
                 let server_aggregate = validator_dkg
@@ -1000,13 +989,11 @@ mod test_ferveo_python {
 
         // Now that every validator holds a dkg instance and a transcript for every other validator,
         // every validator can aggregate the transcripts
-        let me = validators.get(&0).unwrap().clone();
         let mut dkg = Dkg::new(
             TAU,
             shares_num,
             security_threshold,
             validators.values().cloned().collect(),
-            &me,
         )
         .unwrap();
 
@@ -1035,7 +1022,6 @@ mod test_ferveo_python {
         let decryption_shares: Vec<_> = random_indices
             .iter()
             .map(|&index| {
-                let validator = validators.get(index).unwrap();
                 let validator_keypair = validator_keypairs.get(index).unwrap();
                 // Each validator holds their own instance of DKG and creates their own aggregate
                 let mut validator_dkg = Dkg::new(
@@ -1043,7 +1029,6 @@ mod test_ferveo_python {
                     shares_num,
                     security_threshold,
                     validators.values().cloned().collect(),
-                    validator,
                 )
                 .unwrap();
                 let aggregate = validator_dkg
@@ -1093,13 +1078,11 @@ mod test_ferveo_python {
 
         // Now that every validator holds a dkg instance and a transcript for every other validator,
         // every validator can aggregate the transcripts
-        let me = validators.get(&0).unwrap().clone();
         let mut dkg = Dkg::new(
             TAU,
             shares_num,
             security_threshold,
             validators.values().cloned().collect(),
-            &me,
         )
         .unwrap();
 
@@ -1156,8 +1139,6 @@ mod test_ferveo_python {
         let decryption_shares: Vec<_> = random_indices
             .iter()
             .map(|&index| {
-                let validator: Validator =
-                    new_validators.get(index).unwrap().clone();
                 let validator_keypair: &Keypair =
                     if *index != handover_slot_index {
                         validator_keypairs.get(index).unwrap()
@@ -1171,7 +1152,6 @@ mod test_ferveo_python {
                     shares_num,
                     security_threshold,
                     new_validators.values().cloned().collect(),
-                    &validator,
                 )
                 .unwrap();
 

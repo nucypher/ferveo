@@ -22,5 +22,4 @@ dkg = Dkg(
     shares_num=shares_num,
     security_threshold=security_threshold,
     validators=[],
-    me=validators[0],
 )

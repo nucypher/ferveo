@@ -184,27 +184,13 @@ fn test_simple_dkg_handover_serialization() {
         })
         .collect::<Vec<_>>();
 
-    let dkg0 = Dkg::new(
-        tau,
-        shares_num,
-        security_threshold,
-        &validators,
-        &validators[0],
-    )
-    .unwrap();
+    let dkg =
+        Dkg::new(tau, shares_num, security_threshold, &validators).unwrap();
 
     let messages = (0..shares_num)
         .map(|my_index| {
-            let dkg = Dkg::new(
-                tau,
-                shares_num,
-                security_threshold,
-                &validators,
-                &validators[my_index as usize],
-            )
-            .unwrap();
             let transcript = dkg.generate_transcript(&mut rng).unwrap();
-            let sender = dkg.me().clone();
+            let sender = validators[my_index as usize].clone();
             (sender, transcript)
         })
         .collect::<Vec<_>>();
@@ -269,7 +255,7 @@ fn test_simple_dkg_handover_serialization() {
     let incoming_validator_keypair = ValidatorKeypair::new(&mut rng);
 
     // Incoming node creates a handover transcript
-    let handover_transcript = dkg0
+    let handover_transcript = dkg
         .generate_handover_transcript(
             &local_aggregate,
             handover_slot_index as u32,
@@ -292,20 +278,13 @@ fn test_simple_dkg_handover_serialization() {
         share_index: handover_slot_index as u32,
     };
     validator_keypairs[handover_slot_index] = incoming_validator_keypair;
+    let dkg =
+        Dkg::new(tau, shares_num, security_threshold, &validators).unwrap();
 
     // Get decryption shares, now with the aggregate transcript after handover:
     let decryption_shares: Vec<DecryptionShareSimple> = validator_keypairs
         .iter()
-        .enumerate()
-        .map(|(index, validator_keypair)| {
-            let dkg = Dkg::new(
-                tau,
-                shares_num,
-                security_threshold,
-                &validators,
-                &validators[index],
-            )
-            .unwrap();
+        .map(|validator_keypair| {
             aggregate_after_handover
                 .create_decryption_share_simple(
                     &dkg,

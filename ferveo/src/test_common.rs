@@ -44,16 +44,13 @@ pub type TestSetup = (PubliclyVerifiableDkg<E>, Vec<Keypair<E>>);
 pub fn setup_dkg_for_n_validators(
     security_threshold: u32,
     shares_num: u32,
-    my_validator_index: usize,
     validators_num: u32,
 ) -> TestSetup {
     let keypairs = gen_keypairs(validators_num);
     let validators = gen_validators(keypairs.as_slice());
-    let me = validators[my_validator_index].clone();
     let dkg = PubliclyVerifiableDkg::new(
         &validators,
         &DkgParams::new(TAU, security_threshold, shares_num).unwrap(),
-        &me,
     )
     .expect("Setup failed");
     (dkg, keypairs)
@@ -62,13 +59,8 @@ pub fn setup_dkg_for_n_validators(
 /// Create a test dkg
 ///
 /// The [`crate::dkg::test_dkg_init`] module checks correctness of this setup
-pub fn setup_dkg(my_validator_index: usize) -> TestSetup {
-    setup_dkg_for_n_validators(
-        SECURITY_THRESHOLD,
-        SHARES_NUM,
-        my_validator_index,
-        VALIDATORS_NUM,
-    )
+pub fn setup_dkg() -> TestSetup {
+    setup_dkg_for_n_validators(SECURITY_THRESHOLD, SHARES_NUM, VALIDATORS_NUM)
 }
 
 pub type DealtTestSetup = (
@@ -115,9 +107,8 @@ pub fn make_messages(
 ) -> Vec<(Validator<E>, PubliclyVerifiableSS<E>)> {
     let mut messages = vec![];
     for i in 0..dkg.dkg_params.shares_num() {
-        let (dkg, _) = setup_dkg(i as usize);
         let transcript = dkg.generate_transcript(rng).unwrap();
-        let sender = dkg.me.clone();
+        let sender = dkg.validators[&i].clone();
         messages.push((sender, transcript));
     }
     messages.shuffle(rng);
@@ -139,10 +130,9 @@ pub fn setup_dealt_dkg_with_n_transcript_dealt(
             let (dkg, _) = setup_dkg_for_n_validators(
                 security_threshold,
                 shares_num,
-                my_index as usize,
                 validators_num,
             );
-            let me = dkg.me.clone();
+            let me = dkg.validators[&my_index].clone();
             let transcript = dkg.generate_transcript(rng).unwrap();
             (me, transcript)
         })
@@ -152,7 +142,6 @@ pub fn setup_dealt_dkg_with_n_transcript_dealt(
     let (dkg, keypairs) = setup_dkg_for_n_validators(
         security_threshold,
         shares_num,
-        0,
         validators_num,
     );
     // The ordering of messages should not matter

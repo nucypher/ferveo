@@ -634,7 +634,7 @@ mod test_pvss {
     #[test]
     fn test_verify_pvss_wrong_proof_of_knowledge() {
         let rng = &mut ark_std::test_rng();
-        let (dkg, _) = setup_dkg(0);
+        let (dkg, _) = setup_dkg();
         let mut s = ScalarField::rand(rng);
         // Ensure that the proof of knowledge is not zero
         while s == ScalarField::zero() {
@@ -652,7 +652,7 @@ mod test_pvss {
     #[test]
     fn test_verify_pvss_bad_shares() {
         let rng = &mut ark_std::test_rng();
-        let (dkg, _) = setup_dkg(0);
+        let (dkg, _) = setup_dkg();
         let s = ScalarField::rand(rng);
         let pvss =
             PubliclyVerifiableSS::<EllipticCurve>::new(&s, &dkg, rng).unwrap();
@@ -713,7 +713,7 @@ mod test_pvss {
             messages.iter().map(|(_, pvss)| pvss).cloned().collect_vec();
         let mut aggregated = aggregate(&pvss_list).unwrap();
         while aggregated.coeffs[0] == G1::zero() {
-            let (_dkg, _) = setup_dkg(0);
+            let (_dkg, _) = setup_dkg();
             aggregated = aggregate(&pvss_list).unwrap();
         }
         aggregated.coeffs[0] = G1::zero();

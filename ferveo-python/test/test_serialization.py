@@ -26,7 +26,6 @@ def make_dkg_public_key():
         shares_num=shares_num,
         security_threshold=security_threshold,
         validators=validators,
-        me=me,
     )
     transcripts = [ValidatorMessage(v, dkg.generate_transcript()) for v in validators]
     aggregate = dkg.aggregate_transcripts(transcripts)

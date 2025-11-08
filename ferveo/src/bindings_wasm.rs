@@ -301,7 +301,6 @@ impl Dkg {
         shares_num: u32,
         security_threshold: u32,
         validators_js: &ValidatorArray,
-        me: &Validator,
     ) -> JsResult<Dkg> {
         let validators = try_from_js_array::<Validator>(validators_js)
             .map_err(map_js_err)?;
@@ -309,19 +308,14 @@ impl Dkg {
             .into_iter()
             .map(|v| v.to_inner())
             .collect::<JsResult<Vec<_>>>()?;
-        let dkg = api::Dkg::new(
-            tau,
-            shares_num,
-            security_threshold,
-            &validators,
-            &me.to_inner()?,
-        )
-        .map_err(map_js_err)?;
+        let dkg =
+            api::Dkg::new(tau, shares_num, security_threshold, &validators)
+                .map_err(map_js_err)?;
         Ok(Self(dkg))
     }
 
     #[wasm_bindgen(js_name = "generateTranscript")]
-    pub fn generate_transcript(&mut self) -> JsResult<Transcript> {
+    pub fn generate_transcript(&self) -> JsResult<Transcript> {
         let rng = &mut thread_rng();
         let transcript = self.0.generate_transcript(rng).map_err(map_js_err)?;
         Ok(Transcript(transcript))
@@ -329,7 +323,7 @@ impl Dkg {
 
     #[wasm_bindgen(js_name = "aggregateTranscript")]
     pub fn aggregate_transcripts(
-        &mut self,
+        &self,
         messages_js: &ValidatorMessageArray,
     ) -> JsResult<AggregatedTranscript> {
         let messages = unwrap_messages_js(messages_js)?;
@@ -377,6 +371,11 @@ impl Validator {
             public_key: self.public_key.0,
             share_index: self.share_index,
         })
+    }
+
+    #[wasm_bindgen(getter, js_name = "shareIndex")]
+    pub fn share_index(&self) -> u32 {
+        self.share_index
     }
 
     #[wasm_bindgen(getter, js_name = "publicKey")]

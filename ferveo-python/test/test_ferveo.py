@@ -57,7 +57,6 @@ def scenario_for_variant(
             shares_num=shares_num,
             security_threshold=threshold,
             validators=validators,
-            me=sender,
         )
         messages.append(ValidatorMessage(sender, dkg.generate_transcript()))
 
@@ -70,7 +69,6 @@ def scenario_for_variant(
         shares_num=shares_num,
         security_threshold=threshold,
         validators=validators,
-        me=validators[0],
     )
     server_aggregate = dkg.aggregate_transcripts(messages)
     assert server_aggregate.verify(validators_num, messages)
@@ -103,7 +101,6 @@ def scenario_for_variant(
             shares_num=shares_num,
             security_threshold=threshold,
             validators=validators,
-            me=validator,
         )
         server_aggregate = dkg.aggregate_transcripts(messages)
         assert server_aggregate.verify(validators_num, messages)
