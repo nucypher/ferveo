@@ -11,10 +11,11 @@ use pyo3::{
     create_exception,
     exceptions::{PyException, PyRuntimeError, PyValueError},
     prelude::*,
-    types::{PyBytes, PyUnicode},
+    types::{PyBytes, PyString},
     PyClass,
 };
 use rand::thread_rng;
+use secrecy::SecretBox;
 use serde::{Deserialize, Serialize};
 
 use crate::{api, Error};
@@ -174,15 +175,15 @@ fn from_py_bytes<T: FromBytes>(bytes: &[u8]) -> PyResult<T> {
         .map_err(|err| FerveoPythonError::FerveoError(err.into()).into())
 }
 
-fn to_py_bytes<T: ToBytes>(t: &T) -> PyResult<PyObject> {
+fn to_py_bytes<T: ToBytes>(t: &T) -> PyResult<Py<PyAny>> {
     let bytes = t
         .to_bytes()
         .map_err(|err| FerveoPythonError::FerveoError(err.into()))?;
     as_py_bytes(&bytes)
 }
 
-fn as_py_bytes(bytes: &[u8]) -> PyResult<PyObject> {
-    Ok(Python::with_gil(|py| -> PyObject {
+fn as_py_bytes(bytes: &[u8]) -> PyResult<Py<PyAny>> {
+    Ok(Python::attach(|py| -> Py<PyAny> {
         PyBytes::new(py, bytes).into()
     }))
 }
@@ -190,10 +191,10 @@ fn as_py_bytes(bytes: &[u8]) -> PyResult<PyObject> {
 // TODO: Not using generics here since some of the types don't implement AsRef<[u8]>
 fn hash(type_name: &str, bytes: &[u8]) -> PyResult<isize> {
     // call `hash((class_name, bytes(obj)))`
-    Python::with_gil(|py| {
+    Python::attach(|py| {
         let builtins = PyModule::import(py, "builtins")?;
-        let arg1 = PyUnicode::new(py, type_name);
-        let arg2: PyObject = PyBytes::new(py, bytes).into();
+        let arg1 = PyString::new(py, type_name);
+        let arg2: Py<PyAny> = PyBytes::new(py, bytes).into();
         builtins.getattr("hash")?.call1(((arg1, arg2),))?.extract()
     })
 }
@@ -222,7 +223,7 @@ macro_rules! generate_bytes_serialization {
                 from_py_bytes(data).map(Self)
             }
 
-            fn __bytes__(&self) -> PyResult<PyObject> {
+            fn __bytes__(&self) -> PyResult<Py<PyAny>> {
                 to_py_bytes(&self.0)
             }
         }
@@ -241,7 +242,7 @@ macro_rules! generate_boxed_bytes_serialization {
                 )?))
             }
 
-            fn __bytes__(&self) -> PyResult<PyObject> {
+            fn __bytes__(&self) -> PyResult<Py<PyAny>> {
                 let bytes = self
                     .0
                     .to_bytes()
@@ -264,7 +265,7 @@ pub fn encrypt(
     dkg_public_key: &DkgPublicKey,
 ) -> PyResult<Ciphertext> {
     let ciphertext =
-        api::encrypt(api::SecretBox::new(message), aad, &dkg_public_key.0)
+        api::encrypt(SecretBox::new(message.into()), aad, &dkg_public_key.0)
             .map_err(FerveoPythonError::FerveoError)?;
     Ok(Ciphertext(ciphertext))
 }
@@ -711,25 +712,32 @@ impl AggregatedTranscript {
 // needs `#[pyfunction]` in the same module, we need these trampolines
 // to build modules externally.
 
-pub fn register_decrypt_with_shared_secret(m: &PyModule) -> PyResult<()> {
+pub fn register_decrypt_with_shared_secret(
+    m: &Bound<'_, PyModule>,
+) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(decrypt_with_shared_secret, m)?)
 }
 
 pub fn register_combine_decryption_shares_precomputed(
-    m: &PyModule,
+    m: &Bound<'_, PyModule>,
 ) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(combine_decryption_shares_precomputed, m)?)
 }
 
-pub fn register_combine_decryption_shares_simple(m: &PyModule) -> PyResult<()> {
+pub fn register_combine_decryption_shares_simple(
+    m: &Bound<'_, PyModule>,
+) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(combine_decryption_shares_simple, m)?)
 }
 
-pub fn register_encrypt(m: &PyModule) -> PyResult<()> {
+pub fn register_encrypt(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(encrypt, m)?)
 }
 
-pub fn make_ferveo_py_module(py: Python<'_>, m: &PyModule) -> PyResult<()> {
+pub fn make_ferveo_py_module(
+    py: Python<'_>,
+    m: &Bound<'_, PyModule>,
+) -> PyResult<()> {
     // Functions
     register_encrypt(m)?;
     register_combine_decryption_shares_simple(m)?;

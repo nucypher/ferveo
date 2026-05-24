@@ -5,6 +5,7 @@ extern crate wasm_bindgen_test;
 
 use ferveo_wasm::{test_common::*, *};
 use itertools::zip_eq;
+use wasm_bindgen_derive::into_js_array;
 use wasm_bindgen_test::*;
 
 type TestSetup = (

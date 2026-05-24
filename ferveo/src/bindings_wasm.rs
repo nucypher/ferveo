@@ -1,16 +1,12 @@
-use std::{
-    convert::{TryFrom, TryInto},
-    fmt,
-    str::FromStr,
-};
+use std::{fmt, str::FromStr};
 
 use ferveo_common::{FromBytes, ToBytes};
-use ferveo_tdec::SecretBox;
 use js_sys::Error;
 use rand::thread_rng;
+use secrecy::SecretBox;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_derive::TryFromJsValue;
+use wasm_bindgen_derive::{try_from_js_array, TryFromJsValue};
 
 use crate::api;
 
@@ -39,38 +35,6 @@ pub fn from_js_bytes<T: FromBytes>(bytes: &[u8]) -> Result<T, Error> {
     T::from_bytes(bytes).map_err(map_js_err)
 }
 
-/// Tries to convert a JS array from `JsValue` to a vector of Rust type elements.
-// This is necessary since wasm-bindgen does not support having a parameter of `Vec<&T>`
-// (see https://github.com/rustwasm/wasm-bindgen/issues/111).
-pub fn try_from_js_array<T>(value: impl AsRef<JsValue>) -> JsResult<Vec<T>>
-where
-    for<'a> T: TryFrom<&'a JsValue>,
-    for<'a> <T as TryFrom<&'a JsValue>>::Error: fmt::Display,
-{
-    let array: &js_sys::Array = value.as_ref().dyn_ref().ok_or_else(|| {
-        Error::new("Got a non-array argument where an array was expected")
-    })?;
-    let length: usize = array.length().try_into().map_err(map_js_err)?;
-    let mut result = Vec::<T>::with_capacity(length);
-    for js in array.iter() {
-        let typed_elem = T::try_from(&js).map_err(map_js_err)?;
-        result.push(typed_elem);
-    }
-    Ok(result)
-}
-
-pub fn into_js_array<T, U>(value: impl IntoIterator<Item = U>) -> T
-where
-    JsValue: From<U>,
-    T: JsCast,
-{
-    value
-        .into_iter()
-        .map(JsValue::from)
-        .collect::<js_sys::Array>()
-        .unchecked_into::<T>()
-}
-
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(typescript_type = "ValidatorMessage[]")]
@@ -89,7 +53,8 @@ extern "C" {
 fn unwrap_messages_js(
     messages: &ValidatorMessageArray,
 ) -> JsResult<Vec<(api::Validator, api::Transcript)>> {
-    let messages = try_from_js_array::<ValidatorMessage>(messages)?;
+    let messages =
+        try_from_js_array::<ValidatorMessage>(messages).map_err(map_js_err)?;
     let messages = messages
         .iter()
         .map(|m| m.to_inner())
@@ -267,7 +232,7 @@ pub fn ferveo_encrypt(
 ) -> JsResult<Ciphertext> {
     set_panic_hook();
     let ciphertext =
-        api::encrypt(SecretBox::new(message.to_vec()), aad, &dkg_public_key.0)
+        api::encrypt(SecretBox::new(message.into()), aad, &dkg_public_key.0)
             .map_err(map_js_err)?;
     Ok(Ciphertext(ciphertext))
 }
@@ -283,7 +248,8 @@ pub fn combine_decryption_shares_simple(
     decryption_shares_js: &DecryptionShareSimpleArray,
 ) -> JsResult<SharedSecret> {
     let shares =
-        try_from_js_array::<DecryptionShareSimple>(decryption_shares_js)?;
+        try_from_js_array::<DecryptionShareSimple>(decryption_shares_js)
+            .map_err(map_js_err)?;
     let shares: Vec<_> = shares.iter().map(|share| share.0.clone()).collect();
     let shared_secret = api::combine_shares_simple(&shares[..]);
     Ok(SharedSecret(shared_secret))
@@ -294,7 +260,8 @@ pub fn combine_decryption_shares_precomputed(
     decryption_shares_js: &DecryptionSharePrecomputedArray,
 ) -> JsResult<SharedSecret> {
     let shares =
-        try_from_js_array::<DecryptionSharePrecomputed>(decryption_shares_js)?;
+        try_from_js_array::<DecryptionSharePrecomputed>(decryption_shares_js)
+            .map_err(map_js_err)?;
     let shares = shares
         .iter()
         .map(|share| share.0.clone())
@@ -336,7 +303,8 @@ impl Dkg {
         validators_js: &ValidatorArray,
         me: &Validator,
     ) -> JsResult<Dkg> {
-        let validators = try_from_js_array::<Validator>(validators_js)?;
+        let validators = try_from_js_array::<Validator>(validators_js)
+            .map_err(map_js_err)?;
         let validators = validators
             .into_iter()
             .map(|v| v.to_inner())
@@ -532,7 +500,8 @@ impl AggregatedTranscript {
     ) -> JsResult<DecryptionSharePrecomputed> {
         set_panic_hook();
         let selected_validators =
-            try_from_js_array::<Validator>(selected_validators_js)?;
+            try_from_js_array::<Validator>(selected_validators_js)
+                .map_err(map_js_err)?;
         let selected_validators = selected_validators
             .into_iter()
             .map(|v| v.to_inner())

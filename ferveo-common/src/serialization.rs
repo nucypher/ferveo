@@ -4,7 +4,7 @@
 
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use serde::{self, Deserialize, Serialize};
-use serde_with::Bytes;
+use serde_encoded_bytes::{Hex, SliceLike};
 
 //
 // Serialization with serde
@@ -15,7 +15,7 @@ pub mod ser {
     //! Simply use the following attribute on your field:
     //! `#[serde(with = "serialization::ser") attribute"]`
 
-    use serde_with::{DeserializeAs, SerializeAs};
+    use serde_encoded_bytes::{Hex, SliceLike};
 
     use super::*;
 
@@ -32,7 +32,7 @@ pub mod ser {
         val.serialize_compressed(&mut bytes)
             .map_err(serde::ser::Error::custom)?;
 
-        Bytes::serialize_as(&bytes, serializer)
+        SliceLike::<Hex>::serialize(&bytes, serializer)
     }
 
     /// You can use this to deserialize an arkworks type with serde and the "deserialize_with" attribute.
@@ -42,7 +42,7 @@ pub mod ser {
         T: CanonicalDeserialize,
         D: serde::Deserializer<'de>,
     {
-        let bytes: Vec<u8> = Bytes::deserialize_as(deserializer)?;
+        let bytes: Vec<u8> = SliceLike::<Hex>::deserialize(deserializer)?;
         T::deserialize_compressed(&mut &bytes[..])
             .map_err(serde::de::Error::custom)
     }
@@ -70,7 +70,7 @@ where
         val.serialize_compressed(&mut bytes)
             .map_err(serde::ser::Error::custom)?;
 
-        Bytes::serialize_as(&bytes, serializer)
+        SliceLike::<Hex>::serialize(&bytes, serializer)
     }
 }
 
@@ -82,7 +82,7 @@ where
     where
         D: serde::Deserializer<'de>,
     {
-        let bytes: Vec<u8> = Bytes::deserialize_as(deserializer)?;
+        let bytes: Vec<u8> = SliceLike::<Hex>::deserialize(deserializer)?;
         T::deserialize_compressed(&mut &bytes[..])
             .map_err(serde::de::Error::custom)
     }
