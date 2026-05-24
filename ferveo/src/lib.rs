@@ -803,7 +803,7 @@ mod test_dkg_full {
                 .unwrap()
                 .into_affine(),
         );
-        assert!(handover_transcript.validate(share_commitment).unwrap());
+        assert!(handover_transcript.validate(&share_commitment).unwrap());
 
         // The departing validator uses the handover transcript produced by the
         // incoming validator to create a new aggregate transcript.

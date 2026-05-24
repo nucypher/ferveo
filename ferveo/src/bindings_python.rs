@@ -646,6 +646,14 @@ impl AggregatedTranscript {
         Ok(is_valid)
     }
 
+    pub fn verify_for_dkg(&self, dkg: &Dkg) -> PyResult<bool> {
+        let is_valid = self
+            .0
+            .verify_for_dkg(&dkg.0)
+            .map_err(FerveoPythonError::FerveoError)?;
+        Ok(is_valid)
+    }
+
     pub fn create_decryption_share_precomputed(
         &self,
         dkg: &Dkg,
@@ -688,6 +696,17 @@ impl AggregatedTranscript {
         Ok(DecryptionShareSimple(decryption_share))
     }
 
+    pub fn validate_handover_transcript(
+        &self,
+        handover_transcript: &HandoverTranscript,
+    ) -> PyResult<bool> {
+        let is_valid = self
+            .0
+            .validate_handover_transcript(&handover_transcript.0)
+            .map_err(FerveoPythonError::FerveoError)?;
+        Ok(is_valid)
+    }
+
     pub fn finalize_handover(
         &self,
         handover_transcript: &HandoverTranscript,
@@ -703,6 +722,14 @@ impl AggregatedTranscript {
     #[getter]
     pub fn public_key(&self) -> DkgPublicKey {
         DkgPublicKey(self.0.public_key())
+    }
+}
+
+#[pymethods]
+impl HandoverTranscript {
+    #[getter]
+    pub fn share_index(&self) -> u32 {
+        self.0.share_index()
     }
 }
 

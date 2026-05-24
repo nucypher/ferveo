@@ -25,7 +25,7 @@ use crate::bindings_python;
 use crate::bindings_wasm;
 pub use crate::EthereumAddress;
 use crate::{
-    do_verify_aggregation, Error, PubliclyVerifiableSS, Result,
+    do_verify_aggregation, Aggregated, Error, PubliclyVerifiableSS, Result,
     UpdateTranscript,
 };
 
@@ -315,6 +315,10 @@ impl AggregatedTranscript {
         )
     }
 
+    pub fn verify_for_dkg(&self, dkg: &Dkg) -> Result<bool> {
+        self.0.aggregate.verify_full(&dkg.0)
+    }
+
     pub fn create_decryption_share_precomputed(
         &self,
         dkg: &Dkg,
@@ -382,6 +386,19 @@ impl AggregatedTranscript {
         Ok(AggregatedTranscript(eeww))
     }
 
+    pub fn validate_handover_transcript(
+        &self,
+        handover_transcript: &HandoverTranscript,
+    ) -> Result<bool> {
+        let share_commitments = self.0.aggregate.get_share_commitments();
+        let share_commitment = share_commitments
+            .get(handover_transcript.0.share_index as usize)
+            .ok_or(
+                Error::InvalidTranscriptAggregate, // FIXME: better error
+            )?;
+        handover_transcript.0.validate(share_commitment)
+    }
+
     pub fn finalize_handover(
         &self,
         handover_transcript: &HandoverTranscript,
@@ -397,6 +414,16 @@ impl AggregatedTranscript {
             crate::AggregatedTranscript::<E>::from_aggregate(new_aggregate)
                 .unwrap();
         Ok(AggregatedTranscript(eeww))
+    }
+
+    pub fn aggregate(&self) -> &PubliclyVerifiableSS<E, Aggregated> {
+        &self.0.aggregate
+    }
+}
+
+impl HandoverTranscript {
+    pub fn share_index(&self) -> u32 {
+        self.0.share_index
     }
 }
 

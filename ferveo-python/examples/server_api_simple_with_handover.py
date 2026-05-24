@@ -1,12 +1,12 @@
 from ferveo import (
-    encrypt,
-    combine_decryption_shares_simple,
-    decrypt_with_shared_secret,
+    AggregatedTranscript,
+    Dkg,
     Keypair,
     Validator,
     ValidatorMessage,
-    Dkg,
-    AggregatedTranscript,
+    combine_decryption_shares_simple,
+    decrypt_with_shared_secret,
+    encrypt,
 )
 
 
@@ -23,9 +23,6 @@ validators = [
     Validator(gen_eth_addr(i), keypair.public_key(), i)
     for i, keypair in enumerate(validator_keypairs)
 ]
-
-# Validators must be sorted by their public key
-validators.sort(key=lambda v: v.address)
 
 # Each validator holds their own DKG instance and generates a transcript every
 # validator, including themselves

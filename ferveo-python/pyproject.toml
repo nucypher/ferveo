@@ -4,3 +4,6 @@ requires = ["setuptools", "wheel", "setuptools-rust"]
 [tool.ruff]
 exclude = ["ferveo/__init__.py"] # false-positive unused-import
 select = ["E", "F", "I"]
+
+[tool.ruff.lint]
+ignore = ["E501"]

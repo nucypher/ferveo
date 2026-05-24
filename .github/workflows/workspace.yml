@@ -172,7 +172,7 @@ jobs:
         working-directory: ferveo-python
 
       - name: Run ruff
-        run: ruff check ferveo
+        run: ruff check .
         working-directory: ferveo-python
 
   codecov:

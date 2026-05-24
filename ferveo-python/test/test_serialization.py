@@ -1,11 +1,14 @@
+import pytest
+
 from ferveo import (
-    Keypair,
-    Validator,
+    AggregatedTranscript,
     Dkg,
     DkgPublicKey,
     FerveoPublicKey,
     FerveoVariant,
-    ValidatorMessage
+    Keypair,
+    Validator,
+    ValidatorMessage,
 )
 
 
@@ -24,19 +27,24 @@ validators = [
 validators.sort(key=lambda v: v.address)
 
 
-def make_dkg_public_key():
+@pytest.fixture(scope="module")
+def dkg():
     me = validators[0]
-    dkg = Dkg(
+    return Dkg(
         tau=tau,
         shares_num=shares_num,
         security_threshold=security_threshold,
         validators=validators,
         me=me,
     )
+
+
+@pytest.fixture(scope="module")
+def aggregate(dkg):
     transcripts = [ValidatorMessage(v, dkg.generate_transcript()) for v in validators]
     aggregate = dkg.aggregate_transcripts(transcripts)
     assert aggregate.verify(shares_num, transcripts)
-    return aggregate.public_key
+    return aggregate
 
 
 def make_shared_secret():
@@ -67,8 +75,8 @@ def test_keypair_serialization():
     assert serialized == bytes(deserialized)
 
 
-def test_dkg_public_key_serialization():
-    dkg_pk = make_dkg_public_key()
+def test_dkg_public_key_serialization(aggregate):
+    dkg_pk = aggregate.public_key
     serialized = bytes(dkg_pk)
     deserialized = DkgPublicKey.from_bytes(serialized)
     # TODO: Implement __richcmp__
@@ -90,3 +98,36 @@ def test_ferveo_variant_serialization():
     assert FerveoVariant.Precomputed == FerveoVariant.Precomputed
     assert FerveoVariant.Simple == FerveoVariant.Simple
     assert FerveoVariant.Precomputed != FerveoVariant.Simple
+
+
+def test_aggregate_transcript_serialization(aggregate):
+    serialized = bytes(aggregate)
+    deserialized = AggregatedTranscript.from_bytes(serialized)
+    assert bytes(aggregate.public_key) == bytes(deserialized.public_key)
+
+
+def test_aggregate_transcript_validity(dkg, aggregate):
+    assert aggregate.verify_for_dkg(dkg)
+
+
+@pytest.mark.parametrize("handover_slot_index", range(shares_num))
+def test_handover_serialization(dkg, aggregate, handover_slot_index):
+    incoming_validator_keypair = Keypair.random()
+    departing_keypair = validator_keypairs[handover_slot_index]
+
+    handover_transcript = dkg.generate_handover_transcript(
+        aggregate,
+        handover_slot_index,
+        incoming_validator_keypair,
+    )
+
+    assert handover_transcript.share_index == handover_slot_index
+
+    assert aggregate.validate_handover_transcript(handover_transcript)
+
+    new_aggregate = aggregate.finalize_handover(
+        handover_transcript, departing_keypair
+    )
+
+    assert bytes(new_aggregate.public_key) == bytes(aggregate.public_key)
+    assert bytes(new_aggregate) != bytes(aggregate)

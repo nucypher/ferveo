@@ -1,6 +1,6 @@
 [package]
 name = "ferveo-nucypher-common"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 license = "GPL-3.0"
 authors = ["David Nuñez <david@nucypher.com>", "Piotr Roslaniec <p.roslaniec@gmail.com>", "Heliax AG <hello@heliax.dev>"]
