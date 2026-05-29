@@ -10,22 +10,15 @@ from ferveo import (
 )
 
 
-def gen_eth_addr(i: int) -> str:
-    return f"0x{i:040x}"  # TODO: Randomize - #207
-
-
 tau = 1
 security_threshold = 3
 shares_num = 4
 validators_num = shares_num + 2
 validator_keypairs = [Keypair.random() for _ in range(0, validators_num)]
 validators = [
-    Validator(gen_eth_addr(i), keypair.public_key(), i)
+    Validator(keypair.public_key(), i)
     for i, keypair in enumerate(validator_keypairs)
 ]
-
-# Validators must be sorted by their public key
-validators.sort(key=lambda v: v.address)
 
 # Each validator holds their own DKG instance and generates a transcript every
 # validator, including themselves
@@ -36,7 +29,6 @@ for sender in validators:
         shares_num=shares_num,
         security_threshold=security_threshold,
         validators=validators,
-        me=sender,
     )
     messages.append(ValidatorMessage(sender, dkg.generate_transcript()))
 
@@ -48,7 +40,6 @@ dkg = Dkg(
     shares_num=shares_num,
     security_threshold=security_threshold,
     validators=validators,
-    me=me,
 )
 
 # Server can aggregate the transcripts
@@ -96,7 +87,6 @@ for validator, validator_keypair in zip(validators, validator_keypairs):
         shares_num=shares_num,
         security_threshold=security_threshold,
         validators=validators,
-        me=validator,
     )
     # Create a decryption share for the ciphertext
     decryption_share = new_aggregate.create_decryption_share_simple(

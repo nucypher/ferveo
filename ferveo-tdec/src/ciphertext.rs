@@ -8,14 +8,15 @@ use chacha20poly1305::{
     ChaCha20Poly1305,
 };
 use ferveo_common::serialization;
+use secrecy::{ExposeSecret, ExposeSecretMut, SecretBox};
 use serde::{Deserialize, Serialize};
+use serde_encoded_bytes::{Hex, SliceLike};
 use serde_with::serde_as;
 use sha2::{digest::Digest, Sha256};
 use zeroize::ZeroizeOnDrop;
 
 use crate::{
-    htp_bls12381_g2, DkgPublicKey, Error, PrivateKeyShare, Result, SecretBox,
-    SharedSecret,
+    htp_bls12381_g2, DkgPublicKey, Error, PrivateKeyShare, Result, SharedSecret,
 };
 
 #[serde_as]
@@ -30,7 +31,7 @@ pub struct Ciphertext<E: Pairing> {
     pub auth_tag: E::G2Affine,
 
     // V
-    #[serde(with = "serde_bytes")]
+    #[serde(with = "SliceLike::<Hex>")]
     pub ciphertext: Vec<u8>,
 }
 
@@ -98,7 +99,7 @@ impl<E: Pairing> CiphertextHeader<E> {
 }
 
 pub fn encrypt<E: Pairing>(
-    message: SecretBox<Vec<u8>>,
+    message: SecretBox<[u8]>,
     aad: &[u8],
     pubkey: &DkgPublicKey<E>,
     rng: &mut impl rand::Rng,
@@ -120,7 +121,7 @@ pub fn encrypt<E: Pairing>(
     let shared_secret = SharedSecret::<E>(product);
 
     let payload = Payload {
-        msg: message.as_secret().as_ref(),
+        msg: message.expose_secret(),
         aad,
     };
     let ciphertext = shared_secret_to_chacha(&shared_secret)?
@@ -195,12 +196,14 @@ fn sha256(input: &[u8]) -> [u8; 32] {
 pub fn shared_secret_to_chacha<E: Pairing>(
     shared_secret: &SharedSecret<E>,
 ) -> Result<ChaCha20Poly1305> {
-    let mut prf_key = SecretBox::new(Vec::new());
+    let mut prf_key = SecretBox::new(
+        vec![0u8; shared_secret.0.compressed_size()].into_boxed_slice(),
+    );
     shared_secret
         .0
-        .serialize_compressed(prf_key.as_mut_secret())?;
+        .serialize_compressed(prf_key.expose_secret_mut())?;
     Ok(ChaCha20Poly1305::new(GenericArray::from_slice(&sha256(
-        prf_key.as_secret(),
+        prf_key.expose_secret(),
     ))))
 }
 
@@ -247,6 +250,7 @@ fn construct_tag_hash<E: Pairing>(
 #[cfg(test)]
 mod tests {
     use ark_std::test_rng;
+    use secrecy::SecretBox;
 
     use crate::{test_common::*, *};
 
@@ -264,7 +268,7 @@ mod tests {
             setup_simple::<E>(threshold, shares_num, rng);
 
         let ciphertext =
-            encrypt::<E>(SecretBox::new(msg.clone()), aad, &pubkey, rng)
+            encrypt::<E>(SecretBox::new(msg.clone().into()), aad, &pubkey, rng)
                 .unwrap();
 
         let plaintext = decrypt_symmetric(&ciphertext, aad, &privkey).unwrap();
@@ -285,7 +289,8 @@ mod tests {
         let aad: &[u8] = "my-aad".as_bytes();
         let (pubkey, _, _) = setup_simple::<E>(threshold, shares_num, rng);
         let mut ciphertext =
-            encrypt::<E>(SecretBox::new(msg), aad, &pubkey, rng).unwrap();
+            encrypt::<E>(SecretBox::new(msg.into()), aad, &pubkey, rng)
+                .unwrap();
 
         // So far, the ciphertext is valid
         assert!(ciphertext.check(aad).is_ok());

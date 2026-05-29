@@ -19,6 +19,9 @@ pub mod validator;
 #[cfg(test)]
 mod test_common;
 
+#[cfg(test)]
+mod test_serialization;
+
 pub use dkg::*;
 pub use primitives::*;
 pub use pvss::*;
@@ -32,19 +35,19 @@ pub enum Error {
 
     /// DKG validator set must contain the validator with the given address
     #[error("Expected validator to be a part of the DKG validator set: {0}")]
-    DealerNotInValidatorSet(EthereumAddress),
+    DealerNotInValidatorSet(String),
 
     /// DKG received an unknown dealer. Dealer must be the part of the DKG validator set.
     #[error("DKG received an unknown dealer: {0}")]
-    UnknownDealer(EthereumAddress),
+    UnknownDealer(String),
 
     /// DKG received a PVSS transcript from a dealer that has already been dealt.
     #[error("DKG received a PVSS transcript from a dealer that has already been dealt: {0}")]
-    DuplicateDealer(EthereumAddress),
+    DuplicateDealer(String),
 
     /// DKG received an invalid transcript for which optimistic verification failed
     #[error("DKG received an invalid transcript from validator: {0}")]
-    InvalidPvssTranscript(EthereumAddress),
+    InvalidPvssTranscript(String),
 
     /// Not enough validators to perform the DKG for a given number of shares
     #[error("Not enough validators (expected {0}, got {1})")]
@@ -106,7 +109,7 @@ pub enum Error {
 
     /// Received a duplicated transcript from a validator
     #[error("Received a duplicated transcript from validator: {0}")]
-    DuplicateTranscript(EthereumAddress),
+    DuplicateTranscript(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -121,11 +124,12 @@ mod test_dkg_full {
     use ark_std::test_rng;
     use ferveo_common::Keypair;
     use ferveo_tdec::{
-        self, DecryptionSharePrecomputed, DecryptionShareSimple, SecretBox,
+        self, DecryptionSharePrecomputed, DecryptionShareSimple,
         ShareCommitment, SharedSecret,
     };
     use itertools::{izip, Itertools};
     use rand::{seq::SliceRandom, Rng};
+    use secrecy::SecretBox;
     use test_case::test_case;
 
     use super::*;
@@ -145,7 +149,7 @@ mod test_dkg_full {
         let server_aggregate =
             AggregatedTranscript::from_transcripts(transcripts).unwrap();
         assert!(server_aggregate
-            .aggregate
+            .aggregate()
             .verify_aggregation(dkg, transcripts)
             .unwrap());
 
@@ -157,7 +161,7 @@ mod test_dkg_full {
                         .get_validator(&validator_keypair.public_key())
                         .unwrap();
                     server_aggregate
-                        .aggregate
+                        .aggregate()
                         .create_decryption_share_simple(
                             ciphertext_header,
                             aad,
@@ -203,13 +207,13 @@ mod test_dkg_full {
         let local_aggregate =
             AggregatedTranscript::from_transcripts(&transcripts).unwrap();
         assert!(local_aggregate
-            .aggregate
+            .aggregate()
             .verify_aggregation(&dkg, &transcripts)
             .unwrap());
         let ciphertext = ferveo_tdec::encrypt::<E>(
-            SecretBox::new(MSG.to_vec()),
+            SecretBox::new(MSG.into()),
             AAD,
-            &local_aggregate.public_key,
+            &local_aggregate.public_key(),
             rng,
         )
         .unwrap();
@@ -255,13 +259,13 @@ mod test_dkg_full {
         let local_aggregate =
             AggregatedTranscript::from_transcripts(&transcripts).unwrap();
         assert!(local_aggregate
-            .aggregate
+            .aggregate()
             .verify_aggregation(&dkg, &transcripts)
             .unwrap());
         let ciphertext = ferveo_tdec::encrypt::<E>(
-            SecretBox::new(MSG.to_vec()),
+            SecretBox::new(MSG.into()),
             AAD,
-            &local_aggregate.public_key,
+            &local_aggregate.public_key(),
             rng,
         )
         .unwrap();
@@ -295,7 +299,7 @@ mod test_dkg_full {
                         .get_validator(&validator_keypair.public_key())
                         .unwrap();
                     local_aggregate
-                        .aggregate
+                        .aggregate()
                         .create_decryption_share_precomputed(
                             &ciphertext.header().unwrap(),
                             AAD,
@@ -340,13 +344,13 @@ mod test_dkg_full {
         let local_aggregate =
             AggregatedTranscript::from_transcripts(&transcripts).unwrap();
         assert!(local_aggregate
-            .aggregate
+            .aggregate()
             .verify_aggregation(&dkg, &transcripts)
             .unwrap());
         let ciphertext = ferveo_tdec::encrypt::<E>(
-            SecretBox::new(MSG.to_vec()),
+            SecretBox::new(MSG.into()),
             AAD,
-            &local_aggregate.public_key,
+            &local_aggregate.public_key(),
             rng,
         )
         .unwrap();
@@ -361,7 +365,7 @@ mod test_dkg_full {
             );
 
         izip!(
-            &local_aggregate.aggregate.shares,
+            &local_aggregate.aggregate().shares,
             &validator_keypairs,
             &decryption_shares,
         )
@@ -382,7 +386,7 @@ mod test_dkg_full {
         let mut with_bad_decryption_share = decryption_share.clone();
         with_bad_decryption_share.decryption_share = TargetField::zero();
         assert!(!with_bad_decryption_share.verify(
-            &local_aggregate.aggregate.shares[0],
+            &local_aggregate.aggregate().shares[0],
             &validator_keypairs[0].public_key().encryption_key,
             &ciphertext,
         ));
@@ -391,7 +395,7 @@ mod test_dkg_full {
         let mut with_bad_checksum = decryption_share;
         with_bad_checksum.validator_checksum.checksum = G1Affine::zero();
         assert!(!with_bad_checksum.verify(
-            &local_aggregate.aggregate.shares[0],
+            &local_aggregate.aggregate().shares[0],
             &validator_keypairs[0].public_key().encryption_key,
             &ciphertext,
         ));
@@ -423,13 +427,13 @@ mod test_dkg_full {
         let local_aggregate =
             AggregatedTranscript::from_transcripts(&transcripts).unwrap();
         assert!(local_aggregate
-            .aggregate
+            .aggregate()
             .verify_aggregation(&dkg, &transcripts)
             .unwrap());
         let ciphertext = ferveo_tdec::encrypt::<E>(
-            SecretBox::new(MSG.to_vec()),
+            SecretBox::new(MSG.into()),
             AAD,
-            &local_aggregate.public_key,
+            &local_aggregate.public_key(),
             rng,
         )
         .unwrap();
@@ -531,7 +535,7 @@ mod test_dkg_full {
                 let decryption_share =
                     AggregatedTranscript::from_transcripts(&transcripts)
                         .unwrap()
-                        .aggregate
+                        .aggregate()
                         .create_decryption_share_simple(
                             &ciphertext.header().unwrap(),
                             AAD,
@@ -615,15 +619,15 @@ mod test_dkg_full {
         let local_aggregate =
             AggregatedTranscript::from_transcripts(&transcripts).unwrap();
         assert!(local_aggregate
-            .aggregate
+            .aggregate()
             .verify_aggregation(&dkg, &transcripts)
             .unwrap());
 
         // Ciphertext created from the aggregate public key
         let ciphertext = ferveo_tdec::encrypt::<E>(
-            SecretBox::new(MSG.to_vec()),
+            SecretBox::new(MSG.into()),
             AAD,
-            &local_aggregate.public_key,
+            &local_aggregate.public_key(),
             rng,
         )
         .unwrap();
@@ -661,12 +665,12 @@ mod test_dkg_full {
         // Participants distribute UpdateTranscripts and update their shares
         // accordingly. The result is a new, joint AggregatedTranscript.
         let new_aggregate = local_aggregate
-            .aggregate
+            .aggregate()
             .refresh(&update_transcripts, &validator_map)
             .unwrap();
 
         // TODO: Assert new aggregate is different than original, including coefficients
-        assert_ne!(local_aggregate.aggregate, new_aggregate);
+        assert_ne!(local_aggregate.aggregate(), &new_aggregate);
 
         // TODO: Show that all participants obtain the same new aggregate transcript.
 
@@ -732,15 +736,15 @@ mod test_dkg_full {
         let local_aggregate =
             AggregatedTranscript::from_transcripts(&transcripts).unwrap();
         assert!(local_aggregate
-            .aggregate
+            .aggregate()
             .verify_aggregation(&dkg, &transcripts)
             .unwrap());
 
         // Ciphertext created from the aggregate public key
         let ciphertext = ferveo_tdec::encrypt::<E>(
-            SecretBox::new(MSG.to_vec()),
+            SecretBox::new(MSG.into()),
             AAD,
-            &local_aggregate.public_key,
+            &local_aggregate.public_key(),
             rng,
         )
         .unwrap();
@@ -793,7 +797,7 @@ mod test_dkg_full {
         // We're doing this for testing purposes, but in practice, this is done
         // by the departing participant when using the high-level API.
         let share_commitments = get_share_commitments_from_poly_commitments::<E>(
-            &local_aggregate.aggregate.coeffs,
+            &local_aggregate.aggregate().coeffs,
             &dkg.domain,
         );
         let share_commitment = ShareCommitment::<E>(
@@ -817,13 +821,13 @@ mod test_dkg_full {
         );
 
         let aggregate_after_handover = local_aggregate
-            .aggregate
+            .aggregate()
             .finalize_handover(&handover_transcript, departing_keypair)
             .unwrap();
 
         // If we use a different keypair, we should get an error
         let error = local_aggregate
-            .aggregate
+            .aggregate()
             .finalize_handover(
                 &handover_transcript,
                 &incoming_validator_keypair,
@@ -835,22 +839,23 @@ mod test_dkg_full {
         );
 
         // New aggregate is different than original...
-        assert_ne!(local_aggregate.aggregate, aggregate_after_handover);
+        assert_ne!(local_aggregate.aggregate(), &aggregate_after_handover);
 
         // ...but let's look a bit deeper:
         // - Polynomial coefficients are the same, which makes sense since the private shares are not changing
         assert_eq!(
-            local_aggregate.aggregate.coeffs,
+            local_aggregate.aggregate().coeffs,
             aggregate_after_handover.coeffs
         );
         // - The shares vector is different ...
         assert_ne!(
-            local_aggregate.aggregate.shares,
+            local_aggregate.aggregate().shares,
             aggregate_after_handover.shares
         );
         // ... but actually they only differ at the handover index
         for i in 0..shares_num {
-            let share_before = local_aggregate.aggregate.shares.get(i as usize);
+            let share_before =
+                local_aggregate.aggregate().shares.get(i as usize);
             let share_after = aggregate_after_handover.shares.get(i as usize);
             if i == handover_slot_index {
                 assert_ne!(share_before, share_after);

@@ -15,8 +15,11 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 ferveo = { package = "ferveo-nucypher", path = "../ferveo", features = ["bindings-wasm"] }
+wasm-bindgen = { workspace = true }
+js-sys = { workspace = true }
 
 [dev-dependencies]
 wasm-bindgen-test = { workspace = true }
+wasm-bindgen-derive = { workspace = true }
 itertools = { workspace = true }
 

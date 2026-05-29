@@ -1,5 +1,4 @@
-/// Factory functions and variables for testing
-use std::str::FromStr;
+//! Factory functions and variables for testing
 
 use ark_bls12_381::Bls12_381;
 pub use ark_bls12_381::Bls12_381 as E;
@@ -8,8 +7,8 @@ use ferveo_common::Keypair;
 use rand::{seq::SliceRandom, Rng};
 
 use crate::{
-    DkgParams, EthereumAddress, PubliclyVerifiableDkg, PubliclyVerifiableSS,
-    Validator, ValidatorMessage,
+    DkgParams, PubliclyVerifiableDkg, PubliclyVerifiableSS, Validator,
+    ValidatorMessage,
 };
 
 pub type ScalarField = <E as Pairing>::ScalarField;
@@ -29,16 +28,11 @@ pub fn gen_keypairs(n: u32) -> Vec<Keypair<E>> {
     (0..n).map(|_| Keypair::<E>::new(rng)).collect()
 }
 
-pub fn gen_address(i: usize) -> EthereumAddress {
-    EthereumAddress::from_str(&format!("0x{i:040}")).unwrap() // TODO: Randomize - #207
-}
-
 pub fn gen_validators(keypairs: &[Keypair<E>]) -> Vec<Validator<E>> {
     keypairs
         .iter()
         .enumerate()
         .map(|(i, keypair)| Validator {
-            address: gen_address(i),
             public_key: keypair.public_key(),
             share_index: i as u32,
         })
@@ -50,16 +44,13 @@ pub type TestSetup = (PubliclyVerifiableDkg<E>, Vec<Keypair<E>>);
 pub fn setup_dkg_for_n_validators(
     security_threshold: u32,
     shares_num: u32,
-    my_validator_index: usize,
     validators_num: u32,
 ) -> TestSetup {
     let keypairs = gen_keypairs(validators_num);
     let validators = gen_validators(keypairs.as_slice());
-    let me = validators[my_validator_index].clone();
     let dkg = PubliclyVerifiableDkg::new(
         &validators,
         &DkgParams::new(TAU, security_threshold, shares_num).unwrap(),
-        &me,
     )
     .expect("Setup failed");
     (dkg, keypairs)
@@ -68,13 +59,8 @@ pub fn setup_dkg_for_n_validators(
 /// Create a test dkg
 ///
 /// The [`crate::dkg::test_dkg_init`] module checks correctness of this setup
-pub fn setup_dkg(my_validator_index: usize) -> TestSetup {
-    setup_dkg_for_n_validators(
-        SECURITY_THRESHOLD,
-        SHARES_NUM,
-        my_validator_index,
-        VALIDATORS_NUM,
-    )
+pub fn setup_dkg() -> TestSetup {
+    setup_dkg_for_n_validators(SECURITY_THRESHOLD, SHARES_NUM, VALIDATORS_NUM)
 }
 
 pub type DealtTestSetup = (
@@ -121,9 +107,8 @@ pub fn make_messages(
 ) -> Vec<(Validator<E>, PubliclyVerifiableSS<E>)> {
     let mut messages = vec![];
     for i in 0..dkg.dkg_params.shares_num() {
-        let (dkg, _) = setup_dkg(i as usize);
         let transcript = dkg.generate_transcript(rng).unwrap();
-        let sender = dkg.me.clone();
+        let sender = dkg.validators[&i].clone();
         messages.push((sender, transcript));
     }
     messages.shuffle(rng);
@@ -145,10 +130,9 @@ pub fn setup_dealt_dkg_with_n_transcript_dealt(
             let (dkg, _) = setup_dkg_for_n_validators(
                 security_threshold,
                 shares_num,
-                my_index as usize,
                 validators_num,
             );
-            let me = dkg.me.clone();
+            let me = dkg.validators[&my_index].clone();
             let transcript = dkg.generate_transcript(rng).unwrap();
             (me, transcript)
         })
@@ -158,7 +142,6 @@ pub fn setup_dealt_dkg_with_n_transcript_dealt(
     let (dkg, keypairs) = setup_dkg_for_n_validators(
         security_threshold,
         shares_num,
-        0,
         validators_num,
     );
     // The ordering of messages should not matter

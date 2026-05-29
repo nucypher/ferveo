@@ -10,17 +10,10 @@ import {
   ValidatorMessage,
   DecryptionSharePrecomputed,
   combineDecryptionSharesPrecomputed,
-  EthereumAddress,
 } from "ferveo-wasm";
 
 const zip = <A1, A2>(a: Array<A1>, b: Array<A2>): Array<[A1, A2]> =>
   a.map((k: A1, i: number) => [k, b[i]]);
-
-const genEthAddr = (i: number) => {
-  const ethAddr =
-    "0x" + "0".repeat(40 - i.toString(16).length) + i.toString(16);
-  return EthereumAddress.fromString(ethAddr);
-};
 
 const TAU = 1;
 
@@ -34,7 +27,7 @@ function setupTest(
   for (let i = 0; i < validatorsNum; i++) {
     const keypair = Keypair.random();
     validatorKeypairs.push(keypair);
-    const validator = new Validator(genEthAddr(i), keypair.publicKey, i);
+    const validator = new Validator(keypair.publicKey, i);
     validators.push(validator);
   }
 
@@ -42,7 +35,7 @@ function setupTest(
   // validator, including themselves
   const messages: ValidatorMessage[] = [];
   validators.forEach((sender) => {
-    const dkg = new Dkg(TAU, sharesNum, threshold, validators, sender);
+    const dkg = new Dkg(TAU, sharesNum, threshold, validators);
     const transcript = dkg.generateTranscript();
     const message = new ValidatorMessage(sender, transcript);
     messages.push(message);
@@ -50,7 +43,7 @@ function setupTest(
 
   // Now that every validator holds a dkg instance and a transcript for every other validator,
   // every validator can aggregate the transcripts
-  const dkg = new Dkg(TAU, sharesNum, threshold, validators, validators[0]);
+  const dkg = new Dkg(TAU, sharesNum, threshold, validators);
 
   // Both the server and the client can aggregate the transcripts and verify them
   const serverAggregate = dkg.aggregateTranscript(messages);
@@ -94,7 +87,7 @@ describe("ferveo-wasm", () => {
       zip(validators, validatorKeypairs).forEach(([validator, keypair]) => {
         expect(validator.publicKey.equals(keypair.publicKey)).toBe(true);
 
-        const dkg = new Dkg(TAU, sharesNum, threshold, validators, validator);
+        const dkg = new Dkg(TAU, sharesNum, threshold, validators);
         const serverAggregate = dkg.aggregateTranscript(messages);
         const isValid = serverAggregate.verify(validatorsNum, messages);
         expect(isValid).toBe(true);
@@ -138,7 +131,7 @@ describe("ferveo-wasm", () => {
       zip(selectedValidators, selectedValidatorKeypairs).forEach(([validator, keypair]) => {
         expect(validator.publicKey.equals(keypair.publicKey)).toBe(true);
 
-        const dkg = new Dkg(TAU, sharesNum, threshold, validators, validator);
+        const dkg = new Dkg(TAU, sharesNum, threshold, validators);
         const serverAggregate = dkg.aggregateTranscript(messages);
         const isValid = serverAggregate.verify(validatorsNum, messages);
         expect(isValid).toBe(true);

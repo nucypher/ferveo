@@ -11,10 +11,11 @@ use pyo3::{
     create_exception,
     exceptions::{PyException, PyRuntimeError, PyValueError},
     prelude::*,
-    types::{PyBytes, PyUnicode},
+    types::{PyBytes, PyString},
     PyClass,
 };
 use rand::thread_rng;
+use secrecy::SecretBox;
 use serde::{Deserialize, Serialize};
 
 use crate::{api, Error};
@@ -174,15 +175,15 @@ fn from_py_bytes<T: FromBytes>(bytes: &[u8]) -> PyResult<T> {
         .map_err(|err| FerveoPythonError::FerveoError(err.into()).into())
 }
 
-fn to_py_bytes<T: ToBytes>(t: &T) -> PyResult<PyObject> {
+fn to_py_bytes<T: ToBytes>(t: &T) -> PyResult<Py<PyAny>> {
     let bytes = t
         .to_bytes()
         .map_err(|err| FerveoPythonError::FerveoError(err.into()))?;
     as_py_bytes(&bytes)
 }
 
-fn as_py_bytes(bytes: &[u8]) -> PyResult<PyObject> {
-    Ok(Python::with_gil(|py| -> PyObject {
+fn as_py_bytes(bytes: &[u8]) -> PyResult<Py<PyAny>> {
+    Ok(Python::attach(|py| -> Py<PyAny> {
         PyBytes::new(py, bytes).into()
     }))
 }
@@ -190,10 +191,10 @@ fn as_py_bytes(bytes: &[u8]) -> PyResult<PyObject> {
 // TODO: Not using generics here since some of the types don't implement AsRef<[u8]>
 fn hash(type_name: &str, bytes: &[u8]) -> PyResult<isize> {
     // call `hash((class_name, bytes(obj)))`
-    Python::with_gil(|py| {
+    Python::attach(|py| {
         let builtins = PyModule::import(py, "builtins")?;
-        let arg1 = PyUnicode::new(py, type_name);
-        let arg2: PyObject = PyBytes::new(py, bytes).into();
+        let arg1 = PyString::new(py, type_name);
+        let arg2: Py<PyAny> = PyBytes::new(py, bytes).into();
         builtins.getattr("hash")?.call1(((arg1, arg2),))?.extract()
     })
 }
@@ -222,7 +223,7 @@ macro_rules! generate_bytes_serialization {
                 from_py_bytes(data).map(Self)
             }
 
-            fn __bytes__(&self) -> PyResult<PyObject> {
+            fn __bytes__(&self) -> PyResult<Py<PyAny>> {
                 to_py_bytes(&self.0)
             }
         }
@@ -241,7 +242,7 @@ macro_rules! generate_boxed_bytes_serialization {
                 )?))
             }
 
-            fn __bytes__(&self) -> PyResult<PyObject> {
+            fn __bytes__(&self) -> PyResult<Py<PyAny>> {
                 let bytes = self
                     .0
                     .to_bytes()
@@ -264,7 +265,7 @@ pub fn encrypt(
     dkg_public_key: &DkgPublicKey,
 ) -> PyResult<Ciphertext> {
     let ciphertext =
-        api::encrypt(api::SecretBox::new(message), aad, &dkg_public_key.0)
+        api::encrypt(SecretBox::new(message.into()), aad, &dkg_public_key.0)
             .map_err(FerveoPythonError::FerveoError)?;
     Ok(Ciphertext(ciphertext))
 }
@@ -416,19 +417,9 @@ pub struct Validator(api::Validator);
 #[pymethods]
 impl Validator {
     #[new]
-    pub fn new(
-        address: String,
-        public_key: &FerveoPublicKey,
-        share_index: u32,
-    ) -> PyResult<Self> {
-        let validator = api::Validator::new(address, public_key.0, share_index)
-            .map_err(|err| FerveoPythonError::Other(err.to_string()))?;
-        Ok(Self(validator))
-    }
-
-    #[getter]
-    pub fn address(&self) -> String {
-        self.0.address.to_string()
+    pub fn new(public_key: &FerveoPublicKey, share_index: u32) -> Self {
+        let validator = api::Validator::new(public_key.0, share_index);
+        Self(validator)
     }
 
     #[getter]
@@ -496,17 +487,11 @@ impl Dkg {
         shares_num: u32,
         security_threshold: u32,
         validators: Vec<Validator>,
-        me: &Validator,
     ) -> PyResult<Self> {
         let validators: Vec<_> = validators.into_iter().map(|v| v.0).collect();
-        let dkg = api::Dkg::new(
-            tau,
-            shares_num,
-            security_threshold,
-            &validators,
-            &me.0,
-        )
-        .map_err(FerveoPythonError::from)?;
+        let dkg =
+            api::Dkg::new(tau, shares_num, security_threshold, &validators)
+                .map_err(FerveoPythonError::from)?;
         Ok(Self(dkg))
     }
 
@@ -711,25 +696,32 @@ impl AggregatedTranscript {
 // needs `#[pyfunction]` in the same module, we need these trampolines
 // to build modules externally.
 
-pub fn register_decrypt_with_shared_secret(m: &PyModule) -> PyResult<()> {
+pub fn register_decrypt_with_shared_secret(
+    m: &Bound<'_, PyModule>,
+) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(decrypt_with_shared_secret, m)?)
 }
 
 pub fn register_combine_decryption_shares_precomputed(
-    m: &PyModule,
+    m: &Bound<'_, PyModule>,
 ) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(combine_decryption_shares_precomputed, m)?)
 }
 
-pub fn register_combine_decryption_shares_simple(m: &PyModule) -> PyResult<()> {
+pub fn register_combine_decryption_shares_simple(
+    m: &Bound<'_, PyModule>,
+) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(combine_decryption_shares_simple, m)?)
 }
 
-pub fn register_encrypt(m: &PyModule) -> PyResult<()> {
+pub fn register_encrypt(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(encrypt, m)?)
 }
 
-pub fn make_ferveo_py_module(py: Python<'_>, m: &PyModule) -> PyResult<()> {
+pub fn make_ferveo_py_module(
+    py: Python<'_>,
+    m: &Bound<'_, PyModule>,
+) -> PyResult<()> {
     // Functions
     register_encrypt(m)?;
     register_combine_decryption_shares_simple(m)?;
@@ -859,12 +851,7 @@ mod test_ferveo_python {
         let validators: HashMap<u32, Validator> = validator_keypairs
             .iter()
             .map(|(&i, keypair)| {
-                let validator = Validator::new(
-                    format!("0x{i:040}"), // TODO: Randomize - #207
-                    &keypair.public_key(),
-                    i,
-                )
-                .unwrap();
+                let validator = Validator::new(&keypair.public_key(), i);
                 (i, validator)
             })
             .collect::<HashMap<u32, Validator>>();
@@ -879,7 +866,6 @@ mod test_ferveo_python {
                     shares_num,
                     security_threshold,
                     validators.values().cloned().collect(),
-                    sender,
                 )
                 .unwrap();
                 let message = ValidatorMessage::new(
@@ -913,13 +899,11 @@ mod test_ferveo_python {
 
         // Now that every validator holds a dkg instance and a transcript for every other validator,
         // every validator can aggregate the transcripts
-        let me = validators.get(&0).unwrap().clone();
         let mut dkg = Dkg::new(
             TAU,
             shares_num,
             security_threshold,
             validators.values().cloned().collect(),
-            &me,
         )
         .unwrap();
 
@@ -951,7 +935,6 @@ mod test_ferveo_python {
         let decryption_shares: Vec<_> = random_indices
             .iter()
             .map(|&index| {
-                let validator = validators.get(index).unwrap();
                 let validator_keypair = validator_keypairs.get(index).unwrap();
                 // Each validator holds their own instance of DKG and creates their own aggregate
                 let mut validator_dkg = Dkg::new(
@@ -959,7 +942,6 @@ mod test_ferveo_python {
                     shares_num,
                     security_threshold,
                     validators.values().cloned().collect(),
-                    validator,
                 )
                 .unwrap();
                 let server_aggregate = validator_dkg
@@ -1007,13 +989,11 @@ mod test_ferveo_python {
 
         // Now that every validator holds a dkg instance and a transcript for every other validator,
         // every validator can aggregate the transcripts
-        let me = validators.get(&0).unwrap().clone();
         let mut dkg = Dkg::new(
             TAU,
             shares_num,
             security_threshold,
             validators.values().cloned().collect(),
-            &me,
         )
         .unwrap();
 
@@ -1042,7 +1022,6 @@ mod test_ferveo_python {
         let decryption_shares: Vec<_> = random_indices
             .iter()
             .map(|&index| {
-                let validator = validators.get(index).unwrap();
                 let validator_keypair = validator_keypairs.get(index).unwrap();
                 // Each validator holds their own instance of DKG and creates their own aggregate
                 let mut validator_dkg = Dkg::new(
@@ -1050,7 +1029,6 @@ mod test_ferveo_python {
                     shares_num,
                     security_threshold,
                     validators.values().cloned().collect(),
-                    validator,
                 )
                 .unwrap();
                 let aggregate = validator_dkg
@@ -1100,13 +1078,11 @@ mod test_ferveo_python {
 
         // Now that every validator holds a dkg instance and a transcript for every other validator,
         // every validator can aggregate the transcripts
-        let me = validators.get(&0).unwrap().clone();
         let mut dkg = Dkg::new(
             TAU,
             shares_num,
             security_threshold,
             validators.values().cloned().collect(),
-            &me,
         )
         .unwrap();
 
@@ -1130,11 +1106,9 @@ mod test_ferveo_python {
         // New participant that will receive the handover
         let incoming_validator_keypair = Keypair::random();
         let incoming_validator = Validator::new(
-            format!("0x{:040}", 123456789), // TODO: Randomize - #207
             &incoming_validator_keypair.public_key(),
             handover_slot_index,
-        )
-        .unwrap();
+        );
 
         // Incoming node creates a handover transcript
         let handover_transcript = dkg
@@ -1165,8 +1139,6 @@ mod test_ferveo_python {
         let decryption_shares: Vec<_> = random_indices
             .iter()
             .map(|&index| {
-                let validator: Validator =
-                    new_validators.get(index).unwrap().clone();
                 let validator_keypair: &Keypair =
                     if *index != handover_slot_index {
                         validator_keypairs.get(index).unwrap()
@@ -1180,7 +1152,6 @@ mod test_ferveo_python {
                     shares_num,
                     security_threshold,
                     new_validators.values().cloned().collect(),
-                    &validator,
                 )
                 .unwrap();
 

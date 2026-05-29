@@ -7,6 +7,7 @@ use criterion::{
 use ferveo_nucypher_tdec::{test_common::setup_simple, *};
 use rand::prelude::StdRng;
 use rand_core::{RngCore, SeedableRng};
+use secrecy::SecretBox;
 
 const NUM_SHARES_CASES: [usize; 5] = [4, 8, 16, 32, 64];
 const MSG_SIZE_CASES: [usize; 7] = [256, 512, 1024, 2048, 4096, 8192, 16384];
@@ -47,7 +48,7 @@ impl SetupSimple {
 
         // Ciphertext.commitment is already computed to match U
         let ciphertext =
-            encrypt::<E>(SecretBox::new(msg.clone()), aad, &pubkey, rng)
+            encrypt::<E>(SecretBox::new(msg.clone().into()), aad, &pubkey, rng)
                 .unwrap();
 
         // Creating decryption shares
@@ -236,7 +237,7 @@ pub fn bench_share_encrypt_decrypt(c: &mut Criterion) {
                 let setup = setup.clone();
                 black_box(
                     encrypt::<E>(
-                        SecretBox::new(setup.shared.msg),
+                        SecretBox::new(setup.shared.msg.into()),
                         &setup.shared.aad,
                         &setup.shared.pubkey,
                         &mut rng,

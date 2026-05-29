@@ -3,7 +3,6 @@ use std::{
     fs::{create_dir_all, OpenOptions},
     io::prelude::*,
     path::PathBuf,
-    str::FromStr,
 };
 
 use ark_bls12_381::Bls12_381 as EllipticCurve;
@@ -55,16 +54,11 @@ fn gen_keypairs(num: u32) -> Vec<ferveo_common::Keypair<EllipticCurve>> {
         .collect()
 }
 
-pub fn gen_address(i: usize) -> EthereumAddress {
-    EthereumAddress::from_str(&format!("0x{i:040}")).unwrap() // TODO: Randomize - #207
-}
-
 fn gen_validators(
     keypairs: &[ferveo_common::Keypair<EllipticCurve>],
 ) -> Vec<Validator<EllipticCurve>> {
     (0..keypairs.len())
         .map(|i| Validator {
-            address: gen_address(i),
             public_key: keypairs[i].public_key(),
             share_index: i as u32,
         })
@@ -72,17 +66,14 @@ fn gen_validators(
 }
 
 fn setup_dkg(
-    validator: usize,
     shares_num: u32,
     security_threshold: u32,
 ) -> PubliclyVerifiableDkg<EllipticCurve> {
     let keypairs = gen_keypairs(shares_num);
     let validators = gen_validators(&keypairs);
-    let me = validators[validator].clone();
     PubliclyVerifiableDkg::new(
         &validators,
         &DkgParams::new(0, security_threshold, shares_num).unwrap(),
-        &me,
     )
     .expect("Setup failed")
 }
@@ -96,12 +87,11 @@ fn setup(
     Vec<PubliclyVerifiableSS<EllipticCurve>>,
 ) {
     let mut transcripts = vec![];
-    for i in 0..shares_num {
-        let dkg = setup_dkg(i as usize, shares_num, security_threshold);
+    let dkg = setup_dkg(shares_num, security_threshold);
+    for _ in 0..shares_num {
         let transcript = dkg.generate_transcript(rng).expect("Test failed");
         transcripts.push(transcript.clone());
     }
-    let dkg = setup_dkg(0, shares_num, security_threshold);
     (dkg, transcripts)
 }
 

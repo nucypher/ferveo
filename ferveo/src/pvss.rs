@@ -498,18 +498,13 @@ impl<E: Pairing, T: Aggregate> PubliclyVerifiableSS<E, T> {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct AggregatedTranscript<E: Pairing> {
+pub struct AggregatedTranscript<E: Pairing>(
     #[serde(bound(
         serialize = "PubliclyVerifiableSS<E, Aggregated>: Serialize",
         deserialize = "PubliclyVerifiableSS<E, Aggregated>: DeserializeOwned"
     ))]
-    pub aggregate: PubliclyVerifiableSS<E, Aggregated>,
-    #[serde(bound(
-        serialize = "ferveo_tdec::DkgPublicKey<E>: Serialize",
-        deserialize = "ferveo_tdec::DkgPublicKey<E>: DeserializeOwned"
-    ))]
-    pub public_key: ferveo_tdec::DkgPublicKey<E>,
-}
+    PubliclyVerifiableSS<E, Aggregated>,
+);
 
 // TODO: Add tests - #202
 impl<E: Pairing> AggregatedTranscript<E> {
@@ -523,11 +518,15 @@ impl<E: Pairing> AggregatedTranscript<E> {
     pub fn from_aggregate(
         aggregate: PubliclyVerifiableSS<E, Aggregated>,
     ) -> Result<Self> {
-        let public_key = ferveo_tdec::DkgPublicKey::<E>(aggregate.coeffs[0]);
-        Ok(AggregatedTranscript {
-            aggregate,
-            public_key,
-        })
+        Ok(AggregatedTranscript(aggregate))
+    }
+
+    pub fn aggregate(&self) -> &PubliclyVerifiableSS<E, Aggregated> {
+        &self.0
+    }
+
+    pub fn public_key(&self) -> ferveo_tdec::DkgPublicKey<E> {
+        ferveo_tdec::DkgPublicKey::<E>(self.0.coeffs[0])
     }
 }
 
@@ -634,7 +633,7 @@ mod test_pvss {
     #[test]
     fn test_verify_pvss_wrong_proof_of_knowledge() {
         let rng = &mut ark_std::test_rng();
-        let (dkg, _) = setup_dkg(0);
+        let (dkg, _) = setup_dkg();
         let mut s = ScalarField::rand(rng);
         // Ensure that the proof of knowledge is not zero
         while s == ScalarField::zero() {
@@ -652,7 +651,7 @@ mod test_pvss {
     #[test]
     fn test_verify_pvss_bad_shares() {
         let rng = &mut ark_std::test_rng();
-        let (dkg, _) = setup_dkg(0);
+        let (dkg, _) = setup_dkg();
         let s = ScalarField::rand(rng);
         let pvss =
             PubliclyVerifiableSS::<EllipticCurve>::new(&s, &dkg, rng).unwrap();
@@ -713,7 +712,7 @@ mod test_pvss {
             messages.iter().map(|(_, pvss)| pvss).cloned().collect_vec();
         let mut aggregated = aggregate(&pvss_list).unwrap();
         while aggregated.coeffs[0] == G1::zero() {
-            let (_dkg, _) = setup_dkg(0);
+            let (_dkg, _) = setup_dkg();
             aggregated = aggregate(&pvss_list).unwrap();
         }
         aggregated.coeffs[0] = G1::zero();

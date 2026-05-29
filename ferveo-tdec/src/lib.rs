@@ -8,7 +8,6 @@ pub mod context;
 pub mod decryption;
 pub mod hash_to_curve;
 pub mod key_share;
-pub mod secret_box;
 
 // TODO: Only show the public API, tpke::api
 // use ciphertext::*;
@@ -25,7 +24,6 @@ pub use context::*;
 pub use decryption::*;
 pub use hash_to_curve::*;
 pub use key_share::*;
-pub use secret_box::*;
 
 #[cfg(feature = "api")]
 pub mod api;
@@ -211,6 +209,7 @@ mod tests {
     use ark_std::{test_rng, UniformRand};
     use ferveo_common::{FromBytes, ToBytes};
     use rand::seq::IteratorRandom;
+    use secrecy::SecretBox;
 
     use crate::{
         api::DecryptionSharePrecomputed,
@@ -232,7 +231,8 @@ mod tests {
         let (pubkey, _, _) = setup_simple::<E>(threshold, shares_num, rng);
 
         let ciphertext =
-            encrypt::<E>(SecretBox::new(msg), aad, &pubkey, rng).unwrap();
+            encrypt::<E>(SecretBox::new(msg.into()), aad, &pubkey, rng)
+                .unwrap();
 
         let serialized = ciphertext.to_bytes().unwrap();
         let deserialized: Ciphertext<E> =
@@ -275,7 +275,8 @@ mod tests {
         let (pubkey, _, contexts) =
             setup_simple::<E>(shares_num, threshold, rng);
         let ciphertext =
-            encrypt::<E>(SecretBox::new(msg), aad, &pubkey, rng).unwrap();
+            encrypt::<E>(SecretBox::new(msg.into()), aad, &pubkey, rng)
+                .unwrap();
 
         let bad_aad = "bad aad".as_bytes();
         assert!(contexts[0]
@@ -295,7 +296,7 @@ mod tests {
             setup_simple::<E>(shares_num, threshold, &mut rng);
 
         let ciphertext =
-            encrypt::<E>(SecretBox::new(msg.clone()), aad, &pubkey, rng)
+            encrypt::<E>(SecretBox::new(msg.clone().into()), aad, &pubkey, rng)
                 .unwrap();
 
         // We need at least threshold shares to decrypt
@@ -341,7 +342,7 @@ mod tests {
         let (pubkey, _, contexts) =
             setup_precomputed::<E>(shares_num, threshold, &mut rng);
         let ciphertext =
-            encrypt::<E>(SecretBox::new(msg.clone()), aad, &pubkey, rng)
+            encrypt::<E>(SecretBox::new(msg.clone().into()), aad, &pubkey, rng)
                 .unwrap();
 
         let selected_participants =
@@ -394,7 +395,8 @@ mod tests {
             setup_simple::<E>(shares_num, threshold, &mut rng);
 
         let ciphertext =
-            encrypt::<E>(SecretBox::new(msg), aad, &pubkey, rng).unwrap();
+            encrypt::<E>(SecretBox::new(msg.into()), aad, &pubkey, rng)
+                .unwrap();
 
         let decryption_shares: Vec<_> = contexts
             .iter()

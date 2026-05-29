@@ -1,16 +1,12 @@
-use std::{
-    convert::{TryFrom, TryInto},
-    fmt,
-    str::FromStr,
-};
+use std::fmt;
 
 use ferveo_common::{FromBytes, ToBytes};
-use ferveo_tdec::SecretBox;
 use js_sys::Error;
 use rand::thread_rng;
+use secrecy::SecretBox;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_derive::TryFromJsValue;
+use wasm_bindgen_derive::{try_from_js_array, TryFromJsValue};
 
 use crate::api;
 
@@ -39,38 +35,6 @@ pub fn from_js_bytes<T: FromBytes>(bytes: &[u8]) -> Result<T, Error> {
     T::from_bytes(bytes).map_err(map_js_err)
 }
 
-/// Tries to convert a JS array from `JsValue` to a vector of Rust type elements.
-// This is necessary since wasm-bindgen does not support having a parameter of `Vec<&T>`
-// (see https://github.com/rustwasm/wasm-bindgen/issues/111).
-pub fn try_from_js_array<T>(value: impl AsRef<JsValue>) -> JsResult<Vec<T>>
-where
-    for<'a> T: TryFrom<&'a JsValue>,
-    for<'a> <T as TryFrom<&'a JsValue>>::Error: fmt::Display,
-{
-    let array: &js_sys::Array = value.as_ref().dyn_ref().ok_or_else(|| {
-        Error::new("Got a non-array argument where an array was expected")
-    })?;
-    let length: usize = array.length().try_into().map_err(map_js_err)?;
-    let mut result = Vec::<T>::with_capacity(length);
-    for js in array.iter() {
-        let typed_elem = T::try_from(&js).map_err(map_js_err)?;
-        result.push(typed_elem);
-    }
-    Ok(result)
-}
-
-pub fn into_js_array<T, U>(value: impl IntoIterator<Item = U>) -> T
-where
-    JsValue: From<U>,
-    T: JsCast,
-{
-    value
-        .into_iter()
-        .map(JsValue::from)
-        .collect::<js_sys::Array>()
-        .unchecked_into::<T>()
-}
-
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(typescript_type = "ValidatorMessage[]")]
@@ -89,7 +53,8 @@ extern "C" {
 fn unwrap_messages_js(
     messages: &ValidatorMessageArray,
 ) -> JsResult<Vec<(api::Validator, api::Transcript)>> {
-    let messages = try_from_js_array::<ValidatorMessage>(messages)?;
+    let messages =
+        try_from_js_array::<ValidatorMessage>(messages).map_err(map_js_err)?;
     let messages = messages
         .iter()
         .map(|m| m.to_inner())
@@ -267,7 +232,7 @@ pub fn ferveo_encrypt(
 ) -> JsResult<Ciphertext> {
     set_panic_hook();
     let ciphertext =
-        api::encrypt(SecretBox::new(message.to_vec()), aad, &dkg_public_key.0)
+        api::encrypt(SecretBox::new(message.into()), aad, &dkg_public_key.0)
             .map_err(map_js_err)?;
     Ok(Ciphertext(ciphertext))
 }
@@ -283,7 +248,8 @@ pub fn combine_decryption_shares_simple(
     decryption_shares_js: &DecryptionShareSimpleArray,
 ) -> JsResult<SharedSecret> {
     let shares =
-        try_from_js_array::<DecryptionShareSimple>(decryption_shares_js)?;
+        try_from_js_array::<DecryptionShareSimple>(decryption_shares_js)
+            .map_err(map_js_err)?;
     let shares: Vec<_> = shares.iter().map(|share| share.0.clone()).collect();
     let shared_secret = api::combine_shares_simple(&shares[..]);
     Ok(SharedSecret(shared_secret))
@@ -294,7 +260,8 @@ pub fn combine_decryption_shares_precomputed(
     decryption_shares_js: &DecryptionSharePrecomputedArray,
 ) -> JsResult<SharedSecret> {
     let shares =
-        try_from_js_array::<DecryptionSharePrecomputed>(decryption_shares_js)?;
+        try_from_js_array::<DecryptionSharePrecomputed>(decryption_shares_js)
+            .map_err(map_js_err)?;
     let shares = shares
         .iter()
         .map(|share| share.0.clone())
@@ -334,26 +301,21 @@ impl Dkg {
         shares_num: u32,
         security_threshold: u32,
         validators_js: &ValidatorArray,
-        me: &Validator,
     ) -> JsResult<Dkg> {
-        let validators = try_from_js_array::<Validator>(validators_js)?;
+        let validators = try_from_js_array::<Validator>(validators_js)
+            .map_err(map_js_err)?;
         let validators = validators
             .into_iter()
             .map(|v| v.to_inner())
             .collect::<JsResult<Vec<_>>>()?;
-        let dkg = api::Dkg::new(
-            tau,
-            shares_num,
-            security_threshold,
-            &validators,
-            &me.to_inner()?,
-        )
-        .map_err(map_js_err)?;
+        let dkg =
+            api::Dkg::new(tau, shares_num, security_threshold, &validators)
+                .map_err(map_js_err)?;
         Ok(Self(dkg))
     }
 
     #[wasm_bindgen(js_name = "generateTranscript")]
-    pub fn generate_transcript(&mut self) -> JsResult<Transcript> {
+    pub fn generate_transcript(&self) -> JsResult<Transcript> {
         let rng = &mut thread_rng();
         let transcript = self.0.generate_transcript(rng).map_err(map_js_err)?;
         Ok(Transcript(transcript))
@@ -361,7 +323,7 @@ impl Dkg {
 
     #[wasm_bindgen(js_name = "aggregateTranscript")]
     pub fn aggregate_transcripts(
-        &mut self,
+        &self,
         messages_js: &ValidatorMessageArray,
     ) -> JsResult<AggregatedTranscript> {
         let messages = unwrap_messages_js(messages_js)?;
@@ -379,34 +341,12 @@ pub struct Transcript(pub(crate) api::Transcript);
 
 generate_common_methods!(Transcript);
 
-#[wasm_bindgen(js_name = EthereumAddress)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct EthereumAddress(api::EthereumAddress);
-
-#[wasm_bindgen]
-impl EthereumAddress {
-    #[wasm_bindgen(js_name = "fromString")]
-    pub fn from_string(address: &str) -> JsResult<EthereumAddress> {
-        set_panic_hook();
-        Ok(Self(
-            api::EthereumAddress::from_str(address).map_err(map_js_err)?,
-        ))
-    }
-
-    #[wasm_bindgen(js_name = "toString")]
-    pub fn to_string(&self) -> JsResult<String> {
-        set_panic_hook();
-        Ok(self.0.to_string())
-    }
-}
-
 // Using a separate Validator struct for WASM bindings to avoid issues with serialization of
 // `ark_ec::models::bls12::Bls12<ark_bls12_381::curves::Config>`, i.e. G2Affine public key
 #[derive(TryFromJsValue)]
 #[wasm_bindgen]
 #[derive(Clone, Debug, derive_more::AsRef, derive_more::From)]
 pub struct Validator {
-    address: EthereumAddress,
     public_key: FerveoPublicKey,
     share_index: u32,
 }
@@ -415,13 +355,11 @@ pub struct Validator {
 impl Validator {
     #[wasm_bindgen(constructor)]
     pub fn new(
-        address: &EthereumAddress,
         public_key: &FerveoPublicKey,
         share_index: u32,
     ) -> JsResult<Validator> {
         set_panic_hook();
         Ok(Self {
-            address: address.clone(),
             public_key: public_key.clone(),
             share_index,
         })
@@ -430,20 +368,19 @@ impl Validator {
     pub(crate) fn to_inner(&self) -> JsResult<api::Validator> {
         set_panic_hook();
         Ok(api::Validator {
-            address: self.address.0.clone(),
             public_key: self.public_key.0,
             share_index: self.share_index,
         })
     }
 
+    #[wasm_bindgen(getter, js_name = "shareIndex")]
+    pub fn share_index(&self) -> u32 {
+        self.share_index
+    }
+
     #[wasm_bindgen(getter, js_name = "publicKey")]
     pub fn public_key(&self) -> FerveoPublicKey {
         self.public_key.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn address(&self) -> EthereumAddress {
-        self.address.clone()
     }
 }
 
@@ -532,7 +469,8 @@ impl AggregatedTranscript {
     ) -> JsResult<DecryptionSharePrecomputed> {
         set_panic_hook();
         let selected_validators =
-            try_from_js_array::<Validator>(selected_validators_js)?;
+            try_from_js_array::<Validator>(selected_validators_js)
+                .map_err(map_js_err)?;
         let selected_validators = selected_validators
             .into_iter()
             .map(|v| v.to_inner())
@@ -611,13 +549,8 @@ pub mod test_common {
         Keypair::from_secure_randomness(&[i as u8; 32]).unwrap()
     }
 
-    pub fn gen_address(i: usize) -> EthereumAddress {
-        EthereumAddress::from_string(&format!("0x{i:040}")).unwrap() // TODO: Randomize - #207
-    }
-
     pub fn gen_validator(i: usize, keypair: &Keypair) -> Validator {
         Validator {
-            address: gen_address(i),
             public_key: keypair.public_key(),
             share_index: i as u32,
         }

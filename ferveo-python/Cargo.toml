@@ -9,10 +9,6 @@ publish = false
 [lib]
 crate-type = ["cdylib"]
 
-[features]
-extension-module = ["pyo3/extension-module"]
-default = ["extension-module"]
-
 [dependencies]
 ferveo = { package = "ferveo-nucypher", path = "../ferveo", features = ["bindings-python"] }
 pyo3 = { workspace = true }
